@@ -8,6 +8,10 @@
 
   --gold-500: #f1c84b;
   --gold-200: #fff1bc;
+  --blue-500: #1fa7ff;
+  --pink-500: #f05a8a;
+  --violet-500: #7a55ff;
+  --mint-400: #26d7a5;
 
   --ink: #13241c;
   --muted: #63746b;
@@ -46,9 +50,9 @@ body {
     Arial,
     sans-serif;
   background:
-    radial-gradient(circle at 10% 8%, rgba(241, 200, 75, 0.30), transparent 28%),
-    radial-gradient(circle at 86% 18%, rgba(18, 131, 77, 0.18), transparent 30%),
-    linear-gradient(135deg, #f5fbf6 0%, #ffffff 44%, #e9f6ee 100%);
+    linear-gradient(115deg, rgba(240, 90, 138, 0.18) 0 14%, transparent 14% 44%, rgba(38, 215, 165, 0.18) 44% 58%, transparent 58%),
+    linear-gradient(25deg, transparent 0 36%, rgba(31, 167, 255, 0.16) 36% 51%, transparent 51% 76%, rgba(241, 200, 75, 0.20) 76%),
+    linear-gradient(135deg, #f7fff8 0%, #ffffff 36%, #eef7ff 68%, #f6f0ff 100%);
 }
 
 body::before {
@@ -61,6 +65,58 @@ body::before {
     linear-gradient(90deg, rgba(13, 107, 61, 0.055) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 82%);
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  overflow: hidden;
+  background:
+    conic-gradient(from 210deg at 50% 50%, rgba(13, 107, 61, 0.08), rgba(31, 167, 255, 0.12), rgba(240, 90, 138, 0.10), rgba(241, 200, 75, 0.10), rgba(13, 107, 61, 0.08));
+}
+
+.decor {
+  position: fixed;
+  z-index: -2;
+  pointer-events: none;
+  filter: blur(0.2px);
+}
+
+.decor-a {
+  top: 92px;
+  left: max(18px, calc(50% - 680px));
+  width: 132px;
+  height: 132px;
+  border: 18px solid rgba(31, 167, 255, 0.24);
+  border-radius: 38px;
+  transform: rotate(18deg);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.decor-b {
+  right: max(20px, calc(50% - 700px));
+  top: 240px;
+  width: 230px;
+  height: 148px;
+  border-radius: 34px;
+  transform: rotate(-14deg) skewX(-8deg);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0 12px, transparent 12px 24px),
+    linear-gradient(135deg, rgba(240, 90, 138, 0.46), rgba(122, 85, 255, 0.22));
+  box-shadow: 0 30px 70px rgba(122, 85, 255, 0.18);
+}
+
+.decor-c {
+  right: 12%;
+  bottom: 78px;
+  width: 210px;
+  height: 56px;
+  border-radius: 999px;
+  transform: rotate(-10deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(241, 200, 75, 0.68) 0 18px, rgba(38, 215, 165, 0.58) 18px 36px, rgba(31, 167, 255, 0.44) 36px 54px);
+  opacity: 0.78;
 }
 
 a {
@@ -81,9 +137,13 @@ a {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(242, 251, 245, 0.86)),
+    linear-gradient(125deg, transparent 0 50%, rgba(31, 167, 255, 0.18) 50% 64%, transparent 64%),
+    linear-gradient(22deg, transparent 0 66%, rgba(240, 90, 138, 0.15) 66% 78%, transparent 78%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(236, 255, 246, 0.88)),
     var(--paper);
-  box-shadow: var(--shadow-soft);
+  box-shadow:
+    0 24px 80px rgba(7, 63, 40, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px);
 }
 
@@ -110,6 +170,10 @@ a {
   border-radius: 42px;
   transform: rotate(12deg);
   background: rgba(255, 255, 255, 0.35);
+}
+
+.hero h1 {
+  text-shadow: 0 10px 34px rgba(13, 107, 61, 0.14);
 }
 
 .hero > * {
@@ -141,6 +205,35 @@ a {
   border-radius: 999px;
   background: var(--gold-500);
   box-shadow: 0 0 0 5px rgba(241, 200, 75, 0.18);
+}
+
+.deploy-ribbon {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: -10px 0 30px;
+  padding: 12px 16px;
+  border: 1px solid rgba(7, 63, 40, 0.16);
+  border-radius: 18px;
+  color: var(--green-900);
+  background:
+    linear-gradient(90deg, rgba(241, 200, 75, 0.95), rgba(38, 215, 165, 0.84), rgba(31, 167, 255, 0.72));
+  box-shadow: 0 16px 40px rgba(13, 107, 61, 0.13);
+}
+
+.deploy-ribbon span {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.deploy-ribbon strong {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.70);
+  font-size: 0.9rem;
 }
 
 h1,
@@ -249,7 +342,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 252, 249, 0.90));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 252, 249, 0.90));
   box-shadow: 0 14px 38px rgba(7, 63, 40, 0.08);
   transition:
     transform 180ms ease,
@@ -263,10 +356,23 @@ h1 {
   inset: 0;
   content: "";
   background:
-    radial-gradient(circle at 18% 0%, rgba(241, 200, 75, 0.20), transparent 32%),
-    radial-gradient(circle at 88% 12%, rgba(18, 131, 77, 0.13), transparent 35%);
-  opacity: 0;
+    linear-gradient(150deg, rgba(241, 200, 75, 0.18) 0 22%, transparent 22%),
+    linear-gradient(30deg, transparent 0 68%, rgba(31, 167, 255, 0.14) 68% 84%, transparent 84%),
+    linear-gradient(135deg, rgba(240, 90, 138, 0.08), transparent 45%);
+  opacity: 0.72;
   transition: opacity 180ms ease;
+}
+
+.project-card::after {
+  position: absolute;
+  right: -42px;
+  bottom: -50px;
+  width: 118px;
+  height: 118px;
+  content: "";
+  border-radius: 34px;
+  transform: rotate(18deg);
+  background: linear-gradient(135deg, rgba(38, 215, 165, 0.18), rgba(241, 200, 75, 0.22));
 }
 
 .project-card > * {
@@ -302,7 +408,9 @@ h1 {
   place-items: center;
   border: 1px solid rgba(13, 107, 61, 0.14);
   border-radius: 18px;
-  background: var(--green-50);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(231, 245, 236, 0.78)),
+    var(--green-50);
   font-size: 1.55rem;
   box-shadow: inset 0 -10px 22px rgba(13, 107, 61, 0.06);
 }
@@ -494,4 +602,32 @@ h1 {
     display: block;
     margin-bottom: 6px;
   }
+}
+
+.project-card:nth-child(1) .project-tag,
+.project-card:nth-child(1) .project-link:hover,
+.project-card:nth-child(1) .project-link:focus-visible {
+  background: #0d6b3d;
+}
+
+.project-card:nth-child(2) .project-tag,
+.project-card:nth-child(2) .project-link:hover,
+.project-card:nth-child(2) .project-link:focus-visible {
+  background: #1f7ad1;
+}
+
+.project-card:nth-child(3) .project-tag,
+.project-card:nth-child(3) .project-link:hover,
+.project-card:nth-child(3) .project-link:focus-visible {
+  background: #9b5c00;
+}
+
+.project-card:nth-child(4) .project-tag,
+.project-card:nth-child(4) .project-link:hover,
+.project-card:nth-child(4) .project-link:focus-visible {
+  background: #7a3dd8;
+}
+
+.project-card:nth-child(n) .project-tag {
+  color: var(--white);
 }
