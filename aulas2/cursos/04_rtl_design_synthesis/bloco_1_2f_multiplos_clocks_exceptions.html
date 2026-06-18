@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Múltiplos Clocks e Timing Exceptions</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Múltiplos Clocks
+    </nav>
+
+    <h1 class="page-title">Múltiplos Clocks e Timing Exceptions</h1>
+    <p class="lead">
+      Esta aula explica quando dois clocks devem ser analisados entre si, quando devem ser separados, quando um clock
+      precisa ser gerado explicitamente e por que exceptions são comandos poderosos demais para serem usados como
+      “limpeza de report”.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Quando um design tem apenas um clock real, a análise de timing é relativamente direta: registrador lança,
+            lógica combinacional propaga, outro registrador captura. Em designs com múltiplos clocks, a ferramenta precisa
+            saber quais clocks têm relação temporal conhecida, quais são independentes, quais só existem em modos
+            diferentes e quais são derivados de outros clocks.
+          </p>
+          <p>
+            O problema é que, sem constraints corretas, o DC_NXT pode analisar caminhos impossíveis ou ignorar caminhos
+            importantes. E se você aplicar uma exception ampla demais, pode mascarar uma violação real. Esta aula é sobre
+            modelar intenção temporal com precisão: nem pessimista demais, nem permissivo demais.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="ideia-central">A ideia central: clocks são relações, não só sinais</h2>
+          <p>
+            Em RTL, é comum pensar em clock como um sinal chamado <code>clk</code>. Em síntese e STA, um clock é um
+            objeto temporal: ele tem período, bordas, waveform, latência, uncertainty e relação com outros clocks. Dois
+            sinais de clock com nomes diferentes podem ser relacionados, assíncronos, mutuamente exclusivos ou derivados.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Clock síncrono relacionado</h3>
+              <p>Tem relação de fase/frequência conhecida com outro clock. A ferramenta deve analisar caminhos entre eles.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Clock gerado</h3>
+              <p>Deriva de outro clock por divisor, mux, registrador, PLL, gating ou lógica de clock.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Clock assíncrono</h3>
+              <p>Não tem relação temporal determinística. STA não resolve CDC; ela só deixa de otimizar relações sem sentido.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Clock exclusivo</h3>
+              <p>Clocks que não devem ser analisados juntos em certo ponto ou modo, mas precisam ser modelados com cuidado.</p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Tradução prática:</strong> antes de escrever uma exception, responda em português: “estes dois clocks
+            podem lançar e capturar dados entre si em operação real?”. Se a resposta não está clara, o comando ainda não
+            está seguro.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="single-clock">Primeiro: nosso bloco atual parece single-clock</h2>
+          <p>
+            No ambiente do professor, o bloco CPU atual usa um clock principal no SDC:
+          </p>
+
+          <pre><code>create_clock -name master_clk -period 20.0 [get_ports clk]</code></pre>
+
+          <p>
+            Isso significa que, para o primeiro SDC do laboratório, não devemos inventar múltiplos clocks se o RTL não
+            tem múltiplos domínios reais. O conteúdo desta aula entra por dois motivos: primeiro, para entender os slides
+            e questões de prova; segundo, para saber como evoluir o ambiente se depois aparecer clock dividido, clock de
+            interface, clock muxado ou domínio assíncrono.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Aplicação no projeto agora:</strong> mantenha o SDC simples enquanto o bloco for single-clock. Use
+            <code>create_clock</code>, input/output delay, load, transition e false path de reset se justificado. Não use
+            <code>set_clock_groups</code> sem haver mais de um clock real ou virtual relevante.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="multiplos-sincronos">Múltiplos clocks síncronos</h2>
+          <p>
+            Dois clocks podem ter frequências diferentes e ainda assim serem síncronos se existe relação determinística
+            entre suas bordas. Por exemplo: <code>clk_fast</code> de 10 ns e <code>clk_slow</code> de 20 ns derivados da
+            mesma fonte. Nesse caso, caminhos entre domínios podem ser analisáveis por STA.
+          </p>
+
+          <pre><code>create_clock -name clk_fast -period 10.0 [get_ports clk_fast]
+create_clock -name clk_slow -period 20.0 [get_ports clk_slow]
+
+# Se houver incerteza entre os domínios, modele explicitamente:
+set_clock_uncertainty -from [get_clocks clk_fast] -to [get_clocks clk_slow] 0.25
+set_clock_uncertainty -from [get_clocks clk_slow] -to [get_clocks clk_fast] 0.25</code></pre>
+
+          <p>
+            A ferramenta calcula quais bordas de lançamento e captura são críticas. Esse cálculo pode ficar menos óbvio
+            quando os períodos não são múltiplos simples, quando há duty-cycle diferente ou quando existe fase deslocada.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="io-multiplos-clocks">Input/output delay com mais de um clock</h2>
+          <p>
+            Uma mesma porta pode participar de caminhos relativos a clocks diferentes. Se você aplicar um segundo
+            <code>set_input_delay</code> sem cuidado, pode sobrescrever o primeiro. É por isso que os slides destacam
+            <code>-add_delay</code>.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Sem <code>-add_delay</code></h3>
+              <p>O segundo constraint pode substituir o anterior para a mesma porta.</p>
+              <pre><code>set_input_delay -clock clk_a 2.0 [get_ports data]
+set_input_delay -clock clk_b 1.5 [get_ports data]</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Com <code>-add_delay</code></h3>
+              <p>Você declara que existem múltiplos caminhos/referências para a mesma porta.</p>
+              <pre><code>set_input_delay -clock clk_a 2.0 [get_ports data]
+set_input_delay -clock clk_b 1.5 -add_delay [get_ports data]</code></pre>
+            </div>
+          </div>
+
+          <p>
+            O mesmo raciocínio vale para <code>set_output_delay</code>. Em designs reais, uma saída pode ser capturada
+            por blocos externos diferentes, com clocks ou requisitos diferentes. A constraint deve representar todos os
+            caminhos reais, não apenas o mais conveniente.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="generated-clock">Generated clock: quando o clock nasce dentro do design</h2>
+          <p>
+            Um generated clock é um clock derivado de outro clock. Ele pode sair de um divisor, registrador, mux de clock,
+            PLL, clock gate ou outro elemento. A ferramenta pode até inferir algumas relações simples, mas em fluxo sério
+            você explicita o clock gerado para que timing, reports e propagated clock façam sentido.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>Clock fonte</strong><p>Clock original que chega ao bloco.</p></div>
+            <div class="flow-step"><strong>Lógica geradora</strong><p>Divisor, flop, mux, gate ou macro de clock.</p></div>
+            <div class="flow-step"><strong>Clock gerado</strong><p>Novo objeto de clock criado no pino de saída relevante.</p></div>
+          </div>
+
+          <pre><code># Exemplo: clock dividido por 2 por um registrador/divisor
+create_clock -name clk -period 10.0 [get_ports clk]
+
+create_generated_clock -name clk_div2 \
+  -source [get_ports clk] \
+  -divide_by 2 \
+  [get_pins U_DIV/Q]</code></pre>
+
+          <p>
+            O pino final do comando é o ponto onde o clock gerado passa a existir para a análise. Se você escolhe o ponto
+            errado, a ferramenta pode continuar analisando parte do circuito com o clock incorreto.
+          </p>
+
+          <details class="expand-block">
+            <summary>Por que isso importa em RTL/GTECH?</summary>
+            <div class="detail-body">
+              <p>
+                Durante a síntese, o design passa por representações intermediárias. O nome do pino de clock ou saída de
+                um registrador pode mudar entre RTL, GTECH e biblioteca mapeada. Os slides citam pin synonyms porque, em
+                alguns fluxos, é preciso ajudar a ferramenta a reconhecer equivalências de nomes entre a representação
+                genérica e a biblioteca alvo.
+              </p>
+              <pre><code>set_pin_name_synonym &lt;target_lib_pin/synonym&gt; &lt;gtech_pin/original&gt;</code></pre>
+              <p>
+                Para o nosso estágio atual, isso é conhecimento de leitura do curso. Só vira ação se aparecer erro de
+                constraint por pino não encontrado ou se estivermos modelando generated clocks em células específicas.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-mux">Clock muxado: o caso em que muita gente erra</h2>
+          <p>
+            Um mux de clock escolhe entre dois clocks. Se você simplesmente declara os clocks de entrada e não cria clocks
+            gerados na saída do mux, a ferramenta pode analisar relações impossíveis ou deixar de entender que a saída
+            do mux pode carregar clocks diferentes dependendo do modo.
+          </p>
+
+          <div class="timing-map">
+            <div class="timing-node external">clk_a</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">MUX de clock</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node internal">clk_mux_a/clk_mux_b</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node internal">registradores</div>
+          </div>
+
+          <pre><code>create_clock -name clk_a -period 10.0 [get_ports clk_a]
+create_clock -name clk_b -period 12.0 [get_ports clk_b]
+
+create_generated_clock -name clk_mux_a \
+  -source [get_ports clk_a] \
+  -master_clock clk_a \
+  [get_pins U_CLKMUX/Y]
+
+create_generated_clock -name clk_mux_b \
+  -source [get_ports clk_b] \
+  -master_clock clk_b \
+  -add \
+  [get_pins U_CLKMUX/Y]</code></pre>
+
+          <p>
+            O <code>-add</code> aparece porque mais de um clock pode ser associado ao mesmo ponto físico de saída do mux.
+            Depois disso, você precisa informar se esses clocks são logicamente ou fisicamente exclusivos.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-groups">Clock groups: assíncrono, lógico exclusivo, físico exclusivo</h2>
+          <p>
+            <code>set_clock_groups</code> é uma das famílias de commands mais perigosas e úteis de SDC. Ela diz à
+            ferramenta quais relações entre clocks devem ser removidas da análise padrão.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Tipo</th><th>Quando usar</th><th>Risco se usar errado</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>-asynchronous</code></td>
+                  <td>Clocks sem relação temporal determinística.</td>
+                  <td>Esconder crossing que precisava de CDC/sincronizador.</td>
+                </tr>
+                <tr>
+                  <td><code>-logically_exclusive</code></td>
+                  <td>Clocks que não ficam ativos simultaneamente para a mesma lógica por condição lógica/modo.</td>
+                  <td>Remover análise de caminhos que podem existir em outro modo.</td>
+                </tr>
+                <tr>
+                  <td><code>-physically_exclusive</code></td>
+                  <td>Clocks que não coexistem fisicamente no mesmo cenário, por exemplo clocks alternativos no mesmo ponto.</td>
+                  <td>Submodelar interação física ou modo de operação.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Clocks assíncronos
+set_clock_groups -asynchronous \
+  -group [get_clocks clk_a] \
+  -group [get_clocks clk_b]
+
+# Clocks logicamente exclusivos
+set_clock_groups -logically_exclusive \
+  -group [get_clocks mode_clk_a] \
+  -group [get_clocks mode_clk_b]
+
+# Clocks fisicamente exclusivos no mesmo ponto/mux
+set_clock_groups -physically_exclusive \
+  -group [get_clocks clk_mux_a] \
+  -group [get_clocks clk_mux_b]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Boa pergunta de prova:</strong> clock group não é uma forma genérica de “melhorar timing”. Ele remove
+            relações de análise. Se a relação removida podia acontecer de verdade, você criou uma falsa sensação de
+            sucesso.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="async-nao-cdc">Clocks assíncronos não resolvem CDC</h2>
+          <p>
+            Quando você escreve <code>set_clock_groups -asynchronous</code>, está dizendo à ferramenta de timing que não
+            existe uma relação de fase confiável entre os clocks. Isso impede otimização/análise direta entre domínios,
+            mas não cria sincronizador, FIFO assíncrona ou handshake seguro.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>O que a constraint faz</h3>
+              <p>Remove timing paths entre domínios que não têm relação temporal determinística.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>O que ela não faz</h3>
+              <p>Não evita metastabilidade, não valida protocolo CDC e não transforma crossing inseguro em seguro.</p>
+            </article>
+            <article class="concept-card">
+              <h3>O que o RTL precisa ter</h3>
+              <p>Sincronizadores, FIFOs assíncronas, handshakes ou estruturas CDC adequadas.</p>
+            </article>
+          </div>
+
+          <pre><code>set_clock_groups -asynchronous \
+  -group [get_clocks cpu_clk] \
+  -group [get_clocks bus_clk]</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="false-path">False path: quando o caminho é funcionalmente impossível</h2>
+          <p>
+            <code>set_false_path</code> remove caminhos específicos da análise. É correto quando existe justificativa
+            funcional forte: um sinal de configuração estável, um caminho bloqueado por modo, reset assíncrono que não
+            deve ser analisado como dado síncrono, ou lógica que nunca lança e captura naquela relação.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Uso razoável</h3>
+              <pre><code># Reset assíncrono fora da análise de dados
+set_false_path -from [get_ports rst]</code></pre>
+              <p>Comum em blocos simples, desde que o reset seja realmente tratado como controle assíncrono.</p>
+            </div>
+            <div class="note-box">
+              <h3>Uso perigoso</h3>
+              <pre><code># Amplo demais, pode esconder bugs
+set_false_path -from [all_inputs] -to [all_outputs]</code></pre>
+              <p>Remove muita coisa sem provar que os caminhos são impossíveis.</p>
+            </div>
+          </div>
+
+          <p>
+            A forma segura é ser específico: use <code>-from</code>, <code>-to</code> e, quando necessário,
+            <code>-through</code>. Quanto mais amplo o false path, maior a responsabilidade de provar que ele é correto.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="multicycle">Multicycle path em profundidade</h2>
+          <p>
+            Multicycle path é para caminhos que funcionalmente têm mais de um ciclo para estabilizar antes da captura.
+            Isso não é “o caminho está lento, então dou mais ciclos”. É “o protocolo do design só captura esse resultado
+            depois de N ciclos”.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>Sem multicycle</strong><p>Setup assume captura na próxima borda.</p></div>
+            <div class="flow-step"><strong>Setup N</strong><p>Captura passa para N ciclos depois.</p></div>
+            <div class="flow-step"><strong>Hold N-1</strong><p>Hold precisa ser recolocado para não criar análise errada.</p></div>
+          </div>
+
+          <pre><code># Caminho com 4 ciclos funcionais para setup
+set_multicycle_path 4 -setup \
+  -from [get_cells U_SRC/*] \
+  -to   [get_cells U_DST/*]
+
+# Ajuste típico de hold: N - 1
+set_multicycle_path 3 -hold \
+  -from [get_cells U_SRC/*] \
+  -to   [get_cells U_DST/*]</code></pre>
+
+          <details class="expand-block" open>
+            <summary>Por que o hold precisa ser ajustado?</summary>
+            <div class="detail-body">
+              <p>
+                O comando de setup move a borda de captura usada na análise. Se você não ajusta hold, a ferramenta pode
+                verificar hold contra uma borda que não representa a intenção original. O padrão <code>hold = setup - 1</code>
+                frequentemente recoloca a checagem de hold no lugar esperado.
+              </p>
+              <p>
+                Ainda assim, o comando não deve ser aplicado por reflexo. Primeiro prove que a lógica tem enable,
+                handshake, FSM ou protocolo que realmente impede captura antes de N ciclos.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="through">Usando <code>-through</code> para não relaxar demais</h2>
+          <p>
+            Os slides enfatizam que exceptions amplas podem capturar caminhos demais. O <code>-through</code> ajuda a
+            limitar a exception a caminhos que passam por um ponto específico.
+          </p>
+
+          <pre><code># Mais específico: só caminhos que passam por uma lógica/protocolo conhecido
+set_multicycle_path 3 -setup \
+  -from [get_clocks src_clk] \
+  -to   [get_clocks dst_clk] \
+  -through [get_pins U_ENABLE_GATE/Y]
+
+set_multicycle_path 2 -hold \
+  -from [get_clocks src_clk] \
+  -to   [get_clocks dst_clk] \
+  -through [get_pins U_ENABLE_GATE/Y]</code></pre>
+
+          <p>
+            A ideia é simples: quanto mais precisamente você descreve a exceção, menor o risco de remover análise de um
+            caminho que deveria continuar sendo verificado.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="interclock-uncertainty">Inter-clock uncertainty</h2>
+          <p>
+            Quando dois clocks são relacionados, ainda pode haver incerteza entre eles: skew, jitter, diferença de origem
+            ou margem de projeto. Você pode modelar uncertainty entre clocks específicos.
+          </p>
+
+          <pre><code>set_clock_uncertainty 0.20 [get_clocks clk]
+
+set_clock_uncertainty 0.35 \
+  -from [get_clocks clk_fast] \
+  -to   [get_clocks clk_slow]
+
+set_clock_uncertainty 0.30 \
+  -from [get_clocks clk_slow] \
+  -to   [get_clocks clk_fast]</code></pre>
+
+          <p>
+            A uncertainty reduz o tempo disponível, tornando a análise mais conservadora. Se for pequena demais, o design
+            pode parecer melhor que a realidade. Se for grande demais, a ferramenta pode gastar esforço desnecessário ou
+            declarar violações artificiais.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="invalid-exceptions">Sempre cheque exceptions inválidas</h2>
+          <p>
+            Uma exception pode estar sintaticamente correta e ainda assim não afetar nada, por exemplo porque o objeto não
+            existe, o caminho não passa pelo ponto escolhido ou uma outra exception mais forte domina. Por isso os slides
+            insistem em checar exceptions ignoradas.
+          </p>
+
+          <pre><code>report_timing_requirements -ignored
+
+# Depois, confira se o caminho esperado mudou:
+report_timing \
+  -from [get_clocks src_clk] \
+  -to   [get_clocks dst_clk] \
+  -max_paths 10</code></pre>
+
+          <div class="lesson-note">
+            <strong>Checklist mental:</strong> se você adicionou uma exception e não consegue mostrar no report qual
+            caminho ela afetou, ainda não terminou a auditoria.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ordem-segura">Ordem segura para escrever constraints com clocks complexos</h2>
+          <p>
+            O erro comum é começar pelas exceptions. A ordem mais segura é declarar clocks, declarar clocks derivados,
+            modelar ambiente, verificar, e só então aplicar exceptions justificadas.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item"><strong>1. Crie clocks primários</strong><code>create_clock</code> nos ports ou fontes reais.</div>
+            <div class="check-item"><strong>2. Crie generated clocks</strong><code>create_generated_clock</code> em divisores, muxes e gates relevantes.</div>
+            <div class="check-item"><strong>3. Modele I/O</strong><code>set_input_delay</code>, <code>set_output_delay</code>, <code>-add_delay</code> quando necessário.</div>
+            <div class="check-item"><strong>4. Modele incertezas</strong><code>set_clock_uncertainty</code> global ou entre clocks.</div>
+            <div class="check-item"><strong>5. Aplique clock groups</strong>Só para relações justificadas: async, logical ou physical exclusive.</div>
+            <div class="check-item"><strong>6. Aplique exceptions específicas</strong>False path/multicycle com <code>-from</code>, <code>-to</code> e <code>-through</code>.</div>
+            <div class="check-item"><strong>7. Verifique</strong><code>check_timing</code>, <code>report_clock</code>, <code>report_timing_requirements -ignored</code>.</div>
+            <div class="check-item"><strong>8. Reporte caminhos</strong>Confirme que os paths esperados foram afetados e os restantes continuam analisados.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="script">Script consolidado de exemplo</h2>
+          <p>
+            Este script não é para copiar cegamente no CPU atual. Ele é um mapa de como ficaria um bloco mais complexo,
+            com dois clocks relacionados, clock muxado, domínio assíncrono e multicycle justificado.
+          </p>
+
+          <pre><code># Clocks primários
+create_clock -name clk_fast -period 10.0 [get_ports clk_fast]
+create_clock -name clk_slow -period 20.0 [get_ports clk_slow]
+create_clock -name bus_clk  -period 12.0 [get_ports bus_clk]
+
+# Clock gerado por divisor
+create_generated_clock -name clk_div2 \
+  -source [get_ports clk_fast] \
+  -divide_by 2 \
+  [get_pins U_DIV/Q]
+
+# Clocks gerados no output de mux
+create_generated_clock -name clk_mux_fast \
+  -source [get_ports clk_fast] \
+  -master_clock clk_fast \
+  [get_pins U_CLKMUX/Y]
+
+create_generated_clock -name clk_mux_slow \
+  -source [get_ports clk_slow] \
+  -master_clock clk_slow \
+  -add \
+  [get_pins U_CLKMUX/Y]
+
+# Clocks do mux são exclusivos no ponto muxado
+set_clock_groups -physically_exclusive \
+  -group [get_clocks clk_mux_fast] \
+  -group [get_clocks clk_mux_slow]
+
+# CPU e barramento são assíncronos, desde que RTL tenha CDC correto
+set_clock_groups -asynchronous \
+  -group [get_clocks clk_fast] \
+  -group [get_clocks bus_clk]
+
+# I/O com múltiplas referências
+set_input_delay -clock clk_fast 2.0 [get_ports data_in]
+set_input_delay -clock bus_clk  1.5 -add_delay [get_ports data_in]
+
+# Multicycle funcional específico
+set_multicycle_path 3 -setup \
+  -from [get_cells U_SRC/*] \
+  -to   [get_cells U_DST/*] \
+  -through [get_pins U_ENABLE/Y]
+
+set_multicycle_path 2 -hold \
+  -from [get_cells U_SRC/*] \
+  -to   [get_cells U_DST/*] \
+  -through [get_pins U_ENABLE/Y]
+
+# Auditoria obrigatória
+check_timing
+report_clock
+report_timing_requirements -ignored
+report_timing -max_paths 20 -nworst 5</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Como isso conversa com o laboratório do professor</h2>
+          <p>
+            O bloco CPU clonado do professor ainda parece estar na fase de criar SDC básico, sintetizar com DC_NXT e
+            rodar gate-level simulation. Então a aplicação direta desta aula não é sair adicionando clocks e exceptions.
+            A aplicação correta é saber auditar quando isso aparecer.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Situação no projeto</th><th>O que fazer</th><th>O que evitar</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Um único clock <code>clk</code></td>
+                  <td>Use <code>create_clock</code> simples e foque I/O/load/transition.</td>
+                  <td>Adicionar clock groups sem múltiplos clocks reais.</td>
+                </tr>
+                <tr>
+                  <td>Reset assíncrono</td>
+                  <td>Se justificado, <code>set_false_path -from [get_ports rst]</code>.</td>
+                  <td>Usar false path amplo em todos os inputs.</td>
+                </tr>
+                <tr>
+                  <td>Clock dividido no RTL</td>
+                  <td>Investigar <code>create_generated_clock</code>.</td>
+                  <td>Deixar o clock derivado invisível para STA.</td>
+                </tr>
+                <tr>
+                  <td>Interface com outro domínio</td>
+                  <td>Modelar clock externo/virtual e CDC se houver crossing real.</td>
+                  <td>Chamar de asynchronous e esquecer sincronização.</td>
+                </tr>
+                <tr>
+                  <td>Caminho lento mas funcionalmente multi-ciclo</td>
+                  <td>Aplicar multicycle específico e validar hold.</td>
+                  <td>Usar multicycle para esconder caminho que deveria fechar em um ciclo.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="checklist">Checklist de prova e auditoria</h2>
+          <div class="check-grid">
+            <div class="check-item"><strong><code>-add_delay</code></strong>Use quando a mesma porta tem delays relativos a mais de um clock/caminho.</div>
+            <div class="check-item"><strong>Generated clock</strong>Use quando um clock é derivado internamente e precisa ser analisado como clock.</div>
+            <div class="check-item"><strong>Asynchronous</strong>Remove análise entre domínios sem relação temporal; não substitui CDC.</div>
+            <div class="check-item"><strong>Logically exclusive</strong>Clocks não ativos juntos por modo/lógica; exige justificativa funcional.</div>
+            <div class="check-item"><strong>Physically exclusive</strong>Clocks alternativos que não coexistem no mesmo cenário físico/ponto.</div>
+            <div class="check-item"><strong>Multicycle</strong>Setup N normalmente pede hold N-1; sempre prove o protocolo.</div>
+            <div class="check-item"><strong>False path</strong>Use em caminho impossível, não em caminho difícil.</div>
+            <div class="check-item"><strong>Ignored exceptions</strong>Depois de exceptions, sempre rode <code>report_timing_requirements -ignored</code>.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="perguntas">Perguntas de revisão</h2>
+          <div class="quiz-card">
+            <strong>1. Por que <code>set_clock_groups -asynchronous</code> não resolve CDC?</strong>
+            <p class="answer">Porque ele só remove análise temporal entre clocks sem relação determinística; o RTL ainda precisa de sincronizador, FIFO ou handshake seguro.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>2. Quando usar <code>-add_delay</code>?</strong>
+            <p class="answer">Quando uma mesma porta precisa ter múltiplos delays relativos a clocks ou caminhos diferentes, sem sobrescrever constraints anteriores.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>3. Para que serve <code>create_generated_clock</code>?</strong>
+            <p class="answer">Para declarar clocks derivados internamente, como clocks divididos, muxados ou gerados por lógica/células de clock.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>4. Qual é o perigo de <code>set_false_path</code> amplo demais?</strong>
+            <p class="answer">Ele pode esconder caminhos funcionais reais e fazer o design parecer correto sem estar temporizado de fato.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>5. Em multicycle setup N, por que geralmente aplicar hold N-1?</strong>
+            <p class="answer">Porque relaxar setup muda a borda de captura, e o hold precisa ser recolocado na relação correta.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>6. Como auditar se uma exception funcionou?</strong>
+            <p class="answer">Use <code>report_timing_requirements -ignored</code> e rode <code>report_timing</code> filtrado nos caminhos que a exception deveria afetar.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo bloco do site</h2>
+          <p>
+            O próximo bloco deve cobrir <strong>constraints complexas de clock e I/O</strong>: waveform, duty-cycle,
+            borda de descida, múltiplos input/output paths, driving cell, latência pré/pós-CTS e clocks virtuais externos.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/08_Constraints_Multiple_Clocks_and_Exceptions_parte_A.md">Multiple Clocks and Exceptions parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/08_Constraints_Multiple_Clocks_and_Exceptions_parte_B.md">Multiple Clocks and Exceptions parte B</a>,
+          <a data-md-source href="../../assets/md_normalizado/13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md">Job Aid DC_NXT</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2e_timing_analysis_ajuste_sdc.html">Anterior: Timing Analysis</a>
+          <a href="bloco_1_2g_constraints_complexas_clock_io.html">Próxima: Constraints Complexas</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

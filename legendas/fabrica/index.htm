@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fabrica de aulas</title>
+    <link rel="stylesheet" href="index.css?v=20260618-api-port">
+  </head>
+  <body>
+    <main class="factory-shell">
+      <section id="loginView" class="login-panel" aria-label="Login">
+        <div class="login-box">
+          <p class="eyebrow">Shadowing</p>
+          <h1>Fabrica</h1>
+          <form id="loginForm" class="login-form">
+            <label>
+              <span>Chave</span>
+              <input id="passwordInput" type="password" autocomplete="current-password" required>
+            </label>
+            <button type="submit">Entrar</button>
+          </form>
+          <p id="loginStatus" class="status-message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="factoryView" class="factory-panel is-hidden" aria-label="Fabrica de aulas">
+        <header class="factory-header">
+          <div>
+            <p class="eyebrow">Shadowing</p>
+            <h1>Fabrica de aulas</h1>
+          </div>
+          <div class="header-actions">
+            <p id="statusMessage" class="status-message" role="status">Carregando...</p>
+            <button id="logoutButton" type="button">Sair</button>
+          </div>
+        </header>
+
+        <section class="lesson-toolbar" aria-label="Aulas salvas">
+          <label class="lesson-select-label">
+            <span>Aulas existentes</span>
+            <select id="lessonSelect">
+              <option value="">Carregando...</option>
+            </select>
+          </label>
+          <button id="newButton" type="button">Nova</button>
+          <button id="loadButton" type="button" disabled>Carregar</button>
+          <button id="deleteButton" class="danger-button" type="button" disabled>Excluir</button>
+        </section>
+
+        <section class="json-editor" aria-label="Editor de JSON">
+          <textarea
+            id="jsonInput"
+            spellcheck="false"
+            placeholder="Cole aqui o JSON completo da aula."
+          ></textarea>
+        </section>
+
+        <footer class="factory-actions">
+          <button id="saveButton" type="button">Salvar como nova aula</button>
+          <button id="updateButton" type="button" disabled>Atualizar aula selecionada</button>
+          <span id="currentLessonLabel">Nenhuma aula selecionada</span>
+        </footer>
+      </section>
+    </main>
+
+    <script src="index.js?v=20260618-api-port"></script>
+  </body>
+</html>

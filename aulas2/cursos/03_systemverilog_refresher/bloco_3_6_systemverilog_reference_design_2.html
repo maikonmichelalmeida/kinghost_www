@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog Reference Design-2</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>Reference Design-2
+    </nav>
+
+    <h1 class="page-title">SystemVerilog Reference Design-2</h1>
+    <p class="lead">
+      Aula guiada sobre um register array controller com protocolo de acesso, <code>ready</code>,
+      leitura com latência, driver, monitor, scoreboard, VCS, Verdi, filelist e Makefile.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Este bloco continua a sequência de reference designs, mas agora o DUT não é apenas combinacional.
+            O exemplo usa um controlador de array de registradores. Isso muda o tipo de raciocínio: o ambiente
+            precisa lidar com endereço, escrita, leitura, valor armazenado, reset, latência e protocolo de aceitação.
+          </p>
+          <p>
+            A pergunta principal deixa de ser "qual é a saída para esta entrada?" e passa a ser:
+            <strong>como verificar um bloco que guarda estado e responde em ciclos diferentes?</strong>
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_reg_array_reference_tb_architecture.png" alt="Arquitetura do testbench para register array controller">
+            <figcaption>
+              A arquitetura é a mesma ideia do bloco anterior, mas agora o DUT tem protocolo. Driver aplica transações,
+              monitor reconstrói o que aconteceu e scoreboard guarda o modelo esperado por endereço.
+            </figcaption>
+          </figure>
+          <div class="callout">
+            <strong>Leitura para o projeto:</strong> este é um bloco muito próximo do que vamos precisar no ambiente do professor.
+            Ele mostra como um Makefile e uma estrutura de testbench deixam de ser teoria e viram fluxo repetível de simulação e debug.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="dut">O DUT: register array controller</h2>
+          <p>
+            O DUT é uma pequena estrutura endereçável. Pelos parâmetros do slide e do código do lab, ele tem
+            <code>ADDR_WIDTH = 8</code>, <code>DATA_WIDTH = 16</code>, <code>DEPTH = 256</code> e
+            <code>RESET_VAL = 16'h1234</code>.
+          </p>
+          <pre><code class="language-systemverilog">parameter ADDR_WIDTH = 8;
+parameter DATA_WIDTH = 16;
+parameter DEPTH      = 256;
+parameter RESET_VAL  = 16'h1234;
+
+reg [DATA_WIDTH-1:0] ctrl [DEPTH];</code></pre>
+          <p>
+            Isso cria 256 posições de 16 bits. O slide chama o exemplo de "4 KB register array controller".
+            Pelo produto <code>256 x 16</code>, o armazenamento bruto é 4096 bits, ou 4 Kb em bits.
+            Essa precisão de unidade não muda a aula, mas é uma boa prática de engenharia.
+          </p>
+
+          <details class="expand-block" open>
+            <summary>Contrato funcional do DUT</summary>
+            <div class="detail-body">
+              <p>O comportamento esperado pode ser lido como:</p>
+              <pre><code class="language-text">se reset ativo:
+    todas as posições recebem RESET_VAL
+
+se sel=1, ready=1 e wr=1:
+    escrever wdata em ctrl[addr]
+
+se sel=1, ready=1 e wr=0:
+    iniciar leitura de ctrl[addr]
+    devolver rdata com um ciclo extra de latência</code></pre>
+              <p>
+                O ponto novo é <code>ready</code>. Ele indica se o DUT aceita uma operação naquele ciclo.
+                Um driver que ignora <code>ready</code> pode criar erro falso, porque aplica transação fora do protocolo.
+              </p>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary>Como a leitura aparece no RTL</summary>
+            <div class="detail-body">
+              <pre><code class="language-systemverilog">always @ (posedge _if.tb_clk) begin
+    if (!_if.rstn) begin
+        for (int i = 0; i &lt; DEPTH; i += 1)
+            ctrl[i] &lt;= RESET_VAL;
+    end else begin
+        if (_if.sel &amp; _if.ready &amp; _if.wr)
+            ctrl[_if.addr] &lt;= _if.wdata;
+
+        if (_if.sel &amp; _if.ready &amp; !_if.wr)
+            _if.rdata &lt;= ctrl[_if.addr];
+        else
+            _if.rdata &lt;= 0;
+    end
+end</code></pre>
+              <p>
+                O DUT só escreve quando <code>sel</code>, <code>ready</code> e <code>wr</code> estão ativos.
+                Na leitura, <code>wr=0</code> e o dado aparece sincronizado ao clock. Por isso o monitor precisa
+                conhecer a latência antes de capturar <code>rdata</code>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="interface">Interface e transação</h2>
+          <p>
+            A interface agrupa os sinais reais do protocolo. O DUT a usa como porta, e as classes de verificação
+            a acessam por <code>virtual interface</code>.
+          </p>
+          <pre><code class="language-systemverilog">interface reg_if (input bit tb_clk);
+    logic rstn;
+    logic [7:0]  addr;
+    logic [15:0] wdata;
+    logic [15:0] rdata;
+    logic wr;
+    logic sel;
+    logic ready;
+endinterface</code></pre>
+          <p>
+            A transação equivalente é <code>reg_item</code>. Ela representa uma operação abstrata no register array.
+            Para uma escrita, interessam <code>addr</code>, <code>wdata</code> e <code>wr=1</code>.
+            Para uma leitura, interessam <code>addr</code>, <code>wr=0</code> e o <code>rdata</code> observado depois.
+          </p>
+          <pre><code class="language-systemverilog">class reg_item;
+    rand bit [7:0]  addr;
+    rand bit [15:0] wdata;
+    bit  [15:0]     rdata;
+    rand bit        wr;
+
+    function void print(string tag="");
+        $display("T=%0t [%s] addr=0x%0h wr=%0d wdata=0x%0h rdata=0x%0h",
+                 $time, tag, addr, wr, wdata, rdata);
+    endfunction
+endclass</code></pre>
+          <div class="callout">
+            <strong>Separação importante:</strong> <code>rdata</code> não é randomizado porque é resposta observada do DUT.
+            Randomizar resposta seria contaminar o teste com valor inventado.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="cenario">Cenário write followed by read</h2>
+          <p>
+            O caso central do bloco escreve em um endereço e depois lê o mesmo endereço.
+            Esse é o padrão básico de verificação de memória, registrador, FIFO e banco de registradores:
+            criar estado interno conhecido e depois observar se ele volta corretamente.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_reg_array_write_read_scoreboard.png" alt="Sequência write followed by read com scoreboard">
+            <figcaption>
+              O scoreboard guarda o dado escrito em <code>addr=8'haa</code>. Na leitura seguinte do mesmo endereço,
+              ele compara o <code>rdata</code> observado com o dado esperado.
+            </figcaption>
+          </figure>
+          <pre><code class="language-systemverilog">item = new;
+#50 item.randomize() with { addr == 8'haa; wr == 1; };
+drv_mbx.put(item);
+
+item = new();
+#50 item.randomize() with { addr == 8'haa; wr == 0; };
+drv_mbx.put(item);</code></pre>
+          <p>
+            Isso é <strong>directed randomization</strong>: a transação ainda usa randomização, mas alguns campos são
+            fixados por uma restrição local. Aqui o endereço e o tipo de operação são dirigidos; o dado de escrita
+            pode continuar randomizado.
+          </p>
+
+          <details class="expand-block">
+            <summary>Por que isso é melhor que atribuir tudo manualmente?</summary>
+            <div class="detail-body">
+              <p>
+                Porque o teste continua fácil de expandir. Hoje você força um endereço. Amanhã pode forçar um conjunto
+                de endereços, alternar escrita/leitura, cobrir fronteiras como <code>8'h00</code> e <code>8'hff</code>,
+                ou acrescentar constraints sem reescrever o driver.
+              </p>
+              <p>
+                Esse é o começo de uma mentalidade de regressão: criar cenários repetíveis, controlados e fáceis de variar.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="driver-monitor">Driver e monitor</h2>
+          <p>
+            O driver é ativo. Ele pega uma transação da mailbox e dirige sinais na interface.
+            O monitor é passivo. Ele observa os sinais da interface e reconstrói a transação que realmente aconteceu.
+          </p>
+          <div class="split">
+            <div class="note-box">
+              <h3>Driver</h3>
+              <p>Transforma <code>reg_item</code> em sinais: <code>sel</code>, <code>addr</code>, <code>wr</code> e <code>wdata</code>.</p>
+              <p>Precisa respeitar <code>ready</code> para não aplicar operação fora do protocolo.</p>
+            </div>
+            <div class="note-box">
+              <h3>Monitor</h3>
+              <p>Transforma sinais em <code>reg_item</code> observado.</p>
+              <p>Em leitura, espera um clock extra para capturar <code>rdata</code>.</p>
+            </div>
+          </div>
+          <pre><code class="language-systemverilog">forever begin
+    @(posedge vif.tb_clk);
+    if (vif.sel) begin
+        reg_item item = new;
+        item.addr  = vif.addr;
+        item.wr    = vif.wr;
+        item.wdata = vif.wdata;
+
+        if (!vif.wr) begin
+            @(posedge vif.tb_clk);
+            item.rdata = vif.rdata;
+        end
+
+        scb_mbx.put(item);
+    end
+end</code></pre>
+          <p>
+            Esse trecho do monitor é uma aula inteira em poucas linhas. Ele mostra que monitor não é simplesmente
+            "tirar foto de sinais". Monitor interpreta protocolo. Se a leitura tem latência, a captura precisa respeitar a latência.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="scoreboard">Scoreboard como modelo de referência</h2>
+          <p>
+            O scoreboard mantém um modelo esperado do array. Quando recebe uma escrita, guarda o dado por endereço.
+            Quando recebe uma leitura, consulta o endereço e compara com <code>rdata</code>.
+          </p>
+          <pre><code class="language-text">write:
+    refq[addr] = item_escrito
+
+read:
+    se refq[addr] não existe:
+        esperado = 16'h1234
+    senão:
+        esperado = refq[addr].wdata
+
+    comparar esperado com item.rdata</code></pre>
+          <p>
+            O caso de primeira leitura é especialmente importante: se um endereço nunca foi escrito depois do reset,
+            o valor esperado não é desconhecido; é <code>RESET_VAL</code>. Assim, o reset vira requisito verificável.
+          </p>
+          <details class="expand-block" open>
+            <summary>O que este scoreboard realmente verifica?</summary>
+            <div class="detail-body">
+              <ul class="key-list">
+                <li>Se a escrita no endereço correto foi armazenada.</li>
+                <li>Se a leitura devolve o último dado escrito naquele endereço.</li>
+                <li>Se endereços diferentes não se misturam.</li>
+                <li>Se o valor de reset aparece quando o endereço nunca foi escrito.</li>
+                <li>Se a latência observada pelo monitor está coerente com o protocolo.</li>
+              </ul>
+              <p>
+                Ele não precisa copiar todo o RTL. Um bom scoreboard modela comportamento observável, não implementação interna.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="environment">Environment</h2>
+          <p>
+            O environment monta o testbench: instancia driver, monitor, scoreboard, mailbox e distribui a interface virtual.
+            Ele é a peça que deixa o ambiente organizado e reaproveitável.
+          </p>
+          <pre><code class="language-systemverilog">class env;
+    driver d0;
+    monitor m0;
+    scoreboard s0;
+    mailbox scb_mbx;
+    virtual reg_if vif;
+
+    virtual task run();
+        d0.vif = vif;
+        m0.vif = vif;
+        m0.scb_mbx = scb_mbx;
+        s0.scb_mbx = scb_mbx;
+
+        fork
+            s0.run();
+            d0.run();
+            m0.run();
+        join_any
+    endtask
+endclass</code></pre>
+          <p>
+            Este exemplo ainda é manual, mas já tem a forma mental de UVM. O próximo bloco vai formalizar muitos desses papéis.
+            Se você entende este environment, UVM deixa de parecer um conjunto de palavras mágicas.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="simulacao">VCS, Verdi, filelist e Makefile</h2>
+          <p>
+            O fluxo do slide é o fluxo clássico de duas etapas para SystemVerilog: compilar/elaborar e simular.
+            Para debug, compila-se com acesso de debug e abre-se o FSDB no Verdi.
+          </p>
+          <pre><code class="language-bash">vcs -sverilog -f reg_array.f -debug_access -l comp.log
+./simv -l reg_array.log
+verdi -nologo -ssf reg_array.fsdb &amp;</code></pre>
+          <p>
+            O arquivo <code>reg_array.f</code> é um filelist: ele guarda a lista de fontes que o VCS deve compilar.
+            O Makefile empacota esses comandos em alvos como <code>make comp</code>, <code>make sim</code>,
+            <code>make debug</code> e <code>make clean</code>.
+          </p>
+          <details class="expand-block" open>
+            <summary>Por que o professor insiste tanto em Makefile?</summary>
+            <div class="detail-body">
+              <p>
+                Porque Makefile transforma um fluxo frágil de comandos longos em uma interface repetível. Em vez de lembrar
+                todos os flags do VCS, o aluno roda um alvo. Em vez de limpar manualmente dezenas de arquivos, roda
+                <code>make clean</code>. Em vez de depender da memória, o projeto registra o fluxo.
+              </p>
+              <pre><code class="language-makefile">comp:
+    vcs -sverilog -f reg_array.f -debug_access -l comp.log
+
+sim:
+    ./simv -l reg_array.log
+
+debug:
+    verdi -nologo -ssf reg_array.fsdb &amp;
+
+clean:
+    rm -rf simv* csrc* *.log *.fsdb *.vcd</code></pre>
+              <p>
+                Esse é o mesmo raciocínio do ambiente clonado: se a estrutura está correta, você troca DUT, test,
+                filelist ou target sem reconstruir tudo do zero.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="debug">Debug no Verdi</h2>
+          <p>
+            O slide de debug sugere investigar um bug em que ocorre escrita enquanto <code>ready</code> está baixo.
+            Esse é um erro de protocolo. Mesmo com endereço e dado corretos, a operação não deveria ser aceita se
+            o DUT não estava pronto.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_reg_array_verdi_waveform_crop.png" alt="Waveform no Verdi para o register array controller">
+            <figcaption>
+              A waveform ajuda a localizar o ciclo em que <code>sel</code>, <code>wr</code>, <code>addr</code>,
+              <code>wdata</code> e <code>ready</code> ficaram válidos. O erro precisa ser analisado no tempo, não só no código.
+            </figcaption>
+          </figure>
+          <details class="expand-block">
+            <summary>Roteiro de investigação</summary>
+            <div class="detail-body">
+              <ol>
+                <li>Veja no log se o scoreboard acusou erro e em qual endereço.</li>
+                <li>Abra o FSDB no Verdi.</li>
+                <li>Encontre a escrita ou leitura suspeita.</li>
+                <li>Confira <code>sel</code>, <code>wr</code>, <code>addr</code>, <code>wdata</code> e <code>ready</code> no mesmo ciclo.</li>
+                <li>Veja se o driver esperou <code>ready</code>.</li>
+                <li>Veja se o monitor capturou <code>rdata</code> no ciclo correto.</li>
+                <li>Compare com o valor que o scoreboard esperava.</li>
+              </ol>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="plano">Mini verification plan</h2>
+          <p>
+            Um plano simples para este DUT já mostra como a aula vira prática:
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Objetivo</th>
+                  <th>Cenário</th>
+                  <th>Resultado esperado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Reset</td><td>Ler endereço nunca escrito</td><td><code>rdata == 16'h1234</code></td></tr>
+                <tr><td>Escrita/leitura básica</td><td>Escrever em <code>0xaa</code> e ler <code>0xaa</code></td><td>Dado lido igual ao escrito</td></tr>
+                <tr><td>Múltiplos endereços</td><td>Escrever valores em endereços diferentes</td><td>Cada endereço preserva seu dado</td></tr>
+                <tr><td>Sobrescrita</td><td>Escrever duas vezes no mesmo endereço</td><td>Leitura retorna o último valor</td></tr>
+                <tr><td>Protocolo</td><td>Tentar operar com <code>ready=0</code></td><td>Operação não deve ser aceita</td></tr>
+                <tr><td>Bordas</td><td>Testar <code>0x00</code> e <code>0xff</code></td><td>Sem erro de índice</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Isso é o tipo de pensamento que ajuda tanto em prova quanto em laboratório: antes de escrever comandos,
+            defina o que precisa ser observado e qual é o critério de aprovação.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Ponte com o ambiente do professor</h2>
+          <p>
+            Este bloco fortalece exatamente as técnicas que vamos usar no ambiente clonado: arquivo de lista de fontes,
+            Makefile, top de simulação, virtual interface, driver, monitor, scoreboard, logs e Verdi.
+          </p>
+          <p>
+            A leitura prática é: vamos aplicar a mesma lógica ao seu lab. Primeiro localizar o DUT e o top,
+            depois entender a interface, depois mapear como o Makefile compila e simula, depois adaptar ou criar
+            testes, e por fim usar log/waveform/scoreboard para saber se está correto.
+          </p>
+          <div class="callout">
+            <strong>Resumo forte:</strong> o testbench deixa de ser um arquivo que "joga sinais" e passa a ser um ambiente
+            com responsabilidades separadas. Essa é a passagem para UVM e para automação real de laboratório.
+          </div>
+        </section>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_5_systemverilog_reference_design_1.html">Anterior: Reference Design-1</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_7_systemverilog_for_uvm_1.html">Próximo: UVM 1</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

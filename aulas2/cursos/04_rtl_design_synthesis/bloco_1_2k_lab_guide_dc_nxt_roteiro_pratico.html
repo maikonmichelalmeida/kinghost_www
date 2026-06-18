@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Guide DC_NXT: Roteiro Prático</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Lab Guide
+    </nav>
+
+    <h1 class="page-title">Lab Guide DC_NXT: Roteiro Prático</h1>
+    <p class="lead">
+      O Lab Guide transforma os conceitos em uma sequência de execução: preparar setup, abrir DC NXT topographical, ler RTL,
+      aplicar constraints, compilar, analisar reports, salvar resultados e repetir com casos mais complexos.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Esta página não substitui os comandos exatos do ambiente do professor. Ela organiza o Lab Guide da Synopsys como
+            um mapa mental para você saber o que está fazendo quando roda um target de Makefile. A lógica é: setup correto,
+            leitura do design, constraints verificadas, compile dirigido, reports interpretados e artefatos salvos.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa dos laboratórios do guia</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Parte</th>
+                  <th>Tema</th>
+                  <th>Habilidade que interessa para nosso projeto</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Lab 1</td>
+                  <td>Fluxo básico no DC NXT Topographical</td>
+                  <td>Setup, bibliotecas, leitura RTL, schematic, compile e reports.</td>
+                </tr>
+                <tr>
+                  <td>Lab 3</td>
+                  <td>Timing constraints</td>
+                  <td>Criar <code>.con/.sdc</code>, validar unidade de tempo, usar <code>check_timing</code>.</td>
+                </tr>
+                <tr>
+                  <td>Lab 4</td>
+                  <td>Input transition e capacitive loading</td>
+                  <td>Modelar ambiente elétrico externo.</td>
+                </tr>
+                <tr>
+                  <td>Lab 5</td>
+                  <td>Técnicas Ultra com STOTO</td>
+                  <td>Path groups, preservação seletiva, floorplan, multi-core, retiming e Formality.</td>
+                </tr>
+                <tr>
+                  <td>Lab 7</td>
+                  <td>Multiple clocks e timing exceptions</td>
+                  <td>Clock virtual, clock groups, multicycle e exceptions ignoradas.</td>
+                </tr>
+                <tr>
+                  <td>Lab 9</td>
+                  <td>Complex design considerations</td>
+                  <td>Falling edge, múltiplos delays, cargas externas e análise de paths específicos.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="setup">Parte 1: setup e bibliotecas</h2>
+          <p>
+            O primeiro lab ensina que síntese não começa em <code>compile_ultra</code>. Ela começa em ambiente. A ferramenta
+            precisa saber onde estão bibliotecas lógicas, bibliotecas físicas, technology file, TLUPlus, map file e diretórios
+            de busca. Se o setup estiver errado, os comandos seguintes podem até rodar, mas o resultado não é confiável.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Target library</h3>
+              <p>Células que a síntese pode escolher para implementar o design.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Link library</h3>
+              <p>Bibliotecas usadas para resolver referências durante link, incluindo IPs e células já existentes.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Physical library</h3>
+              <p>Informação física usada em modo topographical: tecnologia, geometria e dados para estimativa física.</p>
+            </article>
+          </div>
+
+          <pre><code># Ideia de startup
+dcnxt_shell -topo
+source common_setup.tcl
+source dc_setup.tcl
+
+check_library
+report_lib</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="read">Parte 2: ler, elaborar e linkar RTL</h2>
+          <p>
+            O fluxo clássico é <code>analyze</code>, <code>elaborate</code>, <code>link</code>. O primeiro lê e compila a
+            descrição RTL para uma representação intermediária. O segundo constrói a hierarquia a partir do top. O terceiro
+            resolve referências contra bibliotecas e módulos disponíveis.
+          </p>
+
+          <pre><code>analyze -format sverilog $rtl_files
+elaborate $top_design
+current_design $top_design
+link
+check_design</code></pre>
+
+          <div class="lesson-note">
+            <strong>Para nosso Makefile:</strong> um target de síntese bom deve deixar claro onde entra a lista de RTL, qual
+            é o top e onde os logs serão salvos. Isso evita rodar síntese de um top errado sem perceber.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="constraints">Parte 3: constraints e validação</h2>
+          <p>
+            O Lab Guide insiste em validar constraints porque SDC errado é pior do que SDC ausente: ele pode dar aparência de
+            fechamento. Antes de compilar, rode verificações para descobrir clocks ausentes, endpoints sem constraint,
+            exceptions ignoradas e unidades incoerentes.
+          </p>
+
+          <pre><code>source constraints.sdc
+check_timing
+report_clocks
+report_port -verbose
+report_timing_requirements -ignored</code></pre>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Clock existe?</strong>
+              <code>report_clocks</code> mostra o clock que você acha que criou?
+            </div>
+            <div class="check-item">
+              <strong>I/O tem regra?</strong>
+              Entradas e saídas relevantes têm delays, carga e transição?
+            </div>
+            <div class="check-item">
+              <strong>Exceptions pegaram?</strong>
+              <code>report_timing_requirements -ignored</code> não deve esconder surpresa.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="compile">Parte 4: compile e análise de resultados</h2>
+          <p>
+            O compile não deve ser um botão cego. Primeiro você define intenção: preservar hierarquia ou permitir ungrouping,
+            habilitar scan, retiming, SPG, multi-core, path groups ou incremental. Depois compila e lê reports.
+          </p>
+
+          <pre><code>set_host_options -max_cores 8
+group_path -name REG2REG -from [all_registers] -to [all_registers]
+
+compile_ultra -scan
+
+report_qor
+report_timing
+report_area
+report_power</code></pre>
+
+          <p>
+            O Lab com STOTO mostra recursos mais avançados, como preservação seletiva, retiming e verificação física na
+            Layout Window. Para o nosso CPU, devemos aplicar só o que fizer sentido. O valor do lab é ensinar o repertório.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="exceptions">Parte 5: clocks múltiplos e exceptions</h2>
+          <p>
+            O Lab 7 é importante para prova e para projetos maiores. Ele mostra que clock virtual pode separar caminhos
+            puramente combinacionais de caminhos sequenciais, e que exceptions precisam ser checadas.
+          </p>
+
+          <pre><code>create_clock -name clk -period 10.0 [get_ports clk]
+create_clock -name vclk -period 10.0
+
+set_clock_groups -logically_exclusive -group clk -group vclk
+
+set_multicycle_path 2 -setup -from [get_cells A_reg] -to [get_cells B_reg]
+set_multicycle_path 1 -hold  -from [get_cells A_reg] -to [get_cells B_reg]
+
+report_timing_requirements -ignored</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="complex">Parte 6: constraints complexas no Lab 9</h2>
+          <p>
+            O Lab 9 junta as peças: clock com waveform, input em borda de descida, output com path específico, cargas
+            externas e relatórios direcionados. A lição principal é aprender a pedir o report certo para a pergunta certa.
+          </p>
+
+          <pre><code>report_timing -from [get_ports sel] -to [get_ports Cout]
+report_timing -to [get_ports out1]
+report_constraint -all_violators</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="makefile">Como isso vira Makefile no ambiente do professor?</h2>
+          <p>
+            O Makefile deve encapsular esse fluxo em alvos pequenos. Em vez de lembrar dez comandos, você roda
+            <code>make synth</code>, <code>make reports</code>, <code>make clean</code> ou algo equivalente. Mas a página do
+            curso te dá a capacidade de abrir o target e entender o que está acontecendo por baixo.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>make sim</strong>
+              Compila e simula RTL, gerando waveform quando necessário.
+            </div>
+            <div class="flow-step">
+              <strong>make synth</strong>
+              Chama DC NXT com setup, RTL, constraints, compile e escrita de resultados.
+            </div>
+            <div class="flow-step">
+              <strong>make reports</strong>
+              Organiza logs e reports para leitura e entrega.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro">Roteiro para aplicar no nosso CPU</h2>
+          <ol>
+            <li>Confirmar top module e filelist do RTL.</li>
+            <li>Rodar simulação RTL e guardar evidência.</li>
+            <li>Criar SDC mínimo: clock, input/output delay, load e transition.</li>
+            <li>Rodar target de síntese no esqueleto do professor.</li>
+            <li>Ler <code>check_timing</code>, <code>report_qor</code>, <code>report_timing</code> e <code>report_area</code>.</li>
+            <li>Escrever netlist, DDC e SDC de saída.</li>
+            <li>Preparar Formality quando o professor avançar para equivalência.</li>
+          </ol>
+        </section>
+
+        <p class="source-note">
+          Base: <code>12_Design_Compiler_NXT_RTL_Synthesis_2021_06_Lab_Guide.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2j_post_synthesis_output_data.html">Anterior: Dados Pós-Síntese</a>
+          <a href="bloco_1_2l_job_aid_checklist_final.html">Próxima: Job Aid Final</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#mapa">Mapa</a>
+        <a href="#setup">Setup</a>
+        <a href="#read">Ler RTL</a>
+        <a href="#constraints">Constraints</a>
+        <a href="#compile">Compile</a>
+        <a href="#exceptions">Exceptions</a>
+        <a href="#complex">Lab 9</a>
+        <a href="#makefile">Makefile</a>
+        <a href="#roteiro">Roteiro CPU</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bases de RTL Sintetizável em SystemVerilog</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">06 SystemVerilog for RTL Design</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog RTL</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">06 SystemVerilog for RTL Design</a><span>/</span>Bases de RTL
+    </nav>
+
+    <h1 class="page-title">Bases de RTL Sintetizável: `logic`, `always_comb`, `always_ff` e FSM</h1>
+    <p class="lead">
+      Esta aula transforma os primeiros self-checks do curso em uma leitura prática: como escrever SystemVerilog que o
+      simulador aceita, que a síntese entende e que não cria hardware diferente do que você imaginou.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            SystemVerilog não serve apenas para deixar o código "mais moderno". O ponto central é declarar intenção:
+            combinacional com <code>always_comb</code>, sequencial com <code>always_ff</code>, exclusividade com
+            <code>unique</code>, prioridade com <code>priority</code>, estado simbólico com <code>enum</code> e sinais
+            procedurais com <code>logic</code>.
+          </p>
+          <p>
+            Essa intenção ajuda ferramentas e humanos. Mas ela também cria responsabilidade: se você promete que um
+            <code>case</code> é <code>unique</code> quando não é, ou escreve <code>always_comb</code> deixando saída sem
+            atribuição, a ferramenta pode avisar, otimizar de forma inesperada ou revelar diferença entre simulação e
+            síntese.
+          </p>
+          <div class="project-bridge">
+            <strong>Para o nosso projeto:</strong> este bloco vira checklist de revisão do CPU antes de automatizar síntese.
+            Queremos módulos com portas claras, combinacional sem latch involuntário, registradores com reset consistente e
+            FSMs legíveis.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa mental da aula</h2>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Tipos e portas</strong>
+              Entender `logic`, signed/unsigned, ANSI style e por que `output` sem tipo pode virar net.
+            </div>
+            <div class="flow-step">
+              <strong>2. Combinacional</strong>
+              Usar `always_comb`, atribuir todos os caminhos e evitar latch involuntário.
+            </div>
+            <div class="flow-step">
+              <strong>3. Decisão</strong>
+              Usar `priority` e `unique` como contratos, não como decoração.
+            </div>
+            <div class="flow-step">
+              <strong>4. Sequencial</strong>
+              Usar `always_ff`, eventos corretos, reset claro e atribuição não bloqueante.
+            </div>
+            <div class="flow-step">
+              <strong>5. Estados</strong>
+              Usar `enum` para FSMs mais legíveis e menos frágeis.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="logic">`logic` é tipo de dado, não promessa de registrador</h2>
+          <p>
+            O curso começa cutucando uma confusão comum. Em Verilog antigo, a divisão mental era muitas vezes
+            <code>wire</code> para conexões contínuas e <code>reg</code> para valores atribuídos dentro de <code>always</code>.
+            O nome <code>reg</code> sempre foi traiçoeiro, porque nem todo <code>reg</code> sintetiza registrador. Se você usa
+            <code>reg</code> em um bloco combinacional completo, ele sintetiza lógica combinacional, não flip-flop.
+          </p>
+          <p>
+            SystemVerilog introduz <code>logic</code> como um tipo mais conveniente para sinais de RTL. Ele pode ser usado em
+            muitos lugares onde antes se usava <code>reg</code>. Mas <code>logic</code> também não significa "registrador".
+            Quem decide se o hardware será fio, porta combinacional, latch ou flip-flop é o contexto de atribuição.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Forma de código</th>
+                  <th>Intenção típica</th>
+                  <th>Hardware provável</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>assign y = a &amp; b;</code></td>
+                  <td>Conexão contínua combinacional.</td>
+                  <td>Portas/lógica combinacional.</td>
+                </tr>
+                <tr>
+                  <td><code>always_comb y = a &amp; b;</code></td>
+                  <td>Bloco procedural combinacional.</td>
+                  <td>Portas/lógica combinacional.</td>
+                </tr>
+                <tr>
+                  <td><code>always_comb</code> com caminho sem atribuição</td>
+                  <td>Erro de intenção: faltou cobrir caso.</td>
+                  <td>Latch, warning ou comportamento suspeito.</td>
+                </tr>
+                <tr>
+                  <td><code>always_ff @(posedge clk)</code></td>
+                  <td>Atualização em borda de clock.</td>
+                  <td>Flip-flop.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block">
+            <summary>Self-check: `logic unsigned` recebendo `-1`</summary>
+            <div class="detail-body">
+              <p>O slide pergunta se este código é legal:</p>
+              <pre><code>logic [7:0] unsigned data;
+data = -1;</code></pre>
+              <p>
+                Sim, é legal. O valor <code>-1</code> é representado em complemento de 2 como todos os bits em 1. Em 8 bits,
+                isso é <code>8'b1111_1111</code>. Como a variável é unsigned, se você interpretar esse padrão como número sem
+                sinal, ele vale 255.
+              </p>
+              <p>
+                A lição é importante: <code>signed</code> e <code>unsigned</code> mudam interpretação aritmética e comparação.
+                O hardware continua guardando bits. Prova adora esse tipo de pergunta porque a resposta não é "não pode
+                guardar negativo"; a resposta é "guarda o padrão de bits, depois interpreta conforme o tipo".
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="portas">Portas: escolha ANSI style e seja explícito</h2>
+          <p>
+            Outro self-check do curso mostra uma declaração misturada:
+          </p>
+          <pre><code>module my_module (clk, reset, logic din, output logic d1, d2);</code></pre>
+          <p>
+            Isso está errado porque mistura dois estilos de declaração de portas. Se você começa listando apenas nomes
+            (<code>clk, reset</code>), está usando o estilo non-ANSI. Nesse estilo, direção e tipo devem aparecer depois, no
+            corpo do módulo. Se você quer colocar direção e tipo dentro da lista de portas, use ANSI style desde o começo.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Non-ANSI style</h3>
+              <pre><code>module my_module (clk, reset, din, d1, d2);
+  input  clk, reset, din;
+  output logic d1, d2;
+endmodule</code></pre>
+              <p>Funciona, mas separa nome, direção e tipo. Em projetos maiores, fica mais fácil errar.</p>
+            </div>
+            <div class="note-box">
+              <h3>ANSI style</h3>
+              <pre><code>module my_module (
+  input  logic clk,
+  input  logic reset,
+  input  logic din,
+  output logic d1,
+  output logic d2
+);
+endmodule</code></pre>
+              <p>É mais claro, revisável e combina melhor com RTL moderno.</p>
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Regra para nosso CPU:</strong> ao adaptar módulos, prefira ANSI style. Cada porta deve dizer direção,
+            tipo e largura no mesmo lugar. Isso ajuda revisão, síntese, lint e conexão por nome.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="output-logic">`output` sem tipo pode virar net</h2>
+          <p>
+            O curso traz outra pegadinha prática. Se você declara uma saída apenas como <code>output d1</code>, sem tipo,
+            a linguagem pode tratar essa porta como uma net, similar a <code>wire</code>. Uma net é dirigida por atribuição
+            contínua ou por instância, não por atribuição procedural dentro de <code>always</code>.
+          </p>
+
+          <pre><code>// Problemático: d1 e d2 são outputs sem tipo explícito
+module my_module (
+  input clk,
+  input reset,
+  input din,
+  output d1,
+  output d2
+);
+  always @(posedge clk) begin
+    d1 &lt;= din;
+    d2 &lt;= d1;
+  end
+endmodule</code></pre>
+
+          <p>
+            Se <code>d1</code> e <code>d2</code> forem nets, o bloco <code>always</code> não deve dirigi-los. A forma correta
+            para um sinal atualizado em bloco procedural é declarar como variável, por exemplo <code>output logic</code>.
+          </p>
+
+          <pre><code>// Melhor: portas explícitas e bloco sequencial explícito
+module my_module (
+  input  logic clk,
+  input  logic rst_n,
+  input  logic din,
+  output logic d1,
+  output logic d2
+);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      d1 &lt;= 1'b0;
+      d2 &lt;= 1'b0;
+    end else begin
+      d1 &lt;= din;
+      d2 &lt;= d1;
+    end
+  end
+endmodule</code></pre>
+
+          <details class="expand-block">
+            <summary>Por que isso importa tanto?</summary>
+            <div class="detail-body">
+              <p>
+                Porque a declaração de porta é a fronteira do módulo. Se ela está vaga, cada ferramenta precisa aplicar regras
+                padrão. Regras padrão são perigosas para iniciante porque o código parece simples, mas o objeto criado não é
+                o que você imaginou. Em RTL didático e em projeto de curso, clareza vale mais que economia de caracteres.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="always-comb">`always_comb`: combinacional com contrato</h2>
+          <p>
+            <code>always_comb</code> é a forma moderna de declarar que um bloco é combinacional. Ele substitui o uso clássico
+            de <code>always @(*)</code> em muitos casos e comunica intenção para ferramentas: este bloco não deveria ter
+            memória. Portanto, toda saída atribuída dentro dele precisa receber valor em todos os caminhos possíveis.
+          </p>
+
+          <pre><code>// Perigoso: se sel não ativa nenhum if, d mantém valor anterior
+always_comb begin
+  if (sel[0])
+    d = a;
+  else if (sel[1])
+    d = b;
+  else if (sel[2])
+    d = c;
+end</code></pre>
+
+          <p>
+            O problema é simples e profundo: lógica combinacional não "lembra" valor anterior. Se o código deixa um caminho
+            sem atribuição, a síntese precisa preservar o valor antigo. Preservar valor antigo exige memória. Essa memória
+            normalmente vira latch.
+          </p>
+
+          <pre><code>// Melhor: default primeiro, depois sobrescreve nos casos relevantes
+always_comb begin
+  d = 1'b0;
+
+  if (sel[0])
+    d = a;
+  else if (sel[1])
+    d = b;
+  else if (sel[2])
+    d = c;
+end</code></pre>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Default no topo</h3>
+              <p>Garante valor mesmo quando nenhum caso específico acontece.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Todos os caminhos</h3>
+              <p>Cada saída do bloco precisa ser atribuída independentemente do caminho lógico.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Latch involuntário</h3>
+              <p>Quase sempre indica que a intenção combinacional foi escrita de forma incompleta.</p>
+            </article>
+          </div>
+
+          <details class="expand-block">
+            <summary>Como revisar um `always_comb` no nosso projeto?</summary>
+            <div class="detail-body">
+              <ol>
+                <li>Liste todas as saídas atribuídas no bloco.</li>
+                <li>Veja se cada uma recebe default antes de qualquer <code>if</code> ou <code>case</code>.</li>
+                <li>Se não houver default, confira se todo <code>if</code> tem <code>else</code> completo.</li>
+                <li>Em <code>case</code>, confira se existe <code>default</code> ou se há justificativa real para <code>unique</code>/<code>priority</code>.</li>
+                <li>Se aparecer latch warning, trate como bug até provar o contrário.</li>
+              </ol>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="full-parallel">`full` e `parallel`: duas perguntas diferentes</h2>
+          <p>
+            O curso introduz os conceitos de <strong>full</strong> e <strong>parallel</strong>. Eles parecem abstratos, mas
+            são duas perguntas bem concretas sobre decisões em RTL.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Conceito</th>
+                  <th>Pergunta</th>
+                  <th>Risco quando falso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Full</strong></td>
+                  <td>Todos os valores/caminhos possíveis foram cobertos?</td>
+                  <td>Caminho sem atribuição, latch, default indesejado ou warning.</td>
+                </tr>
+                <tr>
+                  <td><strong>Parallel</strong></td>
+                  <td>Os ramos são mutuamente exclusivos?</td>
+                  <td>Lógica de prioridade inesperada ou otimização incorreta se você prometeu exclusividade.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Um <code>case</code> pode ser full sem ser parallel, parallel sem ser full, os dois, ou nenhum dos dois. O erro de
+            iniciante é achar que uma palavra-chave resolve os dois problemas automaticamente.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="priority-unique">`priority` e `unique` são promessas</h2>
+          <p>
+            <code>priority</code> e <code>unique</code> não são enfeites de estilo. Eles dizem ao simulador e à síntese como
+            você entende a decisão.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>`priority`</h3>
+              <p>
+                Indica que existe ordem de preferência. Se mais de uma condição for verdadeira, a primeira ganha. É natural
+                para decodificadores com prioridade, tratamento de interrupções ou regras do tipo "caso especial antes do
+                caso geral".
+              </p>
+              <pre><code>always_comb begin
+  grant = 3'b000;
+
+  priority if (req[0])
+    grant = 3'b001;
+  else if (req[1])
+    grant = 3'b010;
+  else if (req[2])
+    grant = 3'b100;
+end</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>`unique`</h3>
+              <p>
+                Indica que no máximo uma alternativa deveria casar. É natural para seleção mutuamente exclusiva, estados de
+                FSM e decodificação em que os códigos não deveriam sobrepor.
+              </p>
+              <pre><code>always_comb begin
+  next_state = state;
+
+  unique case (state)
+    IDLE: if (start) next_state = BUSY;
+    BUSY: if (done)  next_state = DONE;
+    DONE:           next_state = IDLE;
+  endcase
+end</code></pre>
+            </div>
+          </div>
+
+          <div class="warning callout">
+            <strong>Cuidado:</strong> se você usar <code>unique</code> em condições que podem sobrepor, você está mentindo para
+            a ferramenta. Isso pode gerar warning em simulação e pode permitir otimizações que não refletem a prioridade que
+            você esperava.
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que não resolver tudo colocando `default: 'x`?</summary>
+            <div class="detail-body">
+              <p>
+                O slide chama atenção para um padrão perigoso: usar <code>'x</code> como default para "ajudar" a ferramenta.
+                Em simulação, <code>X</code> pode revelar estado inválido. Em síntese, <code>X</code> pode virar don't-care,
+                permitindo otimização. Isso é útil em casos controlados, mas perigoso como hábito.
+              </p>
+              <p>
+                Em código de aluno, CPU didático e laboratório, a melhor regra é: use default real e seguro, trate estados
+                inválidos de forma explícita, e deixe <code>'x</code> para situações em que você sabe exatamente o efeito na
+                simulação e na síntese.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="always-ff">`always_ff`: sequencial com evento obrigatório</h2>
+          <p>
+            <code>always_ff</code> declara intenção de flip-flop. Isso significa que o bloco precisa ter controle de evento
+            adequado, normalmente borda de clock e, quando necessário, borda de reset assíncrono.
+          </p>
+
+          <pre><code>// Registrador simples com reset assíncrono ativo baixo
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n)
+    q &lt;= '0;
+  else
+    q &lt;= d;
+end</code></pre>
+
+          <p>
+            Um self-check do curso mostra que <code>always_ff</code> sem event control está errado. Faz sentido: se você diz
+            "isso é flip-flop", precisa dizer em qual borda ele atualiza.
+          </p>
+
+          <pre><code>// Errado para always_ff: não há evento de clock
+always_ff begin
+  q &lt;= d;
+end</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra de ouro:</strong> bloco sequencial usa atribuição não bloqueante, isto é, <code>&lt;=</code>. Bloco
+            combinacional normalmente usa atribuição bloqueante, isto é, <code>=</code>.
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que `<=` em registrador?</summary>
+            <div class="detail-body">
+              <p>
+                Com atribuição não bloqueante, todos os registradores do bloco amostram seus valores antigos e atualizam
+                juntos no fim do passo de simulação. Isso imita melhor o comportamento de flip-flops reais em uma borda de
+                clock.
+              </p>
+              <pre><code>always_ff @(posedge clk) begin
+  a &lt;= b;
+  b &lt;= a;
+end</code></pre>
+              <p>
+                O exemplo acima troca <code>a</code> e <code>b</code> em uma borda. Se você usar <code>=</code> sem entender
+                o escalonamento da simulação, pode criar comportamento de simulação diferente do hardware pretendido.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="reset">Reset assíncrono e reset síncrono</h2>
+          <p>
+            O curso entra em exemplos de registrador porque reset é um dos lugares onde RTL bonito pode virar hardware
+            inesperado. A diferença central é esta:
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Reset assíncrono</h3>
+              <p>
+                O reset aparece na lista de sensibilidade por borda. O registrador pode ser resetado independentemente da
+                borda de clock.
+              </p>
+              <pre><code>always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n)
+    q &lt;= '0;
+  else
+    q &lt;= d;
+end</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Reset síncrono</h3>
+              <p>
+                A lista de sensibilidade tem apenas o clock. O reset é testado dentro do bloco e só tem efeito na borda de
+                clock.
+              </p>
+              <pre><code>always_ff @(posedge clk) begin
+  if (!rst_n)
+    q &lt;= '0;
+  else
+    q &lt;= d;
+end</code></pre>
+            </div>
+          </div>
+
+          <p>
+            O detalhe que aparece nos slides é que certas formas ambíguas de set/reset podem ser interpretadas como
+            assíncronas pela ferramenta. Quando o código não deixa claro qual sinal é clock, qual é reset e qual é set,
+            a síntese precisa inferir intenção. Inferência demais é terreno fértil para surpresa.
+          </p>
+
+          <div class="project-bridge">
+            <strong>No CPU:</strong> escolha uma política e mantenha consistência. Se o projeto usa reset ativo baixo
+            assíncrono, use o mesmo padrão em todos os registradores principais. Se usa reset síncrono, deixe isso claro nos
+            templates e nos testes.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="enum">Enums tornam FSMs estudáveis</h2>
+          <p>
+            A parte A fecha em variáveis enumeradas. Em Verilog puro, muitos alunos escrevem estados como parâmetros:
+          </p>
+          <pre><code>localparam IDLE = 2'b00;
+localparam BUSY = 2'b01;
+localparam DONE = 2'b10;</code></pre>
+          <p>
+            Isso funciona, mas SystemVerilog permite declarar um tipo de estado mais expressivo:
+          </p>
+          <pre><code>typedef enum logic [1:0] {
+  IDLE,
+  BUSY,
+  DONE,
+  ERROR
+} state_t;
+
+state_t state, next_state;</code></pre>
+
+          <p>
+            Agora <code>state</code> e <code>next_state</code> carregam significado no tipo. O waveform pode mostrar nomes,
+            o código fica mais legível e a revisão fica mais direta. Para uma controladora do CPU, isso é muito melhor do que
+            comparar números mágicos espalhados.
+          </p>
+
+          <pre><code>always_comb begin
+  next_state = state;
+
+  unique case (state)
+    IDLE:  if (start) next_state = BUSY;
+    BUSY:  if (done)  next_state = DONE;
+    DONE:            next_state = IDLE;
+    ERROR:           next_state = IDLE;
+    default:         next_state = ERROR;
+  endcase
+end
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n)
+    state &lt;= IDLE;
+  else
+    state &lt;= next_state;
+end</code></pre>
+
+          <details class="expand-block">
+            <summary>O padrão de duas partes para FSM</summary>
+            <div class="detail-body">
+              <p>
+                Uma FSM didática costuma separar registrador de estado e lógica de próximo estado. Isso deixa claro o que é
+                sequencial e o que é combinacional.
+              </p>
+              <div class="check-grid">
+                <div class="check-item">
+                  <strong>Registrador de estado</strong>
+                  <code>always_ff</code>, atualiza <code>state</code> na borda de clock.
+                </div>
+                <div class="check-item">
+                  <strong>Próximo estado</strong>
+                  <code>always_comb</code>, calcula <code>next_state</code> a partir do estado atual e das entradas.
+                </div>
+                <div class="check-item">
+                  <strong>Saídas</strong>
+                  Podem ser combinacionais ou registradas, conforme a arquitetura escolhida.
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="checklist">Checklist para aplicar no nosso RTL</h2>
+          <p>
+            Esta aula vira um checklist de revisão antes de rodar síntese ou encaixar o design no ambiente do professor.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Portas</strong>
+              Usar ANSI style, direção explícita, largura explícita e <code>output logic</code> quando a saída é dirigida por
+              bloco procedural.
+            </div>
+            <div class="check-item">
+              <strong>Combinacional</strong>
+              Preferir <code>always_comb</code>, atribuir defaults e remover latch warnings.
+            </div>
+            <div class="check-item">
+              <strong>Decisões</strong>
+              Usar <code>priority</code> apenas quando há prioridade real; usar <code>unique</code> apenas quando há
+              exclusividade real.
+            </div>
+            <div class="check-item">
+              <strong>Registradores</strong>
+              Usar <code>always_ff</code>, event control correto e <code>&lt;=</code> para atualização sequencial.
+            </div>
+            <div class="check-item">
+              <strong>Reset</strong>
+              Separar claramente reset síncrono de assíncrono e manter padrão no projeto.
+            </div>
+            <div class="check-item">
+              <strong>FSM</strong>
+              Usar <code>enum</code>, <code>state</code>/<code>next_state</code> e tratamento explícito de estado inválido.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="prova">Revisão para prova e laboratório</h2>
+          <div class="quiz-card">
+            <strong>1. `logic [7:0] unsigned data; data = -1;` é ilegal?</strong>
+            Não. O padrão de bits armazenado é <code>8'b1111_1111</code>. Interpretado como unsigned, vale 255.
+          </div>
+
+          <div class="quiz-card">
+            <strong>2. `logic` significa que a síntese criará registrador?</strong>
+            Não. O contexto decide. <code>always_ff</code> com borda cria registrador; <code>always_comb</code> completo cria
+            lógica combinacional.
+          </div>
+
+          <div class="quiz-card">
+            <strong>3. Por que `output d1` pode ser problema dentro de `always`?</strong>
+            Porque <code>output</code> sem tipo pode criar net. Net não deve ser dirigida por atribuição procedural. Use
+            <code>output logic</code> quando o sinal é atribuído dentro de bloco procedural.
+          </div>
+
+          <div class="quiz-card">
+            <strong>4. Qual é o sintoma clássico de combinacional incompleto?</strong>
+            Latch involuntário. Em geral, faltou default ou faltou cobrir um caminho de <code>if</code>/<code>case</code>.
+          </div>
+
+          <div class="quiz-card">
+            <strong>5. `priority` e `unique` significam a mesma coisa?</strong>
+            Não. <code>priority</code> expressa ordem de preferência. <code>unique</code> expressa exclusividade entre
+            alternativas.
+          </div>
+
+          <div class="quiz-card">
+            <strong>6. Reset assíncrono aparece onde?</strong>
+            Na lista de eventos do <code>always_ff</code>, por exemplo
+            <code>@(posedge clk or negedge rst_n)</code>.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ponte">Ponte com o próximo bloco</h2>
+          <p>
+            O próximo bloco aprofunda exatamente a parte que começa aqui: FSMs e decisões. Depois de entender
+            <code>enum</code>, <code>unique</code>, <code>priority</code> e latch, faz sentido estudar codificação binária
+            versus one-hot, <code>unique0</code>, tratamento de <code>X</code>, <code>case inside</code>, arrays e structs.
+          </p>
+          <p>
+            Para o ambiente do professor, isso é útil porque blocos reutilizáveis costumam ter controladoras, estados,
+            decodificadores, muxes e estruturas de dados. Se essa base estiver fraca, a automação até roda, mas os reports e
+            warnings começam a apontar problemas que são de estilo RTL, não de Makefile.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base: <code>01_SystemVerilog_for_RTL_Design_parte_A.md</code>. Os prints deste bloco eram majoritariamente texto e
+          exemplos de código; por isso foram convertidos para código/texto explicado em vez de usados como imagens.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_1_1b_fsm_x_case_arrays_structs.html">Próximo: FSM, X e estruturas</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#mapa">Mapa mental</a>
+        <a href="#logic">logic</a>
+        <a href="#portas">Portas</a>
+        <a href="#output-logic">output logic</a>
+        <a href="#always-comb">always_comb</a>
+        <a href="#full-parallel">full e parallel</a>
+        <a href="#priority-unique">priority e unique</a>
+        <a href="#always-ff">always_ff</a>
+        <a href="#reset">Reset</a>
+        <a href="#enum">Enums</a>
+        <a href="#checklist">Checklist</a>
+        <a href="#prova">Revisão</a>
+        <a href="#ponte">Próximo bloco</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

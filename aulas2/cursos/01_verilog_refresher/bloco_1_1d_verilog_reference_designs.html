@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verilog Reference Designs</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">01 Verilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Verilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">01 Verilog Refresher</a><span>/</span>Reference Designs
+    </nav>
+
+    <h1 class="page-title">Verilog Reference Designs</h1>
+    <p class="lead">
+      Aula sobre como usar pequenos designs de referência para treinar fluxo de simulação,
+      debug com VCS/Verdi e organização reproduzível com scripts, filelists e makefiles.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="por-que-esta-aula-importa">Por que esta aula importa</h2>
+          <p>
+            Um design de referência não existe para ser grande. Ele existe para reduzir o problema
+            até um tamanho em que você consegue enxergar o fluxo inteiro: RTL, testbench, compilação,
+            simulação, log, waveform, debug e repetição.
+          </p>
+          <p>
+            O exemplo principal é um somador de 2 bits. Ele é simples de propósito. Se algo falha,
+            você consegue separar rapidamente se o problema está no RTL, no testbench, no comando do
+            simulador ou na forma como está observando o resultado.
+          </p>
+          <div class="callout">
+            <strong>Ideia central:</strong> antes de adaptar uma CPU ou um laboratório maior, aprenda
+            o ciclo completo em blocos pequenos. O fluxo é o mesmo; só a escala muda.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa-mental">Mapa mental do fluxo</h2>
+          <p>Os slides reforçam a estrutura básica de verificação:</p>
+          <pre><code>stimulus generator -> DUT -> response checker</code></pre>
+          <p>
+            O DUT é o design. O testbench fica ao redor dele, aplica estímulos e observa respostas.
+            Quando existe um checker, o testbench não apenas gera ondas; ele decide se a resposta está correta.
+          </p>
+          <details class="nested-detail">
+            <summary>Detalhe: por que waveform não basta</summary>
+            <div class="detail-body">
+              <p>
+                Waveform é excelente para investigar um erro. Mas, sozinha, ela depende de inspeção humana.
+                Um testbench mais forte precisa produzir uma conclusão objetiva no log, como passou ou falhou.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="testbench-como-topo">Testbench como topo da simulação</h2>
+          <p>
+            O testbench normalmente não tem portas externas. Ele é o topo da simulação e instancia o DUT.
+            Por isso pode usar recursos que não entram em síntese, como delays, dumps de onda,
+            <code>$display</code>, <code>$monitor</code> e <code>$finish</code>.
+          </p>
+          <pre><code>module adder2bit_tb;
+    reg  [1:0] x;
+    reg  [1:0] y;
+    wire [2:0] z;
+
+    adder2bit uut (
+        .x(x),
+        .y(y),
+        .z(z)
+    );
+endmodule</code></pre>
+          <p>
+            As entradas do DUT são dirigidas por <code>reg</code> no testbench. As saídas do DUT são
+            observadas como <code>wire</code>. Isso descreve o ambiente de simulação, não necessariamente
+            hardware extra no design final.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="vcs-dois-passos">VCS em dois passos</h2>
+          <p>O curso começa com o fluxo mínimo:</p>
+          <pre><code>vcs -file adder2bit_tb.v ../rtl/adder2bit.v
+./simv</code></pre>
+          <p>
+            A primeira linha chama o VCS para compilar/elaborar o design e gerar o executável da simulação.
+            A segunda linha roda esse executável. O arquivo <code>simv</code> não é fonte Verilog; ele é o
+            programa de simulação gerado pelo VCS.
+          </p>
+          <details class="nested-detail">
+            <summary>Ligação com <code>make sim</code></summary>
+            <div class="detail-body">
+              <p>
+                Quando o professor usa <code>make sim</code>, o makefile provavelmente está escondendo
+                uma sequência parecida: limpar restos antigos, passar filelists, chamar VCS, rodar
+                <code>simv</code>, salvar logs e talvez gerar arquivos de onda.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="vcs-tres-passos">Fluxo em três passos</h2>
+          <p>Em projetos maiores, o fluxo aparece separado:</p>
+          <pre><code>vlogan -work work -kdb -f source_list -l analyze.log
+vcs -kdb top_tb -l elaborate.log
+./simv -l sim.log</code></pre>
+          <ul class="key-list compact-list">
+            <li><code>vlogan</code> analisa os arquivos HDL, checa sintaxe e prepara dados intermediários.</li>
+            <li><code>vcs</code> elabora o design, resolve hierarquia e gera o executável.</li>
+            <li><code>simv</code> executa a simulação no tempo.</li>
+          </ul>
+          <p>
+            A diferença prática é controle. O fluxo de dois passos é ótimo para exemplo pequeno.
+            O de três passos facilita logs, bibliotecas, filelists e debug em projetos maiores.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="debug-com-verdi">Debug com Verdi</h2>
+          <p>
+            VCS e Verdi se complementam, mas não são a mesma coisa. VCS simula. Verdi depura.
+            O comando mostrado no slide abre um banco de sinais:
+          </p>
+          <pre><code>verdi -nologo -ssf adder2bit_tb.fsdb &</code></pre>
+          <p>
+            O arquivo <code>.fsdb</code> guarda sinais da simulação. Com ele, o Verdi permite navegar por
+            waveform, hierarquia e código fonte, o que ajuda a localizar a causa de uma resposta errada.
+          </p>
+
+          <figure class="figure-block">
+            <img src="../../assets/img/01_verilog_refresher/adder2bit_debug_bug.png" alt="Comparação entre código Verilog com saída z incorreta e código corrigido com saída de 3 bits">
+            <figcaption>
+              O bug didático do slide: a soma estava correta, mas a largura de <code>z</code> era pequena demais.
+            </figcaption>
+          </figure>
+
+          <details class="nested-detail" open>
+            <summary>Aprofundamento: o bug de largura</summary>
+            <div class="detail-body">
+              <p>
+                A maior entrada de 2 bits é <code>2'b11</code>, que vale 3. Se somamos 3 + 3, o resultado é 6,
+                ou <code>3'b110</code>. Portanto a saída do somador precisa de 3 bits.
+              </p>
+              <pre><code>input  [1:0] x;
+input  [1:0] y;
+output [2:0] z;</code></pre>
+              <p>
+                Esse tipo de erro aparece muito em RTL: o operador está certo, mas a largura do sinal perde
+                informação. Por isso, quando houver soma, multiplicação, contador ou índice, sempre revise
+                largura de entrada, largura interna e largura de saída.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="terminal-e-waveform">Terminal e waveform</h2>
+          <p>O terminal dá uma resposta rápida:</p>
+          <pre><code>x=00 y=00 z=0
+x=01 y=01 z=2
+x=11 y=11 z=6
+x=10 y=10 z=4</code></pre>
+          <p>
+            A waveform responde outra pergunta: em que instante cada sinal mudou e qual sequência temporal
+            levou à resposta observada. Use log para confirmar casos principais e waveform para investigar
+            causa temporal.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="organizacao">Organização de projeto</h2>
+          <p>Os slides recomendam separar papéis:</p>
+          <pre><code>src/       RTL fonte
+sim/       área de simulação
+log/       logs
+script/    scripts ou makefiles
+netlist/   saídas estruturais quando houver síntese
+mapped/    resultado mapeado para tecnologia
+unmapped/  resultado antes do mapeamento final</code></pre>
+          <p>
+            A lição não é decorar esses nomes. A lição é não misturar RTL, testbench, script, log e resultado
+            gerado. Essa separação é o que permite automatizar o fluxo.
+          </p>
+          <details class="nested-detail">
+            <summary>Filelists</summary>
+            <div class="detail-body">
+              <p>
+                Em vez de passar muitos arquivos manualmente no comando, você passa uma lista:
+              </p>
+              <pre><code>vcs -f filelist.f</code></pre>
+              <p>
+                Isso deixa a ordem de compilação versionável, revisável e repetível. No seu projeto, deve
+                haver diferença entre filelist de simulação e filelist de síntese.
+              </p>
+            </div>
+          </details>
+          <details class="nested-detail">
+            <summary>Makefile</summary>
+            <div class="detail-body">
+              <p>Um makefile transforma comandos repetitivos em alvos:</p>
+              <pre><code>ana:
+    vlogan -kdb -f filelist.f -l log/analyze.log
+
+comp:
+    vcs -kdb top_tb -l log/elab.log
+
+sim:
+    ./simv -l log/sim.log
+
+clean:
+    rm -rf simv csrc *.log *.fsdb</code></pre>
+              <p>
+                Por isso o professor insiste em makefile: ele quer um fluxo reexecutável e auditável.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="plano-de-verificacao">Plano de verificação</h2>
+          <p>
+            Um dos slides diz que o plano de verificação está para o engenheiro de verificação como a
+            especificação funcional está para o designer RTL. Isso é uma frase importante.
+          </p>
+          <p>
+            Antes de simular, você precisa saber o que deve ser testado. Para um somador, isso inclui valores
+            simples, bordas e carry. Para uma CPU, inclui instruções, registradores, flags, memória, reset,
+            saltos e casos inválidos.
+          </p>
+          <div class="callout">
+            <strong>Regra prática:</strong> waveform ajuda a entender; plano e checker ajudam a provar.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="escada-de-designs">A escada dos designs de referência</h2>
+          <p>Os exemplos listados pelo curso treinam habilidades diferentes:</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Design</th><th>O que treina</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>32-bit adder</td><td>Largura de sinal, carry e lógica combinacional.</td></tr>
+                <tr><td>16x16 multiplier</td><td>Resultado maior que as entradas.</td></tr>
+                <tr><td>Counter with overflow</td><td>Clock, reset, enable e flag.</td></tr>
+                <tr><td>Up/down counter</td><td>Controle por direção.</td></tr>
+                <tr><td>2-client arbiter</td><td>Prioridade, decisão e estado.</td></tr>
+                <tr><td>Mux, demux, encoder, decoder</td><td>Seleção, roteamento e codificação.</td></tr>
+                <tr><td>2x2 matrix multiplication</td><td>Composição de operações aritméticas.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            O valor não está em decorar cada exemplo. O valor está em repetir o ciclo até ele ficar natural:
+          </p>
+          <pre><code>ler RTL -> ler testbench -> rodar simulação -> conferir log -> abrir waveform -> corrigir -> rodar de novo</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="ligacao-com-rtl-lab2">Ligação com o RTL_LAB2</h2>
+          <p>Quando formos adaptar seu lab antigo ao ambiente novo, esta aula vira checklist:</p>
+          <ul class="key-list compact-list">
+            <li>Qual arquivo é RTL e deve entrar na filelist de design?</li>
+            <li>Qual arquivo é testbench e deve ficar só na simulação?</li>
+            <li>Qual é o topo do DUT?</li>
+            <li>Qual é o topo da simulação?</li>
+            <li>Existe checker automático ou só waveform?</li>
+            <li>Quais logs indicam sucesso?</li>
+            <li>Quais sinais precisam ser gravados para abrir no Verdi?</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="audio">Audio: precisa?</h2>
+          <p>
+            Para esta aula, o áudio não parece obrigatório. Os slides têm comandos, exemplos e diagramas
+            suficientes para reconstruir o núcleo técnico.
+          </p>
+          <p>
+            Ele só seria útil se você quiser capturar detalhes práticos da GUI do Verdi, convenções do professor
+            para makefiles ou erros específicos do servidor da UFRGS.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/04_Verilog_Reference_Designs.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_Verilog_Reference_Designs.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1c_lab_verilog_ref_designs.html">Anterior: Lab VerilogRefDesigns</a>
+          <a href="bloco_1_1e_robot_model.html">Próxima: ROBOT Model</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

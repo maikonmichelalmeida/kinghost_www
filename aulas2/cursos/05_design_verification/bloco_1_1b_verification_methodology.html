@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verification Methodology</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">05 Design Verification</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Design Verification</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">05 Design Verification</a><span>/</span>Methodology
+    </nav>
+
+    <h1 class="page-title">Verification Methodology</h1>
+    <p class="lead">
+      Metodologia é o que transforma testes soltos em um processo confiável: objetivo claro, plano de verificação,
+      ambiente reutilizável, checagem automática, cobertura, regressão e critérios de conclusão.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            A aula anterior mostrou que simular não é o mesmo que verificar. Esta aula responde o próximo problema:
+            se não dá para testar tudo, como decidir o que testar, como saber se ainda falta algo e como evitar que a
+            verificação vire uma coleção de testes improvisados?
+          </p>
+          <p>
+            A resposta do curso é metodologia. Não é burocracia; é engenharia de repetição. Um bom método permite que você
+            rode testes muitas vezes, meça progresso, descubra buracos, adicione casos, preserve os testes antigos e chegue
+            a uma decisão defensável de "por enquanto, este bloco está suficientemente verificado".
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="meta">A meta não é chegar a 100% de um número</h2>
+          <p>
+            Os slides começam com uma armadilha: cobertura parece uma nota de prova, mas não é. Code coverage alto não
+            significa design correto. Functional coverage alto também não prova ausência de bugs se o plano estiver
+            incompleto. Coverage é uma ferramenta para orientar a investigação, não um certificado automático de qualidade.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Completude</h3>
+              <p>
+                Mede se aquilo que você decidiu observar foi exercitado. É uma pergunta sobre alcance dos testes.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3>Correção</h3>
+              <p>
+                Mede se o comportamento observado está de acordo com a especificação. É uma pergunta sobre julgamento.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Risco</h3>
+              <p>
+                Um ambiente pode ser completo no que mede e ainda estar errado no que conclui.
+              </p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Frase para guardar:</strong> coverage diz onde você passou; checker diz se o que aconteceu ali estava
+            certo. Um sem o outro é frágil.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="code-functional">Code coverage versus functional coverage</h2>
+          <p>
+            Code coverage olha para o RTL e pergunta: quais linhas, branches, condições, toggles ou estados de FSM foram
+            exercitados? Functional coverage olha para o plano e pergunta: quais cenários funcionais importantes foram
+            exercitados?
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cenário</th>
+                  <th>Interpretação correta</th>
+                  <th>Próxima ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>100% code coverage, 50% functional coverage</td>
+                  <td>O RTL foi executado, mas metade dos cenários funcionais planejados ainda não aconteceu.</td>
+                  <td>Criar testes para os cenários faltantes.</td>
+                </tr>
+                <tr>
+                  <td>50% code coverage, 100% functional coverage</td>
+                  <td>O plano funcional foi coberto, mas há código não exercitado; talvez o plano esteja incompleto.</td>
+                  <td>Investigar código morto, casos não planejados ou funcionalidades esquecidas.</td>
+                </tr>
+                <tr>
+                  <td>Alta cobertura, sem checker</td>
+                  <td>O design foi muito exercitado, mas pouco julgado.</td>
+                  <td>Adicionar self-check, assertions ou scoreboard.</td>
+                </tr>
+                <tr>
+                  <td>Baixa cobertura, testes passando</td>
+                  <td>Os testes atuais são insuficientes para confiança.</td>
+                  <td>Ampliar estímulos, regressão e plano.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que code coverage baixa é um diagnóstico claro?</summary>
+            <div class="detail-body">
+              <p>
+                Se uma linha, branch, condição ou estado nunca foi exercitado, você não tem evidência dinâmica sobre aquele
+                trecho. Pode ser código morto, caso impossível, feature removida, ou simplesmente falta de teste. Em todos os
+                casos, há uma decisão a tomar: excluir com justificativa, remover o código ou criar teste.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="test-done">Quando um teste ou bloco está "done"?</h2>
+          <p>
+            O curso resume uma ideia forte: <strong>Test Done = Test Plan Executed and All Code Executed</strong>. Essa frase
+            não deve ser lida literalmente como "acabou para sempre". Ela significa que, para declarar uma etapa concluída,
+            você precisa ter executado o plano de verificação e também investigado cobertura de código.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Plano executado</strong>
+              Todos os cenários funcionais planejados foram rodados e checados.
+            </div>
+            <div class="flow-step">
+              <strong>Código exercitado</strong>
+              Linhas, branches, condições, toggles e FSMs relevantes foram cobertos ou justificados.
+            </div>
+            <div class="flow-step">
+              <strong>Falhas resolvidas</strong>
+              Bugs encontrados foram corrigidos, e regressão confirma que não voltaram.
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Para nosso CPU:</strong> "done" não deveria significar "abri a waveform e parece bom". Um teste deve
+            produzir PASS/FAIL, e o conjunto de testes deve cobrir instruções, resets, flags, memória, desvios e casos de
+            erro que decidirmos colocar no plano.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="tecnologias">Tecnologias de verificação</h2>
+          <p>
+            O curso coloca as tecnologias em uma escala. Cada uma resolve um tipo de problema. Um simulador event-driven é
+            detalhado e ideal para debug inicial. Um simulador cycle-based ganha desempenho em certos cenários. Emulação e
+            aceleração permitem rodar muito mais ciclos, mas exigem infraestrutura maior. Formal prova propriedades ou
+            equivalência em espaços onde simulação seria insuficiente.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tecnologia</th>
+                  <th>Força</th>
+                  <th>Limitação</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Event-driven simulation</td>
+                  <td>Detalhe temporal, debug de sinais, boa compatibilidade com testbenches ricos.</td>
+                  <td>Pode ser lenta em designs grandes e regressões longas.</td>
+                </tr>
+                <tr>
+                  <td>Cycle-based simulation</td>
+                  <td>Mais rápida quando a precisão por evento não é necessária.</td>
+                  <td>Menos flexível para certos efeitos e debug fino.</td>
+                </tr>
+                <tr>
+                  <td>Emulation/acceleration</td>
+                  <td>Roda muitos ciclos e aproxima workloads reais.</td>
+                  <td>Setup caro e menos confortável para debug detalhado.</td>
+                </tr>
+                <tr>
+                  <td>Formal/equivalence</td>
+                  <td>Prova propriedades ou equivalência sem enumerar testes manualmente.</td>
+                  <td>Depende de propriedades/modelagem corretas e pode ter limites de escala.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="estrategia">Estratégia começa pela especificação</h2>
+          <p>
+            Uma metodologia de verificação começa antes de escrever testbench. Primeiro você entende a especificação e
+            decide quais comportamentos precisam ser demonstrados. Depois transforma esses comportamentos em itens de plano:
+            estímulo, observação, checker, cobertura e prioridade.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>1. Especificação</h3>
+              <div class="command-body">
+                <p>Quais modos, entradas, saídas, protocolos, estados, exceções e restrições definem o bloco?</p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>2. Plano de verificação</h3>
+              <div class="command-body">
+                <p>Quais cenários testam esses requisitos? O que é must-pass? O que é corner case? O que precisa de coverage?</p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>3. Ambiente</h3>
+              <div class="command-body">
+                <p>Como drivers, monitors, checkers, scoreboard e coverage serão organizados para reaproveitamento?</p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>4. Regressão</h3>
+              <div class="command-body">
+                <p>Como rodar repetidamente, coletar resultados, comparar logs e evitar que bugs corrigidos voltem?</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="cdv">Coverage Driven Verification como ciclo</h2>
+          <p>
+            Coverage-driven verification não é uma etapa única. É um loop. Você roda testes, olha cobertura, encontra buracos,
+            cria novos testes ou constraints, roda de novo e repete. No começo, cobertura sobe rápido porque os casos básicos
+            exercitam muita coisa. No final, cada ponto restante custa mais: são corner cases, combinações raras e caminhos
+            difíceis.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Preliminary verification</strong>
+              Testes simples para garantir que o bloco respira: reset, operação básica, interfaces vivas.
+            </div>
+            <div class="flow-step">
+              <strong>Build environment</strong>
+              Criar estrutura reutilizável: driver, monitor, checker, scoreboard, coverage e regressão.
+            </div>
+            <div class="flow-step">
+              <strong>Broad-spectrum</strong>
+              Explorar grande faixa de cenários, muitas vezes com randomização controlada.
+            </div>
+            <div class="flow-step">
+              <strong>Corner-case</strong>
+              Mirar casos raros, limites, exceções, conflitos e estados pouco prováveis.
+            </div>
+            <div class="flow-step">
+              <strong>Directed closure</strong>
+              Escrever testes específicos para fechar buracos restantes de coverage.
+            </div>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que o final da cobertura é difícil?</summary>
+            <div class="detail-body">
+              <p>
+                Os primeiros testes atravessam os caminhos comuns. Os últimos pontos de cobertura geralmente representam
+                combinações raras, ordem específica de eventos, estados internos pouco acessíveis ou interações que só
+                acontecem com constraints bem pensadas. Por isso, no final, testes dirigidos continuam importantes mesmo em
+                ambientes com randomização.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arquitetura">Arquitetura de testbench</h2>
+          <p>
+            Os slides mostram uma arquitetura de testbench porque metodologia precisa de estrutura. Se cada teste dirige
+            sinais manualmente, observa manualmente e decide manualmente, o ambiente fica difícil de manter. Separar papéis
+            permite crescer.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Test</h3>
+              <p>Escolhe cenário, configura ambiente e inicia estímulos.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Stimulus generator</h3>
+              <p>Cria transações dirigidas ou randomizadas conforme o plano.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Driver</h3>
+              <p>Converte transações em sinais no protocolo do DUT.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Monitor</h3>
+              <p>Observa sinais e reconstrói transações ou eventos relevantes.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Scoreboard/checker</h3>
+              <p>Compara esperado versus observado e acusa erro automaticamente.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Coverage collector</h3>
+              <p>Mede cenários exercitados e orienta próximos testes.</p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>O coração da metodologia:</strong> tests mudam; testbench permanece. Você quer trocar cenário sem
+            reescrever todo o ambiente.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="self-check">Coverage não substitui self-check</h2>
+          <p>
+            Um erro muito comum é tratar coverage como verificador. Coverage só diz que algo aconteceu. Ela não diz se
+            aconteceu corretamente. Por isso a metodologia exige self-checking testbenches: testes que sabem falhar sozinhos.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Coverage responde</h3>
+              <p>O cenário foi exercitado? O branch executou? A combinação apareceu?</p>
+            </div>
+            <div class="note-box">
+              <h3>Checker responde</h3>
+              <p>O resultado está correto? O protocolo foi respeitado? A latência foi a esperada?</p>
+            </div>
+          </div>
+
+          <pre><code>// Ideia simples de self-check
+if (dut_result !== expected_result) begin
+  $error("Resultado incorreto: esperado=%0d observado=%0d", expected_result, dut_result);
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="accellera">Accellera e padronização</h2>
+          <p>
+            O bloco menciona Accellera porque metodologias de verificação não vivem só dentro de uma empresa. A indústria
+            padroniza linguagens, bibliotecas e metodologias para permitir interoperabilidade, reuso e treinamento. Isso é
+            parte do caminho que leva a SystemVerilog e UVM nos próximos blocos.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Ligação com o próximo bloco:</strong> quando o curso falar de UVM, não pense primeiro em macros e
+            sintaxe. Pense no problema que UVM tenta resolver: padronizar arquitetura de testbench, separação de testes,
+            reuso de componentes, comunicação por transações e automação de regressão.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="cpu">Aplicação no nosso CPU</h2>
+          <p>
+            Para o nosso projeto, o melhor próximo passo não é pular direto para UVM completo. É aplicar metodologia em uma
+            escala pequena e clara. Um CPU simples já permite um bom plano: instruções aritméticas, loads/stores, jumps,
+            flags, reset, memória, casos inválidos e combinações de sequência.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Plano</strong>
+              Criar uma tabela de funcionalidades e cenários obrigatórios.
+            </div>
+            <div class="check-item">
+              <strong>Self-check</strong>
+              Cada teste precisa comparar estado final esperado, registradores, memória e flags.
+            </div>
+            <div class="check-item">
+              <strong>Regressão</strong>
+              Makefile deve rodar todos os testes e sair com erro se qualquer teste falhar.
+            </div>
+            <div class="check-item">
+              <strong>Coverage inicial</strong>
+              Começar simples: quais instruções foram exercitadas, quais flags foram observadas, quais branches ocorreram.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro">Roteiro de implementação incremental</h2>
+          <ol>
+            <li>Transformar cada cenário do CPU em teste nomeado.</li>
+            <li>Adicionar mensagens PASS/FAIL e retorno de erro para integração com Makefile.</li>
+            <li>Separar estímulo, observação e checagem mesmo que ainda em SystemVerilog simples.</li>
+            <li>Adicionar um scoreboard simples baseado em resultado esperado.</li>
+            <li>Adicionar cobertura funcional mínima: instrução, flag, tipo de acesso e casos de reset.</li>
+            <li>Rodar regressão antes de síntese, depois repetir quando o RTL mudar.</li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. Coverage alta prova correção?</strong>
+            Não. Coverage mede exercício; correção vem de checkers, assertions, scoreboard e comparação contra especificação.
+          </div>
+          <div class="quiz-card">
+            <strong>2. Por que code coverage e functional coverage se complementam?</strong>
+            Code coverage olha para o RTL executado; functional coverage olha para os cenários planejados.
+          </div>
+          <div class="quiz-card">
+            <strong>3. O que significa test done?</strong>
+            Plano executado, código relevante exercitado, falhas resolvidas e buracos justificados ou fechados.
+          </div>
+          <div class="quiz-card">
+            <strong>4. Por que regressão é parte da metodologia?</strong>
+            Porque bugs corrigidos podem voltar, e mudanças pequenas podem quebrar funcionalidades antigas.
+          </div>
+          <div class="quiz-card">
+            <strong>5. Por que testes dirigidos continuam importantes?</strong>
+            Porque corner cases específicos muitas vezes não aparecem com randomização ampla sem orientação.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>02_Verification_Methodology.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1a_introduction_to_verification.html">Anterior: Introduction</a>
+          <a href="bloco_1_1c_hardware_verification_languages.html">Próxima: HVL e UVM</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#meta">Meta</a>
+        <a href="#code-functional">Code vs functional</a>
+        <a href="#test-done">Test done</a>
+        <a href="#tecnologias">Tecnologias</a>
+        <a href="#estrategia">Estratégia</a>
+        <a href="#cdv">CDV</a>
+        <a href="#arquitetura">Testbench</a>
+        <a href="#self-check">Self-check</a>
+        <a href="#accellera">Accellera</a>
+        <a href="#cpu">CPU</a>
+        <a href="#roteiro">Roteiro</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

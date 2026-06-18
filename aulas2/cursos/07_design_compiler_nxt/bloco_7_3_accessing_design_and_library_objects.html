@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accessing Design and Library Objects</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">07 Design Compiler NXT</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">DC NXT</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">07 Design Compiler NXT</a><span>/</span>Objetos e Collections
+    </nav>
+
+    <h1 class="page-title">Accessing Design and Library Objects</h1>
+    <p class="lead">
+      Esta aula ensina a enxergar o DC NXT como um banco de dados de objetos: designs,
+      cells, ports, pins, nets, clocks, bibliotecas, células de biblioteca, atributos e collections.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo da aula</h2>
+          <p>
+            Esta aula é uma das mais importantes para sair do modo "decorar comando" e entrar no modo
+            "entender o que o script está fazendo". No Design Compiler NXT, comandos de síntese, constraints,
+            reports e debug não trabalham apenas com nomes escritos como texto. Eles trabalham com
+            <strong>objetos do banco de dados interno</strong>.
+          </p>
+          <p>
+            Quando você escreve <code>set_input_delay</code>, <code>set_load</code>,
+            <code>report_timing</code>, <code>set_dont_touch</code> ou <code>compile_ultra</code>,
+            a ferramenta precisa saber em quais objetos agir. Se você seleciona o objeto errado, a constraint
+            pode não pegar, pode pegar em outro lugar ou pode retornar vazio sem você perceber.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="modelo-mental">Modelo mental: RTL vira banco de dados</h2>
+          <p>
+            O RTL é texto. Depois de <code>analyze</code> e <code>elaborate</code>, o DC NXT transforma esse
+            texto em objetos manipuláveis. O que no Verilog parece módulo, instância, fio e porta passa a
+            existir como objetos consultáveis por Tcl.
+          </p>
+
+          <pre><code>module TOP (A, B, C, D, CLK, OUT1);
+  input        A, B, C, D, CLK;
+  output [1:0] OUT1;
+
+  wire bus0, bus1, INV0, INV1;
+
+  ENCODER U1 (.AIN(A), .Q1(bus1));
+  INVX1   U2 (.A(bus0), .Y(INV0));
+  INVX1   U3 (.A(bus1), .Y(INV1));
+  REGFILE U4 (.D0(INV0), .D1(INV1), .CLK(CLK));
+endmodule</code></pre>
+
+          <p>
+            Depois da elaboração, <code>TOP</code> não é apenas uma palavra no arquivo. Ele é um objeto
+            <code>design</code>. As instâncias <code>U1</code>, <code>U2</code>, <code>U3</code> e
+            <code>U4</code> são objetos <code>cell</code>. Os fios <code>bus0</code>, <code>bus1</code>,
+            <code>INV0</code> e <code>INV1</code> são objetos <code>net</code>. As entradas e saídas do
+            módulo são <code>ports</code>.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Frase para guardar:</strong> em scripts Synopsys, você quase nunca quer "um nome qualquer".
+            Você quer uma collection de objetos do tipo certo.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="taxonomia">Os principais objetos do DC NXT</h2>
+          <p>
+            A primeira habilidade da aula é classificar corretamente o que você está selecionando. Isso parece
+            simples, mas é a raiz de muitos erros de SDC.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Objeto</th>
+                  <th>O que representa</th>
+                  <th>Exemplo</th>
+                  <th>Comando típico</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>design</code></td>
+                  <td>Módulo/entity elaborada na memória da ferramenta.</td>
+                  <td><code>TOP</code>, <code>ENCODER</code>, <code>REGFILE</code></td>
+                  <td><code>get_designs *</code></td>
+                </tr>
+                <tr>
+                  <td><code>cell</code></td>
+                  <td>Instância dentro do design atual.</td>
+                  <td><code>U1</code>, <code>U2</code>, <code>I_REG</code></td>
+                  <td><code>get_cells *</code></td>
+                </tr>
+                <tr>
+                  <td><code>port</code></td>
+                  <td>Entrada ou saída do design atual.</td>
+                  <td><code>A</code>, <code>CLK</code>, <code>OUT1[0]</code></td>
+                  <td><code>get_ports *</code></td>
+                </tr>
+                <tr>
+                  <td><code>pin</code></td>
+                  <td>Terminal de uma instância dentro do design atual.</td>
+                  <td><code>U1/AIN</code>, <code>U4/CLK</code></td>
+                  <td><code>get_pins */CLK</code></td>
+                </tr>
+                <tr>
+                  <td><code>net</code></td>
+                  <td>Conexão entre ports e pins.</td>
+                  <td><code>bus0</code>, <code>SUM</code>, <code>INV1</code></td>
+                  <td><code>get_nets *</code></td>
+                </tr>
+                <tr>
+                  <td><code>clock</code></td>
+                  <td>Objeto criado por constraint de clock.</td>
+                  <td><code>CLK</code>, depois de <code>create_clock</code></td>
+                  <td><code>get_clocks *</code></td>
+                </tr>
+                <tr>
+                  <td><code>lib_cell</code></td>
+                  <td>Célula disponível na biblioteca tecnológica.</td>
+                  <td><code>20nm/INV1</code>, <code>20nm/OR2_4x</code></td>
+                  <td><code>get_lib_cells 20nm/INV*</code></td>
+                </tr>
+                <tr>
+                  <td><code>lib_pin</code></td>
+                  <td>Pin definido na célula de biblioteca.</td>
+                  <td><code>20nm/OR2_4x/Y</code></td>
+                  <td><code>get_lib_pins 20nm/OR2_4x/*</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="design-cell-libcell"><code>design</code>, <code>cell</code> e <code>lib_cell</code></h2>
+          <p>
+            Esta é uma distinção que precisa ficar muito bem assentada. <code>ENCODER</code> pode ser um
+            <code>design</code> porque é um módulo lido e elaborado. <code>I_ENC</code> é uma <code>cell</code>
+            porque é uma instância de <code>ENCODER</code> dentro de outro design. <code>INVX1</code> é uma
+            <code>lib_cell</code> porque vem da biblioteca tecnológica, não do RTL do usuário.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong><code>get_designs</code></strong>
+              Consulta blocos elaborados, como <code>TOP</code>, <code>ENCODER</code> e <code>REGFILE</code>.
+            </div>
+            <div class="flow-step">
+              <strong><code>get_cells</code></strong>
+              Consulta instâncias dentro do design, como <code>U1</code>, <code>U2</code> e <code>I_REG</code>.
+            </div>
+            <div class="flow-step">
+              <strong><code>get_lib_cells</code></strong>
+              Consulta células da biblioteca, como <code>INV1</code>, <code>NAND2</code>, <code>DFF</code>.
+            </div>
+          </div>
+
+          <pre><code>get_designs *
+# {TOP ENCODER REGFILE PLL}
+
+get_cells *
+# {I_ENC U1 U2 I_REG}
+
+get_lib_cells 20nm/INV*
+# {20nm/INV1 20nm/INV2 20nm/INV3}</code></pre>
+
+          <div class="quiz-card">
+            <strong>Pergunta clássica</strong>
+            <p>
+              Por que <code>INVX1</code> não é um design como <code>ENCODER</code>?
+              Porque <code>INVX1</code> é uma célula da biblioteca tecnológica. Ela pode ser a referência de
+              uma instância, mas não foi elaborada como módulo RTL do seu projeto.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="port-pin">Port versus pin</h2>
+          <p>
+            Port e pin não são categorias absolutas. Elas dependem do nível hierárquico que você está olhando.
+            Se o <code>current_design</code> é <code>TOP</code>, a entrada de uma instância interna é um pin.
+            Se você entra no design dessa instância, o mesmo terminal funcional aparece como port.
+          </p>
+
+          <pre><code>No design pai:
+  U2/MI  -> pin da instância U2
+
+Dentro do próprio design MID:
+  MI     -> port do design MID</code></pre>
+
+          <div class="concept-grid">
+            <div class="concept-card">
+              <span class="mini-label">Port</span>
+              <h3>Fronteira do design atual</h3>
+              <p>
+                Entradas, saídas e inouts do módulo/entity que está ativo como <code>current_design</code>.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">Pin</span>
+              <h3>Terminal de instância</h3>
+              <p>
+                Entradas e saídas das cells instanciadas dentro do design atual.
+              </p>
+            </div>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que isso importa em SDC?</summary>
+            <div class="detail-body">
+              <p>
+                Constraints de interface, como <code>set_input_delay</code> e <code>set_output_delay</code>,
+                normalmente são aplicadas em ports do top. Já constraints internas ou debug de timing muitas
+                vezes usam pins de instâncias. Se você usa <code>get_ports</code> quando deveria usar
+                <code>get_pins</code>, pode receber uma collection vazia.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="nomes-ambiguos">Nomes ambíguos: por que usar <code>get_*</code></h2>
+          <p>
+            O slide mostra um caso com um port chamado <code>SUM</code> e uma net também chamada
+            <code>SUM</code>. Se você escreve apenas:
+          </p>
+
+          <pre><code>set_load 5 SUM</code></pre>
+
+          <p>
+            você deixa a ferramenta resolver a ambiguidade. Em laboratório, isso é perigoso. O jeito robusto
+            é dizer explicitamente qual classe de objeto você quer atingir.
+          </p>
+
+          <pre><code># Carga no port SUM
+set_load 5 [get_ports SUM]
+
+# Carga na net SUM
+set_load 5 [get_nets SUM]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> em scripts versionados, prefira sempre passar collections explícitas:
+            <code>[get_ports ...]</code>, <code>[get_pins ...]</code>, <code>[get_cells ...]</code>.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="command-substitution">Como ler colchetes Tcl</h2>
+          <p>
+            Os colchetes em Tcl executam o comando interno primeiro. Isso é essencial para entender os scripts
+            Synopsys. O comando abaixo não passa o texto <code>get_ports SUM</code> para <code>set_load</code>;
+            ele executa <code>get_ports SUM</code> antes e passa o resultado.
+          </p>
+
+          <pre><code>set_load 5 [get_ports SUM]</code></pre>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Executa</strong>
+              <code>get_ports SUM</code>.
+            </div>
+            <div class="flow-step">
+              <strong>2. Retorna</strong>
+              Uma collection com o port <code>SUM</code>.
+            </div>
+            <div class="flow-step">
+              <strong>3. Aplica</strong>
+              <code>set_load 5</code> nessa collection.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="current-design">O papel do <code>current_design</code></h2>
+          <p>
+            Muitos comandos consultam objetos no nível do design atual. Se o <code>current_design</code> é
+            <code>TOP</code>, <code>get_ports *</code> retorna os ports de <code>TOP</code>. Se você muda o
+            current design, o mesmo comando pode retornar outro conjunto.
+          </p>
+
+          <pre><code>current_design TOP
+get_ports *
+# ports de TOP
+
+current_design ENCODER
+get_ports *
+# ports de ENCODER</code></pre>
+
+          <div class="warning callout">
+            <strong>Boa prática:</strong> antes de aplicar constraints importantes, garanta explicitamente o
+            top com <code>current_design $TOP</code>. Isso reduz a chance de aplicar SDC no nível errado.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="hierarquia">Consultas hierárquicas e flat</h2>
+          <p>
+            A aula mostra uma pegadinha: <code>get_cells -hierarchical</code> e <code>get_flat_cells</code>
+            parecem resolver o mesmo problema, mas não consultam exatamente do mesmo jeito.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Comando</th>
+                  <th>Como pensar</th>
+                  <th>Exemplo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>get_cells sd_mux*</code></td>
+                  <td>Busca no nível atual.</td>
+                  <td>Células locais chamadas <code>sd_mux...</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>get_cells -hierarchical sd_mux*</code></td>
+                  <td>Busca por nome local em toda a hierarquia.</td>
+                  <td>Todas as instâncias <code>sd_mux...</code> abaixo do top.</td>
+                </tr>
+                <tr>
+                  <td><code>get_flat_cells *I_SDRAM_IF*sd_mux*</code></td>
+                  <td>Busca no nome completo achatado.</td>
+                  <td>Caminhos que contêm <code>I_SDRAM_IF</code> e <code>sd_mux</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>get_cells I_SDRAM_TOP/I_SDRAM_IF/sd_mux*
+
+get_cells -hierarchical sd_mux*
+
+get_flat_cells *I_SDRAM_IF*sd_mux*</code></pre>
+
+          <details class="expand-block">
+            <summary>A pegadinha do <code>/</code> com hierarquia</summary>
+            <div class="detail-body">
+              <p>
+                Em alguns comandos, <code>/</code> funciona como delimitador hierárquico. Em outros contextos,
+                especialmente com <code>-hierarchical</code>, o padrão esperado pode ser o nome local da célula,
+                não o caminho completo. Se uma busca retorna vazio, teste se você deveria usar
+                <code>get_flat_cells</code> ou simplificar o padrão.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="of-objects"><code>-of_objects</code>: navegando pelo banco</h2>
+          <p>
+            A opção <code>-of_objects</code> permite descobrir objetos associados a outros objetos. Ela é muito
+            útil quando você não sabe o nome exato, mas sabe a conexão.
+          </p>
+
+          <pre><code># Quais cells estão associadas a uma net?
+get_cells -of_objects [get_nets net_sdram_clk]
+
+# Quais pins pertencem a uma instância?
+get_pins -of_objects [get_cells U1]
+
+# Qual net está conectada a um pin?
+get_nets -of_objects [get_pins U1/Q]</code></pre>
+
+          <p>
+            Esse tipo de navegação é excelente para debug. Em vez de tentar adivinhar nomes, você caminha pelo
+            grafo do design: cell para pins, pin para net, net para outras cells.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="bibliotecas">Consultando bibliotecas</h2>
+          <p>
+            O banco de dados não contém apenas o design. Ele também contém bibliotecas carregadas e suas células.
+            Isso permite investigar área, direção de pins e células disponíveis sem abrir manualmente arquivos
+            <code>.lib</code> ou <code>.db</code>.
+          </p>
+
+          <pre><code>get_libs
+# {20nm gtech standard.sldb}
+
+get_lib_cells 20nm/OR2_4x
+
+get_lib_pins 20nm/OR2_4x/*
+
+get_lib_attribute 20nm/OR2_4x area
+
+get_lib_attribute 20nm/OR2_4x/Y direction</code></pre>
+
+          <div class="project-bridge">
+            <strong>Aplicação prática:</strong> quando uma célula aparece em relatório, você pode consultar
+            sua biblioteca, seus pins e atributos. Isso ajuda a entender por que o compile escolheu certa
+            implementação ou por que uma constraint elétrica foi violada.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="all-commands">Comandos <code>all_*</code></h2>
+          <p>
+            Os comandos <code>all_inputs</code>, <code>all_outputs</code>, <code>all_clocks</code> e
+            <code>all_registers</code> são atalhos que retornam collections prontas. Eles são muito usados em
+            SDC, mas não aceitam padrões arbitrários como os comandos <code>get_*</code>.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Comando</th>
+                  <th>Retorna</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>all_inputs</code></td>
+                  <td>Todos os input e inout ports do design atual.</td>
+                </tr>
+                <tr>
+                  <td><code>all_outputs</code></td>
+                  <td>Todos os output e inout ports do design atual.</td>
+                </tr>
+                <tr>
+                  <td><code>all_clocks</code></td>
+                  <td>Todos os clocks definidos no nível atual ou abaixo.</td>
+                </tr>
+                <tr>
+                  <td><code>all_registers</code></td>
+                  <td>Todos os registradores na hierarquia inteira do design atual.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Válido
+all_inputs
+
+# Inválido: all_inputs não espera padrão posicional
+all_inputs C*
+
+# Forma comum: todos os inputs exceto o clock
+remove_from_collection [all_inputs] [get_ports CLK]</code></pre>
+
+          <div class="quiz-card">
+            <strong>Ponto de prova</strong>
+            <p>
+              <code>all_inputs C*</code> gera erro. Para filtrar, use <code>get_ports C*</code> ou
+              <code>filter_collection [all_inputs] "name =~ C*"</code>.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="collections">Collections: o coração dos scripts Synopsys</h2>
+          <p>
+            Uma collection é uma referência interna para objetos do banco de dados Synopsys. Ela não é uma lista
+            Tcl comum. O slide mostra que, ao guardar uma collection em uma variável, o valor pode aparecer como
+            um handle interno, por exemplo <code>_sel184</code>.
+          </p>
+
+          <pre><code>set foo [get_ports p*]
+echo $foo
+# _sel184
+
+query_objects $foo
+# {pclk pframe_n pidsel pad[31] ...}
+
+sizeof_collection $foo
+# 50</code></pre>
+
+          <div class="concept-grid">
+            <div class="concept-card">
+              <span class="mini-label">query</span>
+              <h3>Ver o conteúdo</h3>
+              <p><code>query_objects $collection</code> mostra os nomes dos objetos.</p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">count</span>
+              <h3>Contar objetos</h3>
+              <p><code>sizeof_collection $collection</code> informa quantos objetos foram encontrados.</p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">combine</span>
+              <h3>Juntar ou remover</h3>
+              <p><code>add_to_collection</code> junta; <code>remove_from_collection</code> subtrai.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="filter">Filtrando por atributos</h2>
+          <p>
+            Objetos têm atributos. Em vez de filtrar só por nome, você pode filtrar por propriedades, como
+            <code>ref_name</code>, <code>dont_touch</code>, <code>is_mapped</code>,
+            <code>is_hierarchical</code> ou <code>period</code>.
+          </p>
+
+          <pre><code># Cells cuja referência começa com AN
+filter_collection [get_cells *] "ref_name =~ AN*"
+
+# Cells ainda não mapeadas
+filter_collection [get_cells *] "is_mapped != true"
+
+# Atalho com -filter
+get_cells * -filter "dont_touch == true"
+
+# Clocks rápidos
+set fastclks [get_clocks * -filter "period < 10"]</code></pre>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Operador</th>
+                  <th>Uso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>==</code></td><td>Igualdade.</td></tr>
+                <tr><td><code>!=</code></td><td>Diferença.</td></tr>
+                <tr><td><code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></td><td>Comparações numéricas.</td></tr>
+                <tr><td><code>=~</code></td><td>Casa com padrão.</td></tr>
+                <tr><td><code>!~</code></td><td>Não casa com padrão.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="iteracao">Iterando: <code>foreach</code> versus <code>foreach_in_collection</code></h2>
+          <p>
+            Uma lista Tcl e uma collection Synopsys podem parecer parecidas quando impressas, mas são estruturas
+            diferentes. Para lista Tcl, use <code>foreach</code>. Para collection, use
+            <code>foreach_in_collection</code>.
+          </p>
+
+          <pre><code># Lista Tcl comum
+set nomes {A B C D}
+foreach nome $nomes {
+  puts $nome
+}
+
+# Collection Synopsys
+set ports [get_ports *]
+foreach_in_collection p $ports {
+  echo [get_object_name $p]
+}</code></pre>
+
+          <p>
+            Dentro de <code>foreach_in_collection</code>, a variável <code>p</code> é um handle de objeto.
+            Para imprimir o nome legível, use <code>get_object_name</code>.
+          </p>
+
+          <pre><code>foreach_in_collection cell [get_cells -hier * -filter \
+    "is_hierarchical == true"] {
+  echo "Instance [get_object_name $cell] is hierarchical"
+}</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="sdc">Como isso aparece no SDC</h2>
+          <p>
+            Esta aula prepara diretamente a próxima, que entrará em constraints. Um SDC saudável seleciona
+            objetos com precisão. O exemplo clássico é aplicar input delay em todos os inputs menos o clock.
+          </p>
+
+          <pre><code>create_clock -name CLK -period 10 [get_ports CLK]
+
+set_input_delay 2.0 -clock CLK \
+  [remove_from_collection [all_inputs] [get_ports CLK]]
+
+set_output_delay 2.0 -clock CLK [all_outputs]</code></pre>
+
+          <p>
+            Agora esse script deixa de ser uma fórmula decorada:
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong><code>[get_ports CLK]</code></strong>
+              Seleciona o port de clock no top.
+            </div>
+            <div class="check-item">
+              <strong><code>[all_inputs]</code></strong>
+              Retorna todos os inputs do design atual.
+            </div>
+            <div class="check-item">
+              <strong><code>remove_from_collection</code></strong>
+              Remove o clock da collection de inputs.
+            </div>
+            <div class="check-item">
+              <strong><code>[all_outputs]</code></strong>
+              Seleciona todos os outputs para aplicar output delay.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="debug">Debug: quando a ferramenta não encontra objetos</h2>
+          <p>
+            Muitos erros de laboratório começam com uma mensagem parecida com:
+          </p>
+
+          <pre><code>Warning: No objects matched 'CLK'
+Error: extra positional option 'C*' (CMD-012)</code></pre>
+
+          <p>
+            A resposta não deve ser chutar comandos até funcionar. Faça uma investigação curta e ordenada.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>1. Confira o design atual</strong>
+              <code>current_design</code> e <code>get_designs *</code>.
+            </div>
+            <div class="check-item">
+              <strong>2. Confira o tipo de objeto</strong>
+              Teste <code>get_ports CLK</code>, <code>get_pins */CLK</code>, <code>get_nets CLK</code>.
+            </div>
+            <div class="check-item">
+              <strong>3. Conte a collection</strong>
+              Use <code>sizeof_collection</code> para saber se encontrou algo.
+            </div>
+            <div class="check-item">
+              <strong>4. Veja os nomes reais</strong>
+              Use <code>query_objects</code> ou padrões mais amplos, como <code>get_ports *CLK*</code>.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Aplicação no nosso laboratório</h2>
+          <p>
+            Para o projeto do professor, esta aula é a base de scripts robustos. Quando montarmos ou auditarmos
+            Makefiles e Tcl, vamos usar essa lógica para garantir que constraints e reports estão pegando nos
+            objetos corretos.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Uso prático imediato:</strong> quando criarmos o SDC do bloco, não vamos escrever constraints
+            em nomes crus. Vamos selecionar ports, clocks, registers, cells e outputs com comandos
+            <code>get_*</code>, <code>all_*</code> e collections. Isso deixa o script explicável e depurável.
+          </div>
+
+          <pre><code># Pequeno bloco de sanidade que pode aparecer em script Tcl
+puts "TOP atual:"
+current_design
+
+puts "Ports encontrados:"
+query_objects [get_ports *]
+
+puts "Inputs exceto clock:"
+query_objects [remove_from_collection [all_inputs] [get_ports CLK]]
+
+puts "Registradores:"
+query_objects [all_registers]</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão forte</h2>
+
+          <div class="quiz-card">
+            <strong>O que <code>get_*</code> retorna?</strong>
+            <p>Uma collection de objetos do banco de dados Synopsys, não uma lista Tcl comum.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Qual é a diferença entre port e pin?</strong>
+            <p>Port é terminal do design atual. Pin é terminal de uma instância dentro do design atual.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Por que <code>INVX1</code> não é design?</strong>
+            <p>Porque é célula de biblioteca. A instância que usa <code>INVX1</code> é uma cell; a definição é uma lib_cell.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Como remover clock dos inputs?</strong>
+            <p><code>remove_from_collection [all_inputs] [get_ports CLK]</code>.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Como iterar sobre collection?</strong>
+            <p>Com <code>foreach_in_collection</code>, usando <code>get_object_name</code> para imprimir nomes legíveis.</p>
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/03_Accessing_Design_and_Library_Objects.md">03 Accessing Design and Library Objects</a>.
+          Próxima fonte:
+          <a data-md-source href="../../assets/md_normalizado/04_Constraints_Reg_to_Reg_and_IO_Timing_parte_A.md">04 Constraints - Reg-to-Reg and I/O Timing parte A</a> e
+          <a data-md-source href="../../assets/md_normalizado/04_Constraints_Reg_to_Reg_and_IO_Timing_parte_B.md">parte B</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_7_2_design_setup_physical_synthesis.html">Anterior: Design Setup</a>
+          <a href="index.html">Próxima: Constraints Reg-to-Reg e I/O Timing</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base em Markdown de aulas2.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post-Synthesis Output Data</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Post-Synthesis Output Data
+    </nav>
+
+    <h1 class="page-title">Post-Synthesis Output Data</h1>
+    <p class="lead">
+      Depois da síntese, o trabalho não termina em "gerou netlist". A saída precisa ser limpa, portátil e suficiente para
+      backend, simulação gate-level, STA, Formality e continuação do fluxo.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Esta aula responde: quais arquivos saem da síntese e por que eles importam? O Design Compiler NXT pode entregar
+            netlist Verilog, DDC, SDC atualizado, SCAN-DEF, dados para IC Compiler II, arquivos para ferramenta de layout de
+            terceiro e relatórios. Mas se a netlist sai com <code>assign</code> indevido, nomes especiais problemáticos,
+            portas explodidas em bits ou <code>tri</code> não tratado, o próximo estágio pode sofrer.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="artefatos">Mapa dos artefatos pós-síntese</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Artefato</th>
+                  <th>Para que serve</th>
+                  <th>Quem consome</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Gate-level netlist</td>
+                  <td>Implementação estrutural em células da biblioteca.</td>
+                  <td>Simulação GLS, Formality, backend.</td>
+                </tr>
+                <tr>
+                  <td>DDC</td>
+                  <td>Banco interno Synopsys com design, constraints e estado compilado.</td>
+                  <td>DC NXT em reabertura ou debug.</td>
+                </tr>
+                <tr>
+                  <td>SDC de saída</td>
+                  <td>Constraints ajustadas para etapas posteriores.</td>
+                  <td>STA, backend, ICC II.</td>
+                </tr>
+                <tr>
+                  <td>SCAN-DEF</td>
+                  <td>Informação de scan chain para fluxo DFT/físico.</td>
+                  <td>Ferramentas de implementação e teste.</td>
+                </tr>
+                <tr>
+                  <td>ICC2 files</td>
+                  <td>Pacote de dados para continuação no IC Compiler II.</td>
+                  <td>IC Compiler II.</td>
+                </tr>
+                <tr>
+                  <td>Reports</td>
+                  <td>Evidência de timing, área, potência, QoR, constraints e congestionamento.</td>
+                  <td>Você, professor, revisão do lab.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="icc2-terceiros">Fluxo para IC Compiler II versus layout de terceiro</h2>
+          <p>
+            Quando o próximo estágio é IC Compiler II, a família Synopsys consegue passar mais informação de forma integrada.
+            O comando <code>write_icc2_files</code> empacota dados úteis para o backend. Quando a próxima ferramenta não é
+            Synopsys, você normalmente precisa escrever arquivos individuais e mais padronizados: Verilog, SDC, DEF ou outros
+            formatos aceitos pelo fluxo.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Caminho Synopsys integrado</h3>
+              <pre><code>write_icc2_files</code></pre>
+              <p>Preserva melhor a intenção física e dados de continuidade para ICC II.</p>
+            </div>
+            <div class="note-box">
+              <h3>Caminho genérico</h3>
+              <pre><code>write -format verilog -hierarchy -output mapped.v
+write_sdc output.sdc</code></pre>
+              <p>Mais explícito e portátil, mas exige cuidado com limpeza de nomes e estrutura.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="assign">Por que <code>assign</code> na netlist pode ser problema?</h2>
+          <p>
+            Em RTL, <code>assign</code> é normal. Em netlist gate-level, muitos fluxos preferem conexões estruturais limpas.
+            Um <code>assign</code> pode surgir por multiple port nets, feed-throughs ou declarações <code>tri</code>. Algumas
+            ferramentas aceitam, outras reclamam, e outras interpretam de forma que atrapalha equivalência ou backend.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Multiple port nets</h3>
+              <p>Quando uma mesma rede conecta múltiplas portas de hierarquia de forma direta, a netlist pode precisar de assign.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Feed-through</h3>
+              <p>Entrada atravessa o bloco e sai sem lógica real. Pode gerar conexão direta difícil para alguns fluxos.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3><code>tri</code></h3>
+              <p>Tri-state interno raramente é desejável em ASIC moderno; pode virar estrutura problemática na netlist.</p>
+            </article>
+          </div>
+
+          <pre><code># Recomendação típica antes do compile
+set_fix_multiple_port_nets -all -buffer_constants
+
+# Evitar tri na escrita da netlist
+set verilogout_no_tri true</code></pre>
+
+          <p>
+            O comando não é "cosmético". Ele força a ferramenta a inserir lógica/buffers para eliminar conexões ambíguas e
+            produzir uma netlist mais aceitável para as próximas etapas.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="nomes">Nomes especiais e <code>change_names</code></h2>
+          <p>
+            Nomes válidos em RTL/SystemVerilog nem sempre são confortáveis para netlist, scripts, backend e ferramentas de
+            terceiros. Caracteres especiais, barras, colchetes, escapes e nomes gerados automaticamente podem complicar
+            parsing e debug. Por isso o curso enfatiza <code>change_names</code>.
+          </p>
+
+          <pre><code># Aplicar regra Verilog na hierarquia inteira
+change_names -rules verilog -hierarchy</code></pre>
+
+          <div class="lesson-note">
+            <strong>Boa prática:</strong> limpe nomes antes de escrever a netlist final. Uma netlist com nomes estranhos é
+            mais difícil de usar em simulação, equivalência formal e análise manual.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="bit-blasted">Portas bit-blasted</h2>
+          <p>
+            Bit-blasting acontece quando um barramento estruturado sai como muitos sinais individuais. Às vezes isso é
+            inevitável, mas em geral piora legibilidade e integração. O slide alerta para preservar portas estruturadas
+            quando o fluxo permite.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Forma</th>
+                  <th>Legibilidade</th>
+                  <th>Risco</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>data[31:0]</code></td>
+                  <td>Boa: mantém intenção de barramento.</td>
+                  <td>Mais fácil de conectar e revisar.</td>
+                </tr>
+                <tr>
+                  <td><code>data_31_, data_30_, ...</code></td>
+                  <td>Pior: conexão vira lista longa.</td>
+                  <td>Mais chance de erro em scripts e wrappers.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="script">Sequência recomendada de saída</h2>
+          <pre><code>################################################################################
+# Antes de compilar: deixar a futura netlist mais limpa
+################################################################################
+set_fix_multiple_port_nets -all -buffer_constants
+set verilogout_no_tri true
+
+################################################################################
+# Síntese
+################################################################################
+compile_ultra
+
+################################################################################
+# Limpeza de nomes antes de escrever artefatos finais
+################################################################################
+change_names -rules verilog -hierarchy
+
+################################################################################
+# Artefatos principais
+################################################################################
+write -format ddc     -hierarchy -output results/TOP.ddc
+write -format verilog -hierarchy -output results/TOP_mapped.v
+write_sdc results/TOP.sdc
+
+################################################################################
+# Se o fluxo físico Synopsys estiver habilitado
+################################################################################
+write_icc2_files</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Aplicação no nosso projeto</h2>
+          <p>
+            Para o laboratório do professor, este bloco é muito importante porque transforma a síntese em um fluxo auditável.
+            Não basta rodar <code>make synth</code>. Precisamos saber onde ficam os resultados, quais arquivos são
+            obrigatórios e quais relatórios provam que a etapa está saudável.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Gerar</strong>
+              Netlist mapeada, DDC, SDC de saída e logs.
+            </div>
+            <div class="check-item">
+              <strong>Verificar</strong>
+              Sem <code>assign</code> indesejado, nomes limpos e portas compreensíveis.
+            </div>
+            <div class="check-item">
+              <strong>Guardar</strong>
+              Reports de timing, área, power, QoR, constraints e design.
+            </div>
+            <div class="check-item">
+              <strong>Preparar</strong>
+              Arquivos para Formality, GLS ou backend quando o professor pedir.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão rápida</h2>
+          <div class="quiz-card">
+            <strong>Por que usar <code>set_fix_multiple_port_nets</code>?</strong>
+            Para evitar conexões diretas que geram <code>assign</code> na netlist final.
+          </div>
+          <div class="quiz-card">
+            <strong>Por que usar <code>change_names</code>?</strong>
+            Para transformar nomes em uma forma mais compatível com Verilog e ferramentas posteriores.
+          </div>
+          <div class="quiz-card">
+            <strong>Qual é a diferença entre DDC e Verilog mapeado?</strong>
+            DDC preserva estado interno Synopsys; Verilog mapeado é uma netlist estrutural consumível por outras etapas.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>11_Post_Synthesis_Output_Data.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2i_constraints_complexas_design_considerations.html">Anterior: Constraints Complexas</a>
+          <a href="bloco_1_2k_lab_guide_dc_nxt_roteiro_pratico.html">Próxima: Lab Guide</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#artefatos">Artefatos</a>
+        <a href="#icc2-terceiros">ICC II vs terceiros</a>
+        <a href="#assign">Assign</a>
+        <a href="#nomes">Nomes</a>
+        <a href="#bit-blasted">Bit-blasted</a>
+        <a href="#script">Script</a>
+        <a href="#projeto">Projeto</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

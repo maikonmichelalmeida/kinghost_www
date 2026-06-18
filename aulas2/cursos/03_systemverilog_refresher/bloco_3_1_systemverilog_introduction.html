@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog Introduction</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>Introduction
+    </nav>
+
+    <h1 class="page-title">SystemVerilog Introduction</h1>
+    <p class="lead">
+      Aula de fundação: SystemVerilog como Verilog 2005 ampliado para RTL moderno,
+      modelagem e verificação, com foco em saber o que vira hardware e o que pertence ao testbench.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="mapa-mental">Mapa mental da aula</h2>
+          <p>
+            O primeiro cuidado é não estudar SystemVerilog como uma lista infinita de palavras novas.
+            A linguagem junta três mundos que se encostam, mas não têm a mesma finalidade.
+          </p>
+          <pre><code>SystemVerilog
+  design sintetizável
+  modelagem de sistema
+  verificação/testbench</code></pre>
+          <p>
+            Essa separação explica quase todos os quizzes da aula. Uma <code>interface</code> pode fazer parte
+            de um design. Uma <code>class</code> normalmente pertence ao testbench. Uma <code>mailbox</code>
+            ajuda processos de verificação a se comunicarem. O arquivo ser <code>.sv</code> não torna tudo
+            sintetizável.
+          </p>
+          <div class="callout">
+            <strong>Regra de estudo:</strong> para cada recurso novo, pergunte: isto descreve hardware,
+            ajuda a modelar o sistema ou constrói o ambiente de verificação?
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="superset">SystemVerilog como superset de Verilog</h2>
+          <p>
+            A aula reforça que SystemVerilog suporta os construtos e melhorias de Verilog 2005.
+            Ele não é uma linguagem completamente separada: é uma evolução que preserva a base Verilog
+            e adiciona recursos para design, modelagem e verificação.
+          </p>
+          <pre><code>Verilog 2005
+  + tipos melhores
+  + processos com intenção explícita
+  + interfaces
+  + structs/unions/arrays
+  + assertions/coverage/classes
+  = SystemVerilog</code></pre>
+          <pre><code class="language-systemverilog">module and2 (
+    input  logic a,
+    input  logic b,
+    output logic y
+);
+    assign y = a & b;
+endmodule</code></pre>
+          <details class="nested-detail">
+            <summary>Por que isso importa no ambiente do professor?</summary>
+            <div class="detail-body">
+              <p>
+                Um makefile ou filelist pode compilar <code>.v</code>, <code>.sv</code> e <code>.svh</code>.
+                O que decide o papel do arquivo não é só a extensão. Você precisa saber se ele está no RTL,
+                no testbench, em includes, em interfaces ou em pacotes de verificação.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="sintetizavel">Nem tudo é sintetizável</h2>
+          <p>
+            O quiz mais importante da aula diz: "All SystemVerilog constructs are synthesizable". A resposta
+            é falsa. SystemVerilog é maior que o subconjunto de RTL sintetizável.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Grupo</th><th>Exemplos</th><th>Uso típico</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>RTL sintetizável</td><td><code>logic</code>, <code>always_ff</code>, <code>always_comb</code>, <code>enum</code>, <code>packed struct</code></td><td>Design que vira hardware</td></tr>
+                <tr><td>Verificação</td><td><code>class</code>, mailbox, semaphores, randomização, coverage</td><td>Testbench e ambientes como UVM</td></tr>
+                <tr><td>Modelagem</td><td>OOP, processos dinâmicos, modelos abstratos</td><td>Representar sistema sem necessariamente virar circuito</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="abstracoes">Behavioral, RTL e estrutural</h2>
+          <p>
+            A aula diferencia níveis de abstração. Behavioral descreve comportamento; RTL descreve transferência
+            entre registradores; estrutural descreve blocos conectados. Para seu projeto, o centro é RTL.
+          </p>
+          <pre><code>behavioral: o que o sistema faz
+RTL:        registradores + lógica combinacional + controle
+structural: instâncias, portas, células e conexões</code></pre>
+          <p>O fluxo de síntese fica assim:</p>
+          <pre><code>RTL design -> synthesis tool -> design netlist</code></pre>
+          <details class="expand-block">
+            <summary>Como reconhecer RTL de verdade?</summary>
+            <div class="detail-body">
+              <p>
+                Procure clocks, resets, registradores, lógica combinacional completa, FSMs e operações
+                aritméticas com largura definida. Se o código depende de classes, delays arbitrários,
+                arquivos de entrada ou randomização, ele provavelmente pertence ao testbench/modelo.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="blocos-digitais">O alvo ainda é hardware digital</h2>
+          <p>
+            Um slide revisa blocos básicos: portas, muxes, decoders, flip-flops, aritmética, FIFOs,
+            arrays de registradores e FSMs. Esse slide é visualmente útil porque lembra que a linguagem
+            precisa mapear para estruturas de hardware.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_logic_building_blocks.png" alt="Recorte com blocos digitais: portas, mux, decoder, flip-flops, FIFO e aritmética">
+            <figcaption>
+              Recorte estratégico: SystemVerilog pode parecer linguagem de software, mas o RTL sintetizável
+              precisa descrever blocos digitais reais ou composições desses blocos.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="logic">`logic`, 2 estados e 4 estados</h2>
+          <p>
+            SystemVerilog simplifica muito a vida em relação ao antigo par mental <code>wire</code>/<code>reg</code>.
+            O tipo <code>logic</code> é de 4 estados: <code>0</code>, <code>1</code>, <code>X</code> e <code>Z</code>.
+            Já <code>bit</code> é de 2 estados: <code>0</code> e <code>1</code>.
+          </p>
+          <pre><code class="language-systemverilog">logic        valid;
+logic [31:0] data;
+bit          model_enable;
+int          count;</code></pre>
+          <p>
+            Para RTL comum, <code>logic</code> costuma ser uma escolha clara para sinais internos e portas
+            procedurais. Mas tipo não substitui disciplina: largura, reset, atribuição completa e estilo
+            de processo ainda determinam se o RTL é bom.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="processos">`always_comb`, `always_ff` e `always_latch`</h2>
+          <p>
+            Em vez de usar sempre <code>always</code> genérico, SystemVerilog permite declarar a intenção do bloco.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Construto</th><th>Intenção</th><th>O que procurar na revisão</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>always_comb</code></td><td>Lógica combinacional</td><td>Atribuição completa, sem memória acidental</td></tr>
+                <tr><td><code>always_ff</code></td><td>Registradores/FFs</td><td>Clock/reset claros, nonblocking assignments</td></tr>
+                <tr><td><code>always_latch</code></td><td>Latch intencional</td><td>Uso realmente desejado, não acidente</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code class="language-systemverilog">always_comb begin
+    y = a & b;
+end
+
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) q <= '0;
+    else        q <= d;
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="fsm">FSM com intenção explícita</h2>
+          <p>
+            O slide de FSM conecta estado, transição e saída. SystemVerilog permite escrever isso de forma
+            muito mais legível usando <code>typedef enum</code>, <code>always_ff</code> e <code>always_comb</code>.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_fsm_state_diagram.png" alt="Diagrama de FSM com estados Idle, Read, Wait e Write">
+            <figcaption>FSM como RTL: registrador de estado, lógica de próximo estado e saídas associadas aos estados.</figcaption>
+          </figure>
+          <details class="expand-block" open>
+            <summary>Modelo didático de FSM</summary>
+            <div class="detail-body">
+              <pre><code class="language-systemverilog">typedef enum logic [1:0] {
+    IDLE,
+    READ,
+    WAIT_STATE,
+    WRITE
+} state_t;
+
+state_t state, next_state;
+
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) state <= IDLE;
+    else        state <= next_state;
+end
+
+always_comb begin
+    next_state = state;
+    unique case (state)
+        IDLE:       if (fsm_en) next_state = READ;
+        READ:                    next_state = WAIT_STATE;
+        WAIT_STATE: if (done)   next_state = WRITE;
+        WRITE:                   next_state = IDLE;
+    endcase
+end</code></pre>
+              <p>
+                A separação é a aula inteira em miniatura: estado registrado em <code>always_ff</code>,
+                decisão combinacional em <code>always_comb</code>, e nomes de estados em vez de números soltos.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="unique-priority">`unique` e `priority`</h2>
+          <p>
+            <code>unique</code> e <code>priority</code> comunicam intenção para simulador, síntese e ferramentas formais.
+          </p>
+          <div class="split">
+            <div class="note-box">
+              <h3>`unique`</h3>
+              <p>Use quando as alternativas deveriam ser exclusivas e a cobertura dos casos importa.</p>
+              <pre><code class="language-systemverilog">unique case (sel)
+  2'b00: y = a;
+  2'b01: y = b;
+  2'b10: y = c;
+  2'b11: y = d;
+endcase</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>`priority`</h3>
+              <p>Use quando a ordem das condições é parte do comportamento.</p>
+              <pre><code class="language-systemverilog">priority if (irq0) grant = 4'b0001;
+else if (irq1)     grant = 4'b0010;
+else if (irq2)     grant = 4'b0100;
+else               grant = 4'b0000;</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="interfaces">Interfaces</h2>
+          <p>
+            <code>interface</code> agrupa sinais relacionados. Esse é o recurso que o quiz aponta como também
+            sintetizável quando usado dentro das regras aceitas pelo fluxo.
+          </p>
+          <pre><code class="language-systemverilog">interface bus_if;
+    logic        valid;
+    logic        ready;
+    logic [31:0] data;
+endinterface</code></pre>
+          <p>
+            A ideia é representar um protocolo de forma coesa, em vez de espalhar dezenas de portas soltas.
+          </p>
+          <details class="nested-detail">
+            <summary>Cuidado de fluxo</summary>
+            <div class="detail-body">
+              <p>
+                O suporte de síntese e as regras de estilo variam por ferramenta. Em um projeto de disciplina,
+                vale seguir o padrão do professor e verificar se a filelist/makefile aceita o uso de interfaces.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="portas">Conexões implícitas: `.name` e `.*`</h2>
+          <p>
+            SystemVerilog reduz a verbosidade de instanciar módulos.
+          </p>
+          <pre><code class="language-systemverilog">alu u_alu (
+    .clk,
+    .rst_n,
+    .a,
+    .b,
+    .y
+);</code></pre>
+          <p>
+            O <code>.*</code> conecta automaticamente portas a sinais de mesmo nome, mas deve ser usado com
+            disciplina. Menos linhas podem facilitar escrita e dificultar revisão.
+          </p>
+          <div class="callout warning">
+            <strong>Preferência prática:</strong> para aprender e revisar, <code>.name</code> costuma ser um bom
+            meio-termo entre clareza e menos repetição.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="dados">Structs, unions e arrays</h2>
+          <p>
+            O slide de organização de dados mostra uma palavra de 32 bits dividida em campos. Esse é um
+            caso perfeito para <code>packed struct</code>.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_struct_union_layout.png" alt="Layout de comando dividido em opcode e campos de dados">
+            <figcaption>
+              Recorte estratégico: dar nome aos campos preserva o layout de bits e reduz erro humano.
+            </figcaption>
+          </figure>
+          <pre><code class="language-systemverilog">typedef struct packed {
+    logic [15:0] opcode;
+    logic [7:0]  data2;
+    logic [7:0]  data1;
+} command_t;
+
+command_t cmd;</code></pre>
+          <pre><code class="language-systemverilog">if (cmd.opcode == OP_ADD) begin
+    result = cmd.data1 + cmd.data2;
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="verificacao">Recursos de verificação</h2>
+          <p>
+            OOP, classes, mailboxes, semaphores, constrained random, coverage e assertions preparam o terreno
+            para verificação moderna. Eles são essenciais para testbench, mas não devem ser confundidos com RTL.
+          </p>
+          <pre><code class="language-systemverilog">class bus_item;
+    rand bit [31:0] addr;
+    rand bit [31:0] data;
+endclass</code></pre>
+          <details class="expand-block">
+            <summary>Assertions, coverage e formal</summary>
+            <div class="detail-body">
+              <p>
+                Assertions transformam regras esperadas em checagens. Coverage mede o quanto foi exercitado.
+                Verificação formal tenta provar propriedades. A aula só apresenta esses nomes, mas eles serão
+                importantes em Design Verification.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="quiz">Quizzes explicados</h2>
+          <div class="quiz-card">
+            <strong>All SystemVerilog constructs are synthesizable.</strong>
+            <p class="answer">Falso. A linguagem inclui RTL, modelagem e verificação.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>SystemVerilog supports ________ which is also synthesizable.</strong>
+            <p class="answer"><code>interface</code>. Classes e mailbox são típicas de verificação.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>________ is input to synthesis tool to generate ________.</strong>
+            <p class="answer">RTL design, design netlist.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>________ concept in SystemVerilog is used for system modeling.</strong>
+            <p class="answer">OOP.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>SystemVerilog supports all ________ constructs and enhancements.</strong>
+            <p class="answer">Verilog 2005.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">O que levar para o projeto</h2>
+          <ul class="key-list compact-list">
+            <li>Use SystemVerilog para aumentar clareza, não para misturar RTL e testbench.</li>
+            <li>Prefira <code>always_ff</code> para registradores e <code>always_comb</code> para lógica combinacional.</li>
+            <li>Use <code>typedef enum</code> para FSMs; fica melhor para revisão e waveform.</li>
+            <li>Use <code>packed struct</code> quando um barramento tiver campos reais de protocolo.</li>
+            <li>Trate <code>interface</code> como agrupamento de sinais, mas respeite o fluxo de síntese disponível.</li>
+            <li>Mantenha classes, mailboxes, randomização e coverage no mundo da verificação.</li>
+          </ul>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/01_SystemVerilog_Introduction.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/01_SystemVerilog_Introduction.md">texto extraído</a>,
+          <a data-md-source href="../../assets/md_normalizado/01_SystemVerilog_Introduction.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="../02_vhdl_refresher/bloco_2_4_lab_vhdlrefdesign.html">Anterior: Lab VHDLRefDesign</a>
+          <a href="bloco_3_2_systemverilog_for_design.html">Próxima: SystemVerilog for Design</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

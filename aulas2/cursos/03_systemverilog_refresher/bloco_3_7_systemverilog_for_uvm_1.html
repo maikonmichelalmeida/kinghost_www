@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog for UVM 1</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>UVM 1
+    </nav>
+
+    <h1 class="page-title">SystemVerilog for UVM 1</h1>
+    <p class="lead">
+      Primeira ponte entre o testbench manual em SystemVerilog e a metodologia UVM:
+      componentes reutilizáveis, hierarquia, fases, factory, transactions, TLM e analysis ports.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Até aqui o curso construiu um testbench em camadas: generator, driver, monitor,
+            scoreboard, environment, mailboxes e virtual interfaces. UVM não apaga esse raciocínio.
+            Ela dá nomes padronizados, fases padronizadas e uma biblioteca para montar esse mesmo
+            ambiente de forma mais reutilizável.
+          </p>
+          <p>
+            A frase que organiza a aula é: <strong>UVM é uma metodologia e uma biblioteca de classes para
+            estruturar verificação orientada a cobertura em SystemVerilog</strong>. O foco não é escrever RTL,
+            e sim criar um ambiente que possa gerar estímulo, observar o DUT, comparar resultados,
+            coletar cobertura e ser reaproveitado em outros blocos.
+          </p>
+
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm1_environment_vc_crop.png" alt="Ambiente UVM com DUT, verification components, sequencer, driver e monitor">
+            <figcaption>
+              A figura resume a ideia de VC: um componente de verificação encapsula sequencer, driver e monitor
+              para uma interface ou protocolo. O environment combina vários VCs ao redor do DUT.
+            </figcaption>
+          </figure>
+
+          <div class="callout">
+            <strong>Leitura para o laboratório:</strong> quando o professor fala em brincar com o ambiente,
+            isso provavelmente significa explorar essa separação de responsabilidades: DUT de um lado,
+            infraestrutura de simulação e verificação do outro, tudo acionado por Makefiles e targets repetíveis.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="cdv">CDV: Coverage Driven Verification</h2>
+          <p>
+            O slide apresenta UVM junto com CDV, <em>Coverage Driven Verification</em>. A ideia é simples,
+            mas muda a forma de trabalhar: a verificação não termina porque a simulação rodou sem erro.
+            Ela termina quando as metas de cobertura e os checks importantes foram atingidos.
+          </p>
+          <p>
+            Em um fluxo pequeno, você pode rodar um teste dirigido e olhar uma waveform. Em um fluxo
+            reutilizável, isso não escala. Você precisa perguntar: quais operações foram exercitadas?
+            Quais combinações apareceram? O reset foi testado? Endereços de borda foram cobertos?
+            O protocolo foi observado em estados difíceis? A cobertura transforma essas perguntas em
+            métricas acompanháveis.
+          </p>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Gerar</strong>
+              Transações e sequences produzem estímulos dirigidos ou randômicos com constraints.
+            </div>
+            <div class="flow-step">
+              <strong>Observar</strong>
+              Monitors reconstruem transações reais a partir dos sinais do DUT.
+            </div>
+            <div class="flow-step">
+              <strong>Fechar</strong>
+              Scoreboards, assertions e coverage indicam se o comportamento esperado foi atingido.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="biblioteca">Biblioteca de classes UVM</h2>
+          <p>
+            O primeiro choque em UVM é a quantidade de classes. A forma mais limpa de estudar é separar
+            duas famílias: objetos de dados e componentes estruturais. O erro comum é misturar as duas.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm1_class_library_crop.png" alt="Hierarquia parcial da biblioteca de classes UVM">
+            <figcaption>
+              A biblioteca UVM deriva muitos elementos de <code>uvm_object</code>. Os blocos que vivem na hierarquia
+              do testbench derivam de <code>uvm_component</code>; as transações derivam de <code>uvm_sequence_item</code>.
+            </figcaption>
+          </figure>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Classe/ideia</th>
+                  <th>Serve para</th>
+                  <th>Exemplos</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>uvm_object</code></td>
+                  <td>Objetos criáveis, copiáveis, imprimíveis e comparáveis.</td>
+                  <td>Config objects, data items, transactions.</td>
+                </tr>
+                <tr>
+                  <td><code>uvm_sequence_item</code></td>
+                  <td>Uma transação gerada por sequence e consumida por driver.</td>
+                  <td>Write/read item, packet, bus transaction.</td>
+                </tr>
+                <tr>
+                  <td><code>uvm_component</code></td>
+                  <td>Bloco estrutural com posição na hierarquia UVM e fases.</td>
+                  <td>Driver, monitor, agent, env, scoreboard, test.</td>
+                </tr>
+                <tr>
+                  <td><code>uvm_env</code></td>
+                  <td>Environment que agrega agents, scoreboards e coverage collectors.</td>
+                  <td>Ambiente do DUT ou de um subsistema.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block" open>
+            <summary>Diferença decisiva: object versus component</summary>
+            <div class="detail-body">
+              <p>
+                Um <code>uvm_object</code> normalmente representa dado, configuração ou item temporário.
+                Ele pode ser criado, copiado e comparado, mas não participa diretamente da hierarquia temporal
+                do testbench.
+              </p>
+              <p>
+                Um <code>uvm_component</code> representa estrutura: existe dentro da árvore UVM, tem nome
+                hierárquico, tem parent, participa de fases e pode ser conectado a outros componentes.
+                Se algo precisa de <code>build_phase</code>, <code>connect_phase</code> ou <code>run_phase</code>,
+                quase sempre é componente, não objeto.
+              </p>
+              <pre><code class="language-text">uvm_object    -> dados e objetos criáveis
+uvm_component -> blocos hierárquicos do ambiente</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="fases">Fases: build, connect e run</h2>
+          <p>
+            A aula enfatiza que componentes UVM passam por fases. Isso substitui a montagem manual
+            desorganizada do testbench por um ciclo de vida previsível.
+          </p>
+          <div class="priority-grid">
+            <div class="priority-card">
+              <h3>Build</h3>
+              <p>Cria componentes, busca configuração e instancia subcomponentes via factory.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Connect</h3>
+              <p>Liga portas, exports, analysis ports e handles entre componentes.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Run</h3>
+              <p>Executa tarefas que consomem tempo de simulação: dirigir, monitorar, coletar e comparar.</p>
+            </div>
+          </div>
+          <pre><code class="language-systemverilog">function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  agent = my_agent::type_id::create("agent", this);
+endfunction
+
+function void connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+  agent.monitor.ap.connect(scoreboard.analysis_export);
+endfunction
+
+task run_phase(uvm_phase phase);
+  // Threads com tempo de simulação vivem aqui.
+endtask</code></pre>
+          <p>
+            Esse padrão é importante para o projeto porque deixa claro onde cada coisa deve ficar:
+            criação no build, conexão no connect, atividade temporal no run.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="componentes">Sequence item, sequence, sequencer, driver e monitor</h2>
+          <p>
+            O testbench manual usava um generator para colocar itens em uma mailbox. Em UVM, essa ideia
+            fica mais formal: uma <code>sequence</code> cria <code>sequence_items</code>, o <code>sequencer</code>
+            organiza a entrega, e o <code>driver</code> transforma cada item em sinais reais do protocolo.
+          </p>
+          <pre><code class="language-text">sequence -> sequencer -> driver -> interface/DUT
+                              |
+monitor <- interface/DUT -----+</code></pre>
+          <p>
+            O monitor continua com a mesma função conceitual que você já viu nos blocos anteriores:
+            observar sinais, reconstruir a transação real e publicar essa transação para consumidores
+            como scoreboard e coverage.
+          </p>
+
+          <details class="expand-block" open>
+            <summary>Como ler cada papel sem decorar</summary>
+            <div class="detail-body">
+              <ul>
+                <li><strong>Sequence item:</strong> é a unidade de estímulo, como uma transação de escrita/leitura.</li>
+                <li><strong>Sequence:</strong> é o roteiro que cria vários itens, randomiza e controla a ordem.</li>
+                <li><strong>Sequencer:</strong> é o mediador entre sequence e driver.</li>
+                <li><strong>Driver:</strong> conhece o protocolo elétrico/temporal da interface e dirige sinais.</li>
+                <li><strong>Monitor:</strong> não dirige nada; observa e publica o que aconteceu de verdade.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="agent-env">Agent e environment</h2>
+          <p>
+            O agent é o pacote reutilizável de uma interface. Ele reúne monitor, e quando ativo também
+            driver e sequencer. O environment reúne agents e componentes globais, como scoreboards,
+            coverage collectors e configurações compartilhadas.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm1_reusable_vc_crop.png" alt="Verification component environment com agents, monitores, drivers e DUT">
+            <figcaption>
+              Em um ambiente real, você pode ter agents de master, slave e monitores de barramento. A reutilização
+              vem de encapsular protocolo e configuração dentro de componentes bem definidos.
+            </figcaption>
+          </figure>
+          <div class="split">
+            <div class="note-box">
+              <h3>Agent ativo</h3>
+              <p>Tem sequencer, driver e monitor. Gera estímulo e observa resposta.</p>
+            </div>
+            <div class="note-box">
+              <h3>Agent passivo</h3>
+              <p>Tem apenas monitor. Serve para observar, checar e coletar cobertura sem interferir no DUT.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="factory">Factory</h2>
+          <p>
+            A factory é um dos conceitos que parecem burocráticos até você precisar trocar uma classe
+            sem reescrever o ambiente. Em vez de criar tudo com <code>new()</code>, UVM usa
+            <code>type_id::create()</code>. Isso permite override: um teste pode substituir um driver,
+            uma sequence ou um item por uma versão derivada.
+          </p>
+          <pre><code class="language-systemverilog">my_driver drv;
+
+function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+  drv = my_driver::type_id::create("drv", this);
+endfunction</code></pre>
+          <details class="expand-block">
+            <summary>Por que isso importa para reuso?</summary>
+            <div class="detail-body">
+              <p>
+                Imagine que o ambiente padrão usa um driver normal. Para um teste de erro, você precisa de um
+                driver que insira atraso, force idle ou gere uma condição excepcional. Se tudo foi criado por
+                factory, o teste pode trocar a implementação sem mexer no código do environment.
+              </p>
+              <p>
+                Essa é a diferença entre um testbench que funciona uma vez e um ambiente que aceita variações
+                de regressão.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="tlm">TLM: comunicação por contrato</h2>
+          <p>
+            TLM significa <em>Transaction Level Modeling</em>. Em UVM, TLM é o conjunto de portas, exports e
+            interfaces usadas para passar transações entre componentes sem acoplar diretamente as classes.
+            Em vez de um componente conhecer a implementação interna do outro, ele conhece um contrato:
+            <code>put</code>, <code>get</code>, <code>write</code>, FIFO, export etc.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mecanismo</th>
+                  <th>Ideia</th>
+                  <th>Quando usar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>put()</code></td>
+                  <td>Producer empurra uma transação para o consumer.</td>
+                  <td>Quando quem produz decide o momento de envio.</td>
+                </tr>
+                <tr>
+                  <td><code>get()</code></td>
+                  <td>Consumer puxa uma transação disponível.</td>
+                  <td>Quando quem consome controla o ritmo.</td>
+                </tr>
+                <tr>
+                  <td><code>uvm_tlm_fifo</code></td>
+                  <td>Fila TLM que desacopla producer e consumer.</td>
+                  <td>Quando os processos devem trabalhar em ritmos diferentes.</td>
+                </tr>
+                <tr>
+                  <td><code>analysis_port.write()</code></td>
+                  <td>Publica uma transação para um ou mais subscribers.</td>
+                  <td>Monitor para scoreboard, coverage e outros observadores.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block" open>
+            <summary>Exemplo mental de TLM</summary>
+            <div class="detail-body">
+              <pre><code class="language-text">monitor observa interface
+monitor cria transação observada
+monitor.ap.write(transação)
+scoreboard recebe
+coverage recebe</code></pre>
+              <p>
+                O monitor não precisa saber como o scoreboard compara, nem como o coverage calcula bins.
+                Ele só publica uma transação. Esse desacoplamento é o que permite reuso.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="analysis-port">Analysis ports e subscribers</h2>
+          <p>
+            A analysis port é uma porta TLM especializada: sua interface essencial é uma chamada
+            <code>write()</code>. Ela é muito usada em monitores porque monitor normalmente publica fatos
+            observados para vários consumidores.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm1_analysis_port_crop.png" alt="Analysis port distribuindo transações para subscribers">
+            <figcaption>
+              A analysis port faz fanout: uma transação publicada pode ir para scoreboard, coverage collector
+              e outros subscribers. Não é handshake; é publicação.
+            </figcaption>
+          </figure>
+          <pre><code class="language-systemverilog">class my_monitor extends uvm_monitor;
+  uvm_analysis_port #(simple_trans) ap;
+
+  function new(string name, uvm_component parent);
+    super.new(name, parent);
+    ap = new("ap", this);
+  endfunction
+
+  task run_phase(uvm_phase phase);
+    simple_trans t;
+    forever begin
+      // Capturar sinais da interface e montar t.
+      ap.write(t);
+    end
+  endtask
+endclass</code></pre>
+          <details class="expand-block">
+            <summary>Pegadinha: todos recebem o mesmo handle</summary>
+            <div class="detail-body">
+              <p>
+                Quando vários subscribers recebem a mesma transação, eles podem receber um handle para o
+                mesmo objeto. Se um subscriber modificar o objeto sem copiar, ele pode afetar os outros.
+                Por isso uma regra prática é: subscriber que pretende guardar ou modificar a transação deve
+                fazer uma cópia local.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="ponte">Ponte com o que já estudamos</h2>
+          <p>
+            A forma mais saudável de aprender UVM é mapear cada peça para algo que você já viu no
+            testbench manual. Assim a biblioteca deixa de parecer um conjunto de nomes soltos.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Antes, no testbench manual</th>
+                  <th>Em UVM</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Transação/packet manual</td><td><code>uvm_sequence_item</code></td></tr>
+                <tr><td>Generator</td><td><code>uvm_sequence</code> + <code>uvm_sequencer</code></td></tr>
+                <tr><td>Driver manual</td><td><code>uvm_driver</code></td></tr>
+                <tr><td>Monitor manual</td><td><code>uvm_monitor</code> com <code>analysis_port</code></td></tr>
+                <tr><td>Scoreboard manual</td><td><code>uvm_scoreboard</code> ou subscriber/checker</td></tr>
+                <tr><td>Environment manual</td><td><code>uvm_env</code></td></tr>
+                <tr><td>Mailbox/queue</td><td>TLM ports, exports e FIFOs</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão forte</h2>
+          <div class="quiz-card">
+            <strong>O que é UVM?</strong>
+            Metodologia e biblioteca SystemVerilog para criar ambientes de verificação reutilizáveis.
+          </div>
+          <div class="quiz-card">
+            <strong>Qual é a diferença entre <code>uvm_object</code> e <code>uvm_component</code>?</strong>
+            <code>uvm_object</code> modela dados/objetos; <code>uvm_component</code> modela blocos hierárquicos com fases.
+          </div>
+          <div class="quiz-card">
+            <strong>Para que serve TLM?</strong>
+            Para comunicar transações entre componentes por contratos padronizados, reduzindo acoplamento.
+          </div>
+          <div class="quiz-card">
+            <strong>Por que analysis port é importante?</strong>
+            Porque permite que o monitor publique a mesma transação para scoreboard, coverage e outros consumidores.
+          </div>
+        </section>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_6_systemverilog_reference_design_2.html">Anterior: Reference Design-2</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_8_systemverilog_for_uvm_2.html">Próximo: UVM 2</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

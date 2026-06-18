@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design Setup for Physical Synthesis</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">07 Design Compiler NXT</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">DC NXT</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">07 Design Compiler NXT</a><span>/</span>Design Setup
+    </nav>
+
+    <h1 class="page-title">Design Setup for Physical Synthesis</h1>
+    <p class="lead">
+      Uma aula única reunindo as partes A, B e C: bibliotecas lógicas, leitura do RTL, link,
+      checks, bibliotecas físicas, design library, TLUPlus, floorplan e revisão dos quizzes.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo da aula</h2>
+          <p>
+            A primeira aula do curso explicou o que é physical synthesis. Esta aula responde a pergunta prática:
+            o que precisa estar preparado para que o Design Compiler NXT consiga sintetizar um design com
+            consciência física?
+          </p>
+          <p>
+            A resposta tem duas camadas. Primeiro, existe o <strong>setup lógico</strong>: bibliotecas
+            <code>.db</code>, caminhos, leitura do RTL, elaboração, link e checks. Depois vem o
+            <strong>setup físico</strong>: bibliotecas NDM, technology file, TLUPlus, layer mapping,
+            design library e floorplan. Sem essa separação mental, os scripts Synopsys parecem uma lista
+            de comandos soltos; com ela, o fluxo passa a ter uma ordem natural.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa-geral">Mapa geral do setup</h2>
+          <p>
+            Antes do <code>compile_ultra</code>, o DC NXT precisa ter uma resposta clara para cinco perguntas.
+            Essas perguntas são uma boa forma de depurar qualquer laboratório de síntese.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Com quais células?</strong>
+              <code>target_library</code>, bibliotecas lógicas <code>.db</code> e células disponíveis.
+            </div>
+            <div class="flow-step">
+              <strong>2. Onde estão as referências?</strong>
+              <code>link_library</code>, <code>search_path</code>, macros, IPs e subdesigns.
+            </div>
+            <div class="flow-step">
+              <strong>3. Qual é o design?</strong>
+              <code>analyze</code>, <code>elaborate</code>, <code>current_design</code>, <code>link</code>.
+            </div>
+          </div>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>4. Qual é o mundo físico?</strong>
+              NDM, technology file, TLUPlus, layer mapping e design library.
+            </div>
+            <div class="flow-step">
+              <strong>5. Qual é o problema de timing?</strong>
+              SDC, clocks, delays, loads, constraints físicas e reports.
+            </div>
+            <div class="flow-step">
+              <strong>6. Como repetir?</strong>
+              Tcl versionado, Makefile, logs, reports e saídas organizadas.
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Frase para guardar:</strong> síntese não começa no compile. O compile só faz sentido
+            depois que bibliotecas, design, constraints e contexto físico estão coerentes.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="setup-logico">Parte 1: setup lógico</h2>
+          <p>
+            O setup lógico prepara a ferramenta para transformar RTL em uma representação interna e depois em
+            células reais de uma tecnologia. A biblioteca lógica, geralmente em formato <code>.db</code>, traz
+            função, timing, área, potência e regras elétricas das células.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Conceito</th>
+                  <th>Para que serve</th>
+                  <th>Erro comum</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>target_library</code></td>
+                  <td>Define as células reais que o compile pode usar para mapear o RTL.</td>
+                  <td>Esquecer a biblioteca alvo ou apontar para corner errado.</td>
+                </tr>
+                <tr>
+                  <td><code>link_library</code></td>
+                  <td>Resolve referências a subdesigns, macros, IPs e células já instanciadas.</td>
+                  <td>Não incluir <code>*</code> ou não incluir macros usadas pelo RTL.</td>
+                </tr>
+                <tr>
+                  <td><code>search_path</code></td>
+                  <td>Diz onde a ferramenta procura arquivos sem caminho absoluto.</td>
+                  <td>Rodar o script de outro diretório e quebrar caminhos relativos.</td>
+                </tr>
+                <tr>
+                  <td><code>gtech.db</code></td>
+                  <td>Representação genérica da lógica antes do mapeamento tecnológico.</td>
+                  <td>Achar que GTECH é uma biblioteca física final.</td>
+                </tr>
+                <tr>
+                  <td><code>standard.sldb</code></td>
+                  <td>Representa operadores e blocos genéricos, como aritmética e comparadores.</td>
+                  <td>Confundir DesignWare genérico com células da tecnologia alvo.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>set_app_var target_library {libs/saed32_wc.db}
+set_app_var link_library   "* $target_library libs/sram.db"
+set_app_var search_path    ". ./rtl ./scripts ./libs"</code></pre>
+
+          <details class="expand-block">
+            <summary>Por que <code>set_app_var</code> aparece tanto?</summary>
+            <div class="detail-body">
+              <p>
+                <code>set_app_var</code> altera variáveis reconhecidas pela aplicação Synopsys. Já
+                <code>set</code> cria ou altera uma variável Tcl comum. Em scripts do DC NXT, usar
+                <code>set_app_var</code> deixa explícito que você está configurando o comportamento da
+                ferramenta, não apenas guardando texto em uma variável local.
+              </p>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary>Por que o <code>*</code> aparece em <code>link_library</code>?</summary>
+            <div class="detail-body">
+              <p>
+                O asterisco representa designs já carregados na memória do DC NXT. Sem ele, a ferramenta pode
+                procurar referências apenas nos arquivos indicados e ignorar designs que você já analisou ou
+                leu na sessão atual.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="ler-design">Ler, elaborar, linkar e checar</h2>
+          <p>
+            Depois das bibliotecas, vem a criação do design dentro da ferramenta. Essa etapa é mais do que
+            "abrir arquivos". O DC NXT precisa analisar o código, construir a hierarquia, resolver parâmetros
+            e confirmar que todas as referências existem.
+          </p>
+
+          <div class="concept-grid">
+            <div class="concept-card">
+              <span class="mini-label">analyze</span>
+              <h3>Lê arquivos fonte</h3>
+              <p>
+                Verifica sintaxe, linguagem e dependências. O resultado vai para uma biblioteca de trabalho.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">elaborate</span>
+              <h3>Constrói a hierarquia</h3>
+              <p>
+                Resolve parâmetros, instâncias e define o design que será manipulado pela ferramenta.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">link</span>
+              <h3>Resolve referências</h3>
+              <p>
+                Liga instâncias a designs, macros ou células de biblioteca. Referências não resolvidas são sinal vermelho.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">check_design</span>
+              <h3>Audita antes do compile</h3>
+              <p>
+                Procura problemas estruturais que podem tornar a síntese inválida ou enganosa.
+              </p>
+            </div>
+          </div>
+
+          <pre><code>define_design_lib WORK -path ./work
+
+analyze -format sverilog {
+  rtl/pkg.sv
+  rtl/alu.sv
+  rtl/control.sv
+  rtl/top.sv
+}
+
+elaborate top
+current_design top
+link
+check_design</code></pre>
+
+          <div class="warning callout">
+            <strong>Risco real:</strong> um compile pode até terminar com warnings graves, mas a netlist gerada
+            não representar o design que você acha que sintetizou. Por isso <code>link</code> e
+            <code>check_design</code> não são enfeites.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ddc">Salvar o estado: unmapped e mapped DDC</h2>
+          <p>
+            O formato <code>.ddc</code> é nativo da Synopsys e preserva o estado interno do design. A aula
+            sugere salvar antes e depois do compile.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Momento</th>
+                  <th>Arquivo típico</th>
+                  <th>Por que é útil</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Antes do compile</td>
+                  <td><code>unmapped/top.ddc</code></td>
+                  <td>Congela o design elaborado, linkado e ainda não mapeado.</td>
+                </tr>
+                <tr>
+                  <td>Depois do compile</td>
+                  <td><code>mapped/top.ddc</code></td>
+                  <td>Guarda a netlist sintetizada para análise e etapas posteriores.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>write_file -format ddc -hierarchy -output unmapped/${TOP}.ddc
+
+compile_ultra
+
+write_file -format ddc -hierarchy -output mapped/${TOP}.ddc</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="setup-fisico">Parte 2: setup físico</h2>
+          <p>
+            Para physical synthesis, a biblioteca lógica não basta. A ferramenta precisa enxergar a tecnologia
+            física: tamanho das células, localização de pinos, camadas metálicas, vias, modelos RC e alguma
+            informação de floorplan.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Elemento físico</th>
+                  <th>O que informa ao DC NXT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Physical cell library <code>.ndm</code></td>
+                  <td>Tamanho das células, frame view, localização de pinos, macros e IPs físicos.</td>
+                </tr>
+                <tr>
+                  <td>Technology file <code>.tf</code></td>
+                  <td>Camadas, vias, regras físicas, pitch, width, spacing e sites.</td>
+                </tr>
+                <tr>
+                  <td>TLUPlus</td>
+                  <td>Tabelas/modelos para estimar resistência e capacitância das nets.</td>
+                </tr>
+                <tr>
+                  <td>Layer mapping file</td>
+                  <td>Mapeia nomes de camadas entre technology file e TLUPlus.</td>
+                </tr>
+                <tr>
+                  <td>Design library</td>
+                  <td>Contêiner físico do projeto, com tecnologia e referências físicas.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Resumo mental:</strong> <code>.db</code> diz como a célula funciona e quanto atrasa.
+            <code>.ndm</code> diz como ela existe fisicamente. TLUPlus diz como estimar o fio.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ndm-frame">NDM, physical cell library e frame view</h2>
+          <p>
+            Uma physical cell library contém descrições físicas de standard cells, macros e IO pads. No DC NXT,
+            aparece no contexto de NDM e frame view. A frame view não precisa mostrar o layout transistor por
+            transistor; ela precisa mostrar o suficiente para a ferramenta estimar placement e interconexão.
+          </p>
+
+          <div class="concept-grid">
+            <div class="concept-card">
+              <span class="mini-label">Standard cell</span>
+              <h3>Peça pequena do mapeamento</h3>
+              <p>
+                Inversores, NANDs, NORs, muxes e flip-flops. Têm altura padronizada e várias opções de drive.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">Macro / IP</span>
+              <h3>Bloco físico grande</h3>
+              <p>
+                RAMs, ROMs, PLLs e blocos fechados. A ferramenta precisa conhecer seu tamanho e seus pinos,
+                mas não reescreve sua lógica interna.
+              </p>
+            </div>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Quiz importante</strong>
+            <p>
+              A frame view de uma physical cell library define principalmente:
+              <span class="answer">o contorno da célula e a localização dos pinos</span>.
+              Não confunda isso com as regras físicas da tecnologia.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="technology-tluplus">Technology file, TLUPlus e layer mapping</h2>
+          <p>
+            O technology file descreve o processo físico: camadas, vias, números de camadas, regras de largura,
+            espaçamento, área, pitch e sites. Ele não é uma biblioteca lógica e não define "DRC lógico".
+            A pegadinha do curso é justamente essa: o technology file define <strong>DRCs físicas</strong>.
+          </p>
+
+          <pre><code>Technology file (.tf)
+  -> METAL1, METAL2, vias, sites
+  -> physical DRCs: width, spacing, pitch
+
+TLUPlus
+  -> modelos RC das interconexões
+
+Layer mapping
+  -> METAL1 do .tf equivale a cm1 do TLUPlus</code></pre>
+
+          <details class="expand-block">
+            <summary>Por que TLUPlus e layer mapping trabalham juntos?</summary>
+            <div class="detail-body">
+              <p>
+                O TLUPlus fornece modelos RC, mas pode usar nomes de camadas diferentes dos nomes do technology
+                file. O mapping file é o tradutor. Sem esse casamento, a ferramenta pode carregar arquivos, mas
+                não associar corretamente os modelos RC às camadas físicas.
+              </p>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary>Direção preferencial de roteamento</summary>
+            <div class="detail-body">
+              <p>
+                O slide observa que a direção preferencial das camadas não vem automaticamente do technology file.
+                Ela pode ser especificada por comando, depois que já existe um <code>current_design</code>.
+              </p>
+              <pre><code>set_preferred_routing_direction -layers {M1 M3 M5 M7} \
+    -direction horizontal
+set_preferred_routing_direction -layers {M2 M4 M6 M8 MRDL} \
+    -direction vertical</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="design-library">Design library</h2>
+          <p>
+            A design library é o contêiner físico usado pelo DC NXT. Ela guarda dados de tecnologia e aponta
+            para as bibliotecas físicas de referência. Ela não é a mesma coisa que uma physical cell library:
+            a physical cell library é o catálogo das peças; a design library é o ambiente físico do projeto.
+          </p>
+
+          <pre><code>set ndm_reference_library ../CLIB/saed32_lvt.ndm
+set ndm_design_library    ./MY_design.dlib
+
+create_lib \
+    -ref_libs   $ndm_reference_library \
+    -technology ./tech/saed32_1p9m.tf \
+    $ndm_design_library
+
+check_library
+
+set_tlu_plus_files \
+    -max_tluplus  ./tech/saed32_1p9m_Cmax.tluplus \
+    -tech2itf_map ./tech/saed32_tf_itf_tluplus.map</code></pre>
+
+          <p>
+            Em execuções posteriores, o script pode abrir a design library existente em vez de recriá-la:
+          </p>
+
+          <pre><code>if {![file isdirectory $ndm_design_library]} {
+    create_lib -ref_libs $ndm_reference_library \
+        -technology ./tech/saed32_1p9m.tf \
+        $ndm_design_library
+    check_library
+} else {
+    open_lib $ndm_design_library
+}
+
+set_tlu_plus_files \
+    -max_tluplus  $TLUPLUS_MAX_FILE \
+    -tech2itf_map $MAP_FILE</code></pre>
+
+          <div class="warning callout">
+            <strong>Detalhe de laboratório:</strong> mesmo abrindo uma design library existente, os slides indicam
+            que TLUPlus e map file devem ser carregados novamente na sessão.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="floorplan">Floorplan e o problema netlist versus floorplan</h2>
+          <p>
+            O curso chama atenção para o problema clássico: physical synthesis quer floorplan, mas design planning
+            quer uma netlist inicial. A solução é um fluxo em duas fases.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fase</th>
+                  <th>O que existe</th>
+                  <th>Objetivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Pre-floorplan synthesis</td>
+                  <td>Defaults ou constraints físicas aproximadas.</td>
+                  <td>Gerar uma netlist inicial para planejar o floorplan.</td>
+                </tr>
+                <tr>
+                  <td>Design Planning no ICC II</td>
+                  <td>Netlist inicial.</td>
+                  <td>Criar floorplan real com core, macros, ports e blockages.</td>
+                </tr>
+                <tr>
+                  <td>Post-floorplan synthesis</td>
+                  <td>Floorplan real carregado no DC NXT.</td>
+                  <td>Gerar netlist com melhor correlação física.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Quando ainda não existe floorplan real
+set_utilization 0.8
+set_aspect_ratio 0.5
+create_die_area -coordinate {{0 0} {600 400}}
+set_cell_location -coordinate {400 160} -fixed -orientation {N} RAM1
+
+# Quando o floorplan real já existe
+read_floorplan floorplan_def/floorplan.tcl</code></pre>
+
+          <div class="lesson-note">
+            <strong>Leitura prática:</strong> na pre-floorplan synthesis, você usa aproximações. Na
+            post-floorplan synthesis, você relê dados reais do planejamento físico.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="organizacao-scripts">Organização de scripts</h2>
+          <p>
+            Esta aula também é uma aula de higiene de projeto. Em vez de jogar tudo em um único script enorme,
+            o fluxo Synopsys costuma separar variáveis editáveis, setup reutilizável e fluxo principal.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong><code>.synopsys_dc.setup</code></strong>
+              Configurações iniciais da ferramenta, histórico e aliases.
+            </div>
+            <div class="check-item">
+              <strong><code>common_setup.tcl</code></strong>
+              Variáveis do projeto: top, bibliotecas, caminhos, arquivos de tecnologia.
+            </div>
+            <div class="check-item">
+              <strong><code>dc_setup.tcl</code></strong>
+              Script reutilizável que aplica setup lógico e físico.
+            </div>
+            <div class="check-item">
+              <strong><code>dc.tcl</code></strong>
+              Script principal: lê RTL, aplica constraints, compila, reporta e exporta.
+            </div>
+          </div>
+
+          <pre><code>source common_setup.tcl
+source dc_setup.tcl
+
+define_design_lib WORK -path ./work
+analyze -format sverilog $RTL_FILES
+elaborate $TOP
+current_design $TOP
+link
+check_design
+
+write_file -format ddc -hierarchy -output unmapped/${TOP}.ddc
+
+source constraints/${TOP}.sdc
+source constraints/${TOP}_phys_cons.tcl
+
+compile_ultra
+report_constraint -all_violators
+report_timing
+write_file -format ddc -hierarchy -output mapped/${TOP}.ddc
+write_icc2_files -out outputs/${TOP}_icc2</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao-quizzes">Parte 3: revisão e quizzes</h2>
+          <p>
+            A parte C da aula é curta, mas importante porque mira exatamente nas confusões que caem em prova
+            e que também quebram laboratório.
+          </p>
+
+          <div class="quiz-card">
+            <strong>Physical cell library versus design library</strong>
+            <p>
+              <span class="answer">Physical cell library</span>: descrições físicas de standard cells, macros
+              e IO pads. <span class="answer">Design library</span>: contêiner do design físico e dados associados.
+            </p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Frame view</strong>
+            <p>
+              Define o contorno da célula e a localização dos pinos. Não é a definição principal de DRC físico.
+            </p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>TLUPlus + layer mapping</strong>
+            <p>
+              Verdadeiro: a modelagem RC parasitária das nets é fornecida com TLUPlus e arquivos de mapeamento
+              de camadas.
+            </p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Technology file define logic DRC?</strong>
+            <p>
+              Falso. Ele define DRCs físicas, como minimum spacing, width e pitch, além de camadas, vias e sites.
+            </p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>Quando aplicar physical constraints?</strong>
+            <p>
+              Antes da pre-floorplan synthesis, se há restrições físicas estimadas; e antes da post-floorplan
+              synthesis, quando o floorplan real já foi criado e carregado por DEF/Floorplan Tcl.
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Aplicação no nosso projeto</h2>
+          <p>
+            Para o laboratório do professor, esta aula sugere uma evolução bem concreta. O projeto deve sair de
+            "scripts manuais que simulam" para um ambiente onde cada etapa tem alvo, log e saída rastreável.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Agora</th>
+                  <th>Próximo passo saudável</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RTL e testbench no mesmo universo mental.</td>
+                  <td>Separar filelist de síntese e filelist de simulação.</td>
+                </tr>
+                <tr>
+                  <td>Script executado manualmente.</td>
+                  <td>Makefile chamando Tcl e preservando logs.</td>
+                </tr>
+                <tr>
+                  <td>Simulação como prova principal.</td>
+                  <td>Adicionar alvo de síntese com SDC mínimo e reports.</td>
+                </tr>
+                <tr>
+                  <td>Pouca rastreabilidade de warnings.</td>
+                  <td>Guardar <code>check_design</code>, <code>report_constraint</code> e <code>report_timing</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Estratégia:</strong> não tentar implementar todo SPG de uma vez. Primeiro deixar o bloco
+            entrar limpo no DC NXT com bibliotecas e SDC. Depois, se o ambiente do professor trouxer tecnologia,
+            NDM e TLUPlus prontos, avançar para topographical/physical synthesis.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Bases Markdown:
+          <a data-md-source href="../../assets/md_normalizado/02_Design_Setup_for_Physical_Synthesis_parte_A.md">parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_Design_Setup_for_Physical_Synthesis_parte_B.md">parte B</a> e
+          <a data-md-source href="../../assets/md_normalizado/02_Design_Setup_for_Physical_Synthesis_parte_C.md">parte C</a>.
+          Próxima fonte:
+          <a data-md-source href="../../assets/md_normalizado/03_Accessing_Design_and_Library_Objects.md">03 Accessing Design and Library Objects</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_7_1_introducao_physical_synthesis.html">Anterior: Physical Synthesis</a>
+          <a href="bloco_7_3_accessing_design_and_library_objects.html">Próxima: Accessing Design and Library Objects</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base em Markdown de aulas2.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

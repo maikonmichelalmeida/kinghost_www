@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>06 SystemVerilog for RTL Design</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">06 SystemVerilog for RTL Design</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Este curso</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span>06 SystemVerilog for RTL Design
+    </nav>
+
+    <h1 class="page-title">06 SystemVerilog for RTL Design</h1>
+    <p class="lead">
+      Curso focado em escrever RTL sintetizável em SystemVerilog com intenção explícita: tipos, blocos combinacionais,
+      registradores, FSMs, interfaces, parâmetros, pacotes, wrappers e cuidados que afetam síntese e qualidade de resultado.
+    </p>
+
+    <section class="section">
+      <h2>Mapa do curso</h2>
+      <p>
+        Este curso é especialmente importante para o nosso objetivo porque fica entre dois mundos: a escrita do design RTL e
+        o modo como a ferramenta de síntese entende esse design. A ideia não é apenas trocar Verilog por SystemVerilog, mas
+        escrever código que deixe clara a intenção de hardware para simulador, sintetizador e revisão humana.
+      </p>
+
+      <div class="lesson-grid">
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Bloco 1 - Bases de RTL sintetizável</h3>
+          <p>
+            `logic`, portas ANSI, `output logic`, `always_comb`, inferência de latch, `priority`, `unique`, `always_ff`,
+            resets, atribuições não bloqueantes e enums para FSM.
+          </p>
+          <a class="button-link" href="bloco_1_1a_logic_always_comb_always_ff_fsm.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Bloco 2 - FSM, X, case inside, arrays e structs</h3>
+          <p>
+            Codificação binária versus one-hot, `unique0`, operadores com don't-care, cuidado com `casex/casez`, tri-state,
+            arrays, structs e organização de dados para RTL.
+          </p>
+          <a class="button-link" href="bloco_1_1b_fsm_x_case_arrays_structs.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Bloco 3 - Interfaces, modports, parâmetros e wrappers</h3>
+          <p>
+            Interfaces como contrato de conexão, modports, suporte de síntese, parametrização, wrappers e integração com
+            hierarquia de projeto.
+          </p>
+          <a class="button-link" href="bloco_1_1c_interfaces_modports_wrappers.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Bloco 4 - Packages, QoR, DesignWare e signed arithmetic</h3>
+          <p>
+            Pacotes, estilo de codificação, qualidade de resultado, operadores aritméticos, bibliotecas DesignWare e efeitos
+            práticos na síntese.
+          </p>
+          <a class="button-link" href="bloco_1_1d_packages_qor_designware_signed.html">Estudar aula</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Curso Concluído</h2>
+      <p>
+        O curso 06 agora está fechado em quatro blocos. A linha mestra é escrever SystemVerilog como descrição clara de
+        hardware: tipos explícitos, blocos com intenção, FSMs previsíveis, interfaces e wrappers quando a conectividade cresce,
+        packages para definições compartilhadas e estilo de datapath pensando em QoR.
+      </p>
+      <p>
+        A transição natural é o curso 07, Design Compiler NXT / RTL Synthesis, porque agora já temos a base de RTL necessária
+        para entender melhor análise, elaboração, link, constraints, compile e reports.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Por que este curso importa agora?</h2>
+      <div class="concept-grid">
+        <article class="concept-card">
+          <h3>Para o CPU</h3>
+          <p>
+            Ajuda a revisar portas, registradores, resets, lógica combinacional, muxes e FSMs antes de entrar em síntese.
+            Muitos bugs de laboratório aparecem exatamente nessas fronteiras.
+          </p>
+        </article>
+
+        <article class="concept-card">
+          <h3>Para o ambiente do professor</h3>
+          <p>
+            O ambiente automatizado provavelmente espera blocos organizados, simuláveis e sintetizáveis. Código RTL mais
+            explícito facilita Makefile, scripts de síntese, lint mental, reports e debug.
+          </p>
+        </article>
+
+        <article class="concept-card warn">
+          <h3>Para prova e entrevistas</h3>
+          <p>
+            As pegadinhas deste curso são clássicas: latch involuntário, `wire` versus `logic`, reset assíncrono mal descrito,
+            `priority/unique` usados sem cuidado e diferença entre simulação e síntese.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Critério de qualidade deste curso</h2>
+      <p>
+        Como os slides desta seção são muito baseados em self-checks, a página não tenta reproduzir prints de texto. O método
+        usado aqui é converter o conteúdo em exemplos editáveis, explicar a intenção de hardware e fechar com regra prática
+        para o projeto. Quando houver diagrama, waveform ou figura realmente informativa nos próximos blocos, ela entra como
+        recorte curado.
+      </p>
+    </section>
+
+    <nav class="pager" aria-label="Navegação entre páginas">
+      <a href="../../index.html">Voltar para cursos</a>
+      <a href="bloco_1_1d_packages_qor_designware_signed.html">Última aula processada</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog for UVM 2</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>UVM 2
+    </nav>
+
+    <h1 class="page-title">SystemVerilog for UVM 2</h1>
+    <p class="lead">
+      Aula operacional de UVM: como criar data items, usar knobs, escrever driver e monitor,
+      conectar sequencer, montar agent/environment e controlar fim de teste com objections.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            A aula anterior explicou a arquitetura. Esta aula desce para o modo de implementação.
+            O caminho completo é: criar um item de transação, gerar esse item em uma sequence,
+            entregar ao driver por um sequencer, dirigir a interface, observar a resposta no monitor,
+            publicar para scoreboard/coverage e encerrar o teste corretamente.
+          </p>
+          <pre><code class="language-text">uvm_sequence_item
+    -> uvm_sequence / uvm_sequencer
+    -> uvm_driver
+    -> DUT/interface
+    -> uvm_monitor
+    -> scoreboard + coverage
+    -> uvm_agent / uvm_env / uvm_test</code></pre>
+          <div class="callout">
+            <strong>Resumo forte:</strong> UVM padroniza a arquitetura, mas não verifica nada sozinho.
+            Você ainda precisa modelar bons itens, bons checks, boa cobertura e um driver que respeite o protocolo.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="data-item">Data item: a transação em UVM</h2>
+          <p>
+            O data item é a unidade de estímulo e observação. Em um barramento, pode representar leitura,
+            escrita, endereço, dado, byte enable, burst, delay e resposta. Em um bloco simples, pode representar
+            apenas opcode, operandos e resultado esperado. O ponto é: o item deve carregar a informação necessária
+            para uma operação de alto nível, não os detalhes temporais de cada sinal.
+          </p>
+          <pre><code class="language-systemverilog">class simple_item extends uvm_sequence_item;
+  rand int unsigned addr;
+  rand int unsigned data;
+  rand int unsigned delay;
+
+  constraint legal_addr { addr inside {[0:255]}; }
+  constraint legal_delay { delay inside {[0:10]}; }
+
+  `uvm_object_utils_begin(simple_item)
+    `uvm_field_int(addr,  UVM_ALL_ON)
+    `uvm_field_int(data,  UVM_ALL_ON)
+    `uvm_field_int(delay, UVM_ALL_ON)
+  `uvm_object_utils_end
+
+  function new(string name = "simple_item");
+    super.new(name);
+  endfunction
+endclass</code></pre>
+          <p>
+            A herança de <code>uvm_sequence_item</code> coloca o item no mundo das sequences e sequencers.
+            As field macros registram campos para automações como print, copy, compare e debug. Elas não
+            substituem pensamento de verificação; elas reduzem código repetitivo.
+          </p>
+
+          <details class="expand-block">
+            <summary>Por que data item não é componente?</summary>
+            <div class="detail-body">
+              <p>
+                O data item não fica permanentemente na hierarquia. Ele nasce, é randomizado, viaja pelo
+                sequencer até o driver, pode ser publicado por um monitor, comparado pelo scoreboard e depois
+                descartado. Por isso deriva de <code>uvm_sequence_item</code>, não de <code>uvm_component</code>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="knobs">Knobs: controle abstrato de estímulo</h2>
+          <p>
+            Knobs são campos de controle que ajudam a escrever testes sem mexer em todas as constraints internas.
+            Em vez de o teste conhecer cada faixa de delay, cada corner case e cada distribuição, ele ajusta um
+            parâmetro de intenção: curto, médio, longo, burst, idle, modo erro, modo normal etc.
+          </p>
+          <pre><code class="language-systemverilog">typedef enum { SHORT_DELAY, MEDIUM_DELAY, LONG_DELAY } delay_kind_e;
+
+class simple_item extends uvm_sequence_item;
+  rand int unsigned delay;
+  rand delay_kind_e delay_kind;
+
+  constraint delay_by_kind {
+    delay_kind == SHORT_DELAY  -> delay inside {[0:2]};
+    delay_kind == MEDIUM_DELAY -> delay inside {[3:6]};
+    delay_kind == LONG_DELAY   -> delay inside {[7:20]};
+  }
+endclass</code></pre>
+          <p>
+            Isso melhora a escrita de cenários. Um teste pode dizer “quero tráfego com atraso longo” sem copiar
+            regras internas. Quando o ambiente crescer, essa diferença vira manutenção mais simples.
+          </p>
+          <details class="expand-block">
+            <summary>Onde entra <code>solve before</code>?</summary>
+            <div class="detail-body">
+              <p>
+                Quando uma variável de controle influencia outra, pode ser útil orientar o solver:
+                primeiro escolha o knob, depois resolva o campo dependente. Isso evita distribuições estranhas
+                quando a intenção do teste é controlar uma categoria antes dos valores concretos.
+              </p>
+              <pre><code class="language-systemverilog">constraint ordering {
+  solve delay_kind before delay;
+}</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arquitetura">Componentes transacionais</h2>
+          <p>
+            A figura da aula mostra a arquitetura transacional: sequencer gera/fornece dados ao driver,
+            driver dirige a interface, monitor observa a interface e analysis distribui transações para
+            consumidores. A versão recomendada agrupa monitor, driver, sequencer e analysis dentro de um agent.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm2_transaction_level_components_crop.png" alt="Componentes transacionais UVM e agrupamento recomendado em agent">
+            <figcaption>
+              À esquerda, os elementos aparecem soltos. À direita, UVM recomenda agrupá-los em um agent,
+              que vira a unidade reutilizável de verificação de uma interface.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="driver">Driver: contrato com o sequencer</h2>
+          <p>
+            O driver é o tradutor entre transação e sinais. Ele não inventa estímulo; ele pede um item ao
+            sequencer, executa esse item no protocolo real e informa quando terminou. O trio fundamental é:
+          </p>
+          <pre><code class="language-systemverilog">task run_phase(uvm_phase phase);
+  forever begin
+    seq_item_port.get_next_item(req);
+    drive_item(req);
+    seq_item_port.item_done();
+  end
+endtask</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm2_driver_sequencer_crop.png" alt="Conexão entre sequencer e driver por seq_item_port e seq_item_export">
+            <figcaption>
+              O sequencer entrega itens pelo <code>seq_item_export</code>; o driver consome pelo
+              <code>seq_item_port</code>. Essa conexão é feita no agent.
+            </figcaption>
+          </figure>
+
+          <details class="expand-block" open>
+            <summary><code>get_next_item()</code> é um contrato</summary>
+            <div class="detail-body">
+              <p>
+                Quando o driver chama <code>get_next_item(req)</code>, ele está dizendo ao sequencer:
+                “me entregue uma transação válida e segure essa transação como pendente até eu terminar”.
+                A chamada é bloqueante: se não houver item, o driver espera.
+              </p>
+              <p>
+                Quando o driver chama <code>item_done()</code>, ele libera o sequencer para avançar.
+                Se esquecer esse método, o sequencer pode ficar travado, porque do ponto de vista dele
+                o item anterior nunca terminou.
+              </p>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary><code>try_next_item()</code> e ciclos idle</summary>
+            <div class="detail-body">
+              <p>
+                Alguns protocolos precisam manter sinais idle mesmo quando não existe transação real a executar.
+                Nesse caso, <code>try_next_item()</code> permite consultar sem bloquear.
+              </p>
+              <pre><code class="language-systemverilog">seq_item_port.try_next_item(req);
+
+if (req == null) begin
+  drive_idle();
+end
+else begin
+  drive_item(req);
+  seq_item_port.item_done();
+end</code></pre>
+              <p>
+                Essa diferença é essencial: <code>get_next_item()</code> trava esperando item; <code>try_next_item()</code>
+                retorna imediatamente se não houver item.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="monitor">Monitor: observação, checks e cobertura</h2>
+          <p>
+            O monitor é passivo. Ele não deve depender do driver, porque a função dele é observar o que ocorreu
+            na interface, inclusive quando o driver está errado. Um bom monitor entende o protocolo: sabe quando
+            uma transação começou, quando terminou, qual dado é válido e em que ciclo a resposta deve ser lida.
+          </p>
+          <pre><code class="language-systemverilog">class master_monitor extends uvm_monitor;
+  virtual dut_if vif;
+  bit checks_enable = 1;
+  bit coverage_enable = 1;
+  uvm_analysis_port #(simple_item) ap;
+
+  covergroup cov_trans @(cov_transaction);
+    option.per_instance = 1;
+    // bins de endereço, operação, atraso, resposta etc.
+  endgroup
+
+  task run_phase(uvm_phase phase);
+    forever begin
+      simple_item item = collect_transaction_from_interface();
+
+      if (checks_enable)
+        check_protocol(item);
+
+      if (coverage_enable)
+        cov_transaction.trigger();
+
+      ap.write(item);
+    end
+  endtask
+endclass</code></pre>
+          <p>
+            A aula também mostra que checks e coverage podem ser configuráveis. Isso é útil quando o mesmo
+            monitor é usado em contextos diferentes: às vezes você quer checar tudo; às vezes quer apenas
+            observar e publicar.
+          </p>
+          <pre><code class="language-systemverilog">uvm_config_db#(bit)::set(this, "master0.monitor", "checks_enable", 0);</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="factory-config">Factory e configuração</h2>
+          <p>
+            UVM recomenda criar componentes com factory para permitir overrides. Isso aparece de novo nesta aula
+            quando o ambiente instancia driver, monitor, sequencer e agents. A configuração entra com
+            <code>uvm_config_db</code>, que permite passar virtual interfaces e parâmetros sem criar dependências
+            rígidas demais.
+          </p>
+          <pre><code class="language-systemverilog">if (!uvm_config_db #(virtual dut_if)::get(this, "", "vif", vif))
+  `uvm_fatal("NOVIF",
+    {"Virtual interface must be set for: ", get_full_name(), ".vif"})</code></pre>
+          <details class="expand-block">
+            <summary>Por que não passar tudo por construtor?</summary>
+            <div class="detail-body">
+              <p>
+                Em ambientes pequenos, passar handles por construtor parece simples. Em UVM, a hierarquia pode ser
+                profunda e componentes podem ser trocados por factory. O <code>uvm_config_db</code> permite configurar
+                uma região da hierarquia por nome/caminho, preservando flexibilidade.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="agent">Agent ativo e passivo</h2>
+          <p>
+            O agent é a unidade de reutilização de uma interface. Quando ativo, ele instancia monitor,
+            driver e sequencer. Quando passivo, instancia apenas monitor. Isso permite usar o mesmo agent
+            para dirigir um DUT em um teste e apenas observar o mesmo protocolo em outro contexto.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm2_agent_active_passive_crop.png" alt="Agent UVM com analysis, monitor, sequencer e driver">
+            <figcaption>
+              Agent ativo: monitor + sequencer + driver. Agent passivo: monitor e analysis, sem dirigir sinais.
+            </figcaption>
+          </figure>
+          <pre><code class="language-systemverilog">function void build_phase(uvm_phase phase);
+  super.build_phase(phase);
+
+  monitor = my_monitor::type_id::create("monitor", this);
+
+  if (is_active == UVM_ACTIVE) begin
+    sequencer = my_sequencer::type_id::create("sequencer", this);
+    driver    = my_driver   ::type_id::create("driver", this);
+  end
+endfunction
+
+function void connect_phase(uvm_phase phase);
+  if (is_active == UVM_ACTIVE)
+    driver.seq_item_port.connect(sequencer.seq_item_export);
+endfunction</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="environment">Environment configurável</h2>
+          <p>
+            O environment é onde a topologia maior aparece: quantos agents existem, quais são ativos,
+            quais são passivos, onde ficam scoreboards, coverage collectors e monitores globais. A aula
+            mostra um exemplo com múltiplos masters e slaves, típico de barramento.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_uvm2_environment_multiagent_crop.png" alt="Environment UVM com master agents, slave agents, bus monitor e DUT">
+            <figcaption>
+              O environment pode criar arrays de agents e configurar a quantidade por parâmetro.
+              Isso é o começo de um ambiente escalável.
+            </figcaption>
+          </figure>
+          <pre><code class="language-systemverilog">class ahb_env extends uvm_env;
+  int num_masters;
+  ahb_master_agent masters[];
+
+  `uvm_component_utils_begin(ahb_env)
+    `uvm_field_int(num_masters, UVM_ALL_ON)
+  `uvm_component_utils_end
+
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    masters = new[num_masters];
+
+    for (int i = 0; i < num_masters; i++) begin
+      string inst_name;
+      $sformat(inst_name, "masters[%0d]", i);
+      masters[i] = ahb_master_agent::type_id::create(inst_name, this);
+    end
+  endfunction
+endclass</code></pre>
+          <p>
+            Um teste pode configurar a topologia assim:
+          </p>
+          <pre><code class="language-systemverilog">uvm_config_db#(int)::set(this, "*my_env", "num_masters", 3);</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="scenario">Scenario creation</h2>
+          <p>
+            Criar cenário em UVM não é “dar força bruta nos sinais”. O cenário deve acionar sequences,
+            ajustar knobs, escolher agents ativos e combinar padrões. Esse é o ponto em que o ambiente
+            deixa de ser só uma pilha de classes e vira ferramenta de verificação.
+          </p>
+          <pre><code class="language-systemverilog">class smoke_test extends uvm_test;
+  my_env env;
+
+  task run_phase(uvm_phase phase);
+    basic_sequence seq;
+
+    phase.raise_objection(this);
+
+    seq = basic_sequence::type_id::create("seq");
+    seq.start(env.master_agent.sequencer);
+
+    phase.drop_objection(this);
+  endtask
+endclass</code></pre>
+          <p>
+            Em testes maiores, a sequence pode controlar knobs, repetir tráfego, variar delays, misturar
+            leitura/escrita e chamar sub-sequences. Para prova e laboratório, o importante é reconhecer
+            que a sequence é o lugar natural do roteiro de estímulo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="objections">Fim de teste: objections</h2>
+          <p>
+            Em testbench manual é comum encerrar com <code>#tempo; $finish;</code>. Isso é frágil:
+            se o DUT demora mais, o teste termina cedo; se demora menos, você desperdiça simulação.
+            UVM usa objections para declarar que ainda existe atividade relevante em andamento.
+          </p>
+          <pre><code class="language-systemverilog">task run_phase(uvm_phase phase);
+  phase.raise_objection(this);
+
+  // Atividade principal do teste.
+  seq.start(env.agent.sequencer);
+
+  phase.drop_objection(this);
+endtask</code></pre>
+          <p>
+            Enquanto existe pelo menos uma objection levantada, a phase não termina. Quando todas são
+            derrubadas, UVM pode encerrar a phase. Esse mecanismo é hierárquico e combina melhor com
+            ambientes em que vários agents trabalham ao mesmo tempo.
+          </p>
+          <details class="expand-block" open>
+            <summary>Objection em sequence: padrão <code>pre_body/body/post_body</code></summary>
+            <div class="detail-body">
+              <pre><code class="language-systemverilog">task pre_body();
+  if (starting_phase != null)
+    starting_phase.raise_objection(this);
+endtask
+
+task body();
+  // Estímulo principal da sequence.
+endtask
+
+task post_body();
+  if (starting_phase != null)
+    starting_phase.drop_objection(this);
+endtask</code></pre>
+              <p>
+                Esse padrão evita que a simulation acabe antes da sequence terminar. Depois, conceitos como
+                drain time e <code>phase_ready_to_end()</code> servem para dar tempo a atividades pendentes,
+                como respostas atrasadas ou filas de scoreboard.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="plano">Como isso vira prática no laboratório</h2>
+          <p>
+            Para adaptar essa aula ao ambiente do professor, a leitura prática é montar um checklist de
+            responsabilidades. Mesmo que o lab não use UVM completo, esses papéis ajudam a organizar o raciocínio.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Peça</th>
+                  <th>Pergunta que devemos responder</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>DUT/interface</td><td>Quais sinais compõem o protocolo? Há ready/valid/reset/clock?</td></tr>
+                <tr><td>Item/transação</td><td>Qual operação abstrata representa uma interação com o DUT?</td></tr>
+                <tr><td>Driver</td><td>Como a transação vira sinais respeitando ciclos e handshake?</td></tr>
+                <tr><td>Monitor</td><td>Como reconstruir a operação real olhando apenas a interface?</td></tr>
+                <tr><td>Scoreboard</td><td>Qual modelo simples decide se a resposta está certa?</td></tr>
+                <tr><td>Coverage</td><td>Quais casos precisam aparecer para considerar o teste útil?</td></tr>
+                <tr><td>Makefile</td><td>Quais targets compilam, simulam, limpam e abrem debug?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão forte</h2>
+          <div class="quiz-card">
+            <strong>De qual classe deriva um data item?</strong>
+            De <code>uvm_sequence_item</code>.
+          </div>
+          <div class="quiz-card">
+            <strong>Qual é o padrão central do driver?</strong>
+            <code>get_next_item()</code>, dirigir a transação, depois <code>item_done()</code>.
+          </div>
+          <div class="quiz-card">
+            <strong>Quando usar <code>try_next_item()</code>?</strong>
+            Quando o driver não pode bloquear e precisa continuar dirigindo idle ou comportamento de fundo.
+          </div>
+          <div class="quiz-card">
+            <strong>O que diferencia agent ativo de passivo?</strong>
+            Ativo tem driver, sequencer e monitor; passivo tem monitor e não dirige sinais.
+          </div>
+          <div class="quiz-card">
+            <strong>Para que servem objections?</strong>
+            Para controlar o fim de fase/teste sem depender de <code>$finish</code> por tempo fixo.
+          </div>
+        </section>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_7_systemverilog_for_uvm_1.html">Anterior: UVM 1</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="../04_rtl_design_synthesis/index.html">Próximo curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

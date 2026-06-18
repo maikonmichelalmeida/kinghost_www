@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Aid DC_NXT: Checklist Final</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Job Aid Final
+    </nav>
+
+    <h1 class="page-title">Job Aid DC_NXT: Checklist Final</h1>
+    <p class="lead">
+      Esta é a página de fechamento do curso: um mapa operacional para reconhecer comandos, revisar prova e transformar o
+      conteúdo em uma sequência de trabalho no laboratório do professor.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            O Job Aid não é uma aula conceitual comum. Ele é uma cola operacional: como invocar a ferramenta, configurar
+            bibliotecas, usar Tcl, buscar objetos, aplicar constraints, gerar reports, compilar, lidar com SPG e escrever
+            arquivos de saída. Esta página resume o que você deve carregar na cabeça quando abrir um Makefile ou script do
+            professor.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="ordem">A ordem do fluxo importa</h2>
+          <div class="flow-steps">
+            <div class="flow-step"><strong>1. Setup</strong>Bibliotecas, search path, work library, SVF e variáveis.</div>
+            <div class="flow-step"><strong>2. Read RTL</strong><code>analyze</code>, <code>elaborate</code>, <code>link</code>.</div>
+            <div class="flow-step"><strong>3. Constraints</strong>SDC, clocks, I/O, ambiente, exceptions e checks.</div>
+            <div class="flow-step"><strong>4. Compile</strong><code>compile_ultra</code>, opções, path groups, scan, SPG.</div>
+            <div class="flow-step"><strong>5. Reports</strong>Timing, área, power, QoR, constraints, congestion.</div>
+            <div class="flow-step"><strong>6. Output</strong>Netlist, DDC, SDC, ICC2 files e artefatos para Formality.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="invocacao">Invocação e ajuda</h2>
+          <pre><code># Modo topographical / DC NXT
+dcnxt_shell -topo
+
+# Ajuda dentro da ferramenta
+help compile_ultra
+man compile_ultra
+printvar target_library
+
+# Comandos úteis estilo shell
+pwd
+ls
+history</code></pre>
+
+          <p>
+            No servidor da UFRGS, você provavelmente não vai decorar a invocação completa se o Makefile do professor já
+            encapsular isso. Mas precisa reconhecer se o target está abrindo a ferramenta correta e se o modo topographical
+            está ativo quando o fluxo exigir recursos físicos.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="tcl">Tcl e collections</h2>
+          <p>
+            O DC NXT não trabalha só com strings. Muitos comandos retornam collections: conjuntos de portas, células, nets,
+            clocks ou designs. Entender isso evita scripts frágeis.
+          </p>
+
+          <pre><code>set regs [all_registers]
+sizeof_collection $regs
+
+get_ports clk
+get_clocks CORE_CLK
+get_cells -hier *alu*
+get_nets -hier *result*</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> sempre que possível, passe objetos retornados por <code>get_*</code>, não nomes
+            digitados soltos. Isso reduz erro de typo e melhora scripts reutilizáveis.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="constraints">Bloco de constraints essencial</h2>
+          <pre><code>create_clock -name CORE_CLK -period 20.0 [get_ports clk]
+set_clock_uncertainty 0.2 [get_clocks CORE_CLK]
+
+set_input_delay  2.0 -clock CORE_CLK [remove_from_collection [all_inputs] [get_ports clk]]
+set_output_delay 2.0 -clock CORE_CLK [all_outputs]
+
+set_input_transition 0.1 [remove_from_collection [all_inputs] [get_ports clk]]
+set_load 0.05 [all_outputs]
+
+check_timing
+report_clocks
+report_timing_requirements -ignored</code></pre>
+
+          <p>
+            Este modelo não deve ser copiado sem pensar, mas é uma base mental. Para o nosso CPU, precisamos adaptar período,
+            delays, cargas, reset e portas reais. A qualidade está em documentar hipóteses e validar o que a ferramenta
+            entendeu.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="compile">Compile dirigido</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Opção/recurso</th>
+                  <th>Uso</th>
+                  <th>Cuidado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>compile_ultra</code></td>
+                  <td>Síntese otimizada principal.</td>
+                  <td>Não substitui constraints corretas.</td>
+                </tr>
+                <tr>
+                  <td><code>-scan</code></td>
+                  <td>Prepara síntese para scan/DFT.</td>
+                  <td>Use quando o fluxo exigir scan-ready.</td>
+                </tr>
+                <tr>
+                  <td><code>-retime</code></td>
+                  <td>Permite mover registradores para melhorar timing.</td>
+                  <td>Exige Formality/SVF bem configurado.</td>
+                </tr>
+                <tr>
+                  <td><code>-spg</code></td>
+                  <td>Usa Synopsys Physical Guidance.</td>
+                  <td>Faz sentido com setup físico/floorplan adequado.</td>
+                </tr>
+                <tr>
+                  <td><code>-incremental</code></td>
+                  <td>Ajusta solução existente.</td>
+                  <td>Não é ideal para mudanças grandes.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="reports">Reports que você deve procurar</h2>
+          <div class="check-grid">
+            <div class="check-item"><strong><code>report_qor</code></strong>Resumo de WNS, TNS, área e qualidade geral.</div>
+            <div class="check-item"><strong><code>report_timing</code></strong>Caminhos críticos e slack.</div>
+            <div class="check-item"><strong><code>report_area</code></strong>Área por hierarquia/célula.</div>
+            <div class="check-item"><strong><code>report_power</code></strong>Estimativa de potência.</div>
+            <div class="check-item"><strong><code>report_constraint</code></strong>Violações de constraints.</div>
+            <div class="check-item"><strong><code>report_congestion</code></strong>Quando o fluxo físico/SPG estiver em jogo.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="spg">SPG, NLO e congestionamento no Job Aid</h2>
+          <p>
+            O Job Aid fecha o arco do curso: síntese lógica, constraints, compile ultra e depois síntese com consciência
+            física. SPG não é o primeiro passo do nosso CPU, mas é o vocabulário para entender o sistema do professor quando
+            ele aproxima DC NXT de ICC II.
+          </p>
+
+          <pre><code>compile_ultra -spg
+report_congestion -build_map
+report_congestion
+report_net_routing_layer_constraints [get_nets -hier] -output net_layer.tcl</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="saida">Saída limpa e pronta para próxima etapa</h2>
+          <pre><code>set_fix_multiple_port_nets -all -buffer_constants
+set verilogout_no_tri true
+change_names -rules verilog -hierarchy
+
+write -format ddc     -hierarchy -output results/TOP.ddc
+write -format verilog -hierarchy -output results/TOP_mapped.v
+write_sdc results/TOP.sdc
+write_icc2_files</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="checklist">Checklist final do curso</h2>
+          <div class="quiz-card">
+            <strong>Antes de ler RTL</strong>
+            Setup carregado, bibliotecas resolvidas, diretórios existem, SVF definido se haverá Formality.
+          </div>
+          <div class="quiz-card">
+            <strong>Depois de ler RTL</strong>
+            <code>current_design</code> correto, <code>link</code> sem referência quebrada, <code>check_design</code> lido.
+          </div>
+          <div class="quiz-card">
+            <strong>Depois do SDC</strong>
+            Clocks, I/O delays, loads, transitions e exceptions conferidos com reports.
+          </div>
+          <div class="quiz-card">
+            <strong>Depois do compile</strong>
+            QoR, timing, área, power e constraints analisados. Não basta ver "rodou".
+          </div>
+          <div class="quiz-card">
+            <strong>Antes de entregar</strong>
+            Netlist limpa, artefatos salvos, logs organizados e hipóteses documentadas.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="prova">Mini revisão de prova</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tema</th>
+                  <th>Resposta curta que precisa estar na cabeça</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GTECH</td>
+                  <td>Representação genérica/intermediária antes de mapear para target library.</td>
+                </tr>
+                <tr>
+                  <td>Target library</td>
+                  <td>Biblioteca de células disponíveis para implementação.</td>
+                </tr>
+                <tr>
+                  <td>Link library</td>
+                  <td>Bibliotecas usadas para resolver referências no design.</td>
+                </tr>
+                <tr>
+                  <td>Timing path</td>
+                  <td>Caminho entre startpoint e endpoint: reg-to-reg, input-to-reg, reg-to-output ou combinacional.</td>
+                </tr>
+                <tr>
+                  <td>DRC</td>
+                  <td>Design rule constraints, como max transition, max capacitance e fanout; costumam ter prioridade alta.</td>
+                </tr>
+                <tr>
+                  <td>Physical synthesis</td>
+                  <td>Síntese que considera efeitos físicos, floorplan, RC e posicionamento aproximado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fechamento">Fechamento: o que fazer agora no laboratório</h2>
+          <p>
+            Com este curso fechado, o caminho mais produtivo é aplicar o conhecimento no projeto, não continuar acumulando
+            teoria. O próximo passo real é pegar o esqueleto do professor, encaixar o CPU em um bloco, escrever/ajustar SDC,
+            rodar simulação e síntese por Makefile, guardar reports e preparar a ponte para Formality.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Direção recomendada:</strong> fazer o mínimo completo primeiro. Um fluxo pequeno que simula, sintetiza,
+            escreve netlist e gera reports vale mais do que um fluxo enorme com SPG, retiming e Formality ainda sem base.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md</code> e <code>Conhecimentos_obtidos_da_prova_DC_NXT_RTL_Synthesis.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2k_lab_guide_dc_nxt_roteiro_pratico.html">Anterior: Lab Guide</a>
+          <a href="index.html">Voltar ao curso concluído</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#ordem">Ordem do fluxo</a>
+        <a href="#invocacao">Invocação</a>
+        <a href="#tcl">Tcl</a>
+        <a href="#constraints">Constraints</a>
+        <a href="#compile">Compile</a>
+        <a href="#reports">Reports</a>
+        <a href="#spg">SPG</a>
+        <a href="#saida">Saída</a>
+        <a href="#checklist">Checklist</a>
+        <a href="#prova">Prova</a>
+        <a href="#fechamento">Fechamento</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

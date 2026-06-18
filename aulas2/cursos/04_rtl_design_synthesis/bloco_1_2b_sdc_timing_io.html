@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SDC, Caminhos de Timing e Orçamento de I/O</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>SDC e Timing
+    </nav>
+
+    <h1 class="page-title">SDC, Caminhos de Timing e Orçamento de I/O</h1>
+    <p class="lead">
+      Esta aula transforma os slides de constraints em um mapa prático para o projeto: como dizer ao Design Compiler
+      quanto tempo o bloco tem para funcionar, como modelar o mundo externo e como validar se o SDC foi entendido.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            O professor disse que a etapa agora é “fazer o SDC desse bloco”. Isso é mais profundo do que escrever
+            algumas linhas em Tcl. O SDC é a forma de transformar uma intenção de projeto em restrições que a ferramenta
+            consegue usar. O RTL diz <em>o que</em> o circuito faz; o SDC diz <em>em que contexto temporal e elétrico</em>
+            esse circuito precisa funcionar.
+          </p>
+          <p>
+            A ideia central dos MDs do curso é: você informa quanto tempo está sendo gasto fora do bloco e o DC NXT
+            calcula quanto sobra para a lógica interna. Se essa informação não existe, a ferramenta pode sintetizar um
+            circuito que parece correto, mas que não foi otimizado para uma frequência real, nem para uma carga real,
+            nem para sinais de entrada realistas.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="problema">O problema que o SDC resolve</h2>
+          <p>
+            Quando você simula RTL no VCS, o foco é funcional: os sinais mudam na ordem esperada? A CPU executa o que
+            deveria? O testbench encontra o resultado correto? Essa pergunta ainda é essencial, mas ela não basta para
+            síntese. Para sintetizar, a ferramenta precisa responder outra pergunta:
+          </p>
+          <div class="equation">O hardware gerado consegue cumprir timing, área e regras elétricas no ambiente esperado?</div>
+          <p>
+            O Design Compiler não consegue adivinhar sozinho qual clock você quer atingir. Ele também não sabe quanto
+            atraso existe antes de uma entrada chegar ao seu bloco, quanto tempo o próximo bloco precisa depois da sua
+            saída, qual carga capacitiva suas saídas dirigem, nem se o reset deve ser tratado como caminho de dados.
+            Tudo isso precisa ser informado.
+          </p>
+          <div class="lesson-note">
+            <strong>Frase para guardar:</strong> um RTL sem SDC pode ser sintetizável, mas ainda não está especificado
+            como um bloco de hardware inserido em um sistema.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="timing-paths">Timing paths: os quatro caminhos que a ferramenta enxerga</h2>
+          <p>
+            Os slides começam pelo conceito de <strong>timing path</strong>. Um path é um caminho de timing com um ponto
+            de partida e um ponto de chegada. O startpoint pode ser uma porta de entrada ou o clock de um registrador.
+            O endpoint pode ser uma porta de saída ou uma entrada de registrador. A partir disso, a ferramenta separa o
+            design em tipos de caminho.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <span class="mini-label">Path 1</span>
+              <h3>Entrada para registrador</h3>
+              <p>
+                O sinal chega por uma porta de entrada, atravessa lógica combinacional interna e é capturado por um
+                flip-flop dentro do bloco. Precisa de <code>set_input_delay</code> e de um clock de referência.
+              </p>
+            </article>
+            <article class="concept-card">
+              <span class="mini-label">Path 2</span>
+              <h3>Registrador para registrador</h3>
+              <p>
+                O caminho nasce em um registrador interno e termina em outro registrador interno. Este é o caso clássico:
+                <code>create_clock</code> define o período disponível.
+              </p>
+            </article>
+            <article class="concept-card">
+              <span class="mini-label">Path 3</span>
+              <h3>Registrador para saída</h3>
+              <p>
+                O dado sai de um registrador interno, passa por lógica interna e chega em uma porta de saída. Precisa
+                de <code>set_output_delay</code> para reservar tempo ao circuito externo.
+              </p>
+            </article>
+            <article class="concept-card">
+              <span class="mini-label">Path 4</span>
+              <h3>Entrada para saída</h3>
+              <p>
+                Caminho puramente combinacional dentro do bloco. Ele ainda pode fazer parte de um caminho síncrono
+                maior, mesmo que o bloco não tenha registrador nesse trecho.
+              </p>
+            </article>
+          </div>
+
+          <div class="timing-map" aria-label="Diagrama conceitual de orçamento de timing">
+            <div class="timing-node external">Registrador externo<br>lança dado</div>
+            <div class="timing-arrow">→</div>
+            <div class="timing-node external">Atraso externo<br>de entrada</div>
+            <div class="timing-arrow">→</div>
+            <div class="timing-node internal">Lógica interna<br>do bloco</div>
+            <div class="timing-arrow">→</div>
+            <div class="timing-node external">Tempo externo<br>de saída</div>
+          </div>
+
+          <p>
+            Essa separação é importantíssima para o seu projeto. Se o seu SDC só cria clock, você restringe caminhos
+            registrador-para-registrador, mas pode deixar entradas e saídas mal modeladas. Se o seu bloco tiver caminho
+            combinacional direto entre entrada e saída, ele também precisa de contexto temporal.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="create-clock">O comando mais importante: <code>create_clock</code></h2>
+          <p>
+            O primeiro comando que normalmente aparece em um SDC síncrono é <code>create_clock</code>. Ele cria um objeto
+            de clock na memória da ferramenta e associa esse clock a uma porta ou pino do design. A ferramenta usa esse
+            objeto para calcular checks de setup e hold.
+          </p>
+
+          <pre><code>create_clock -name master_clk -period 20.0 [get_ports clk]</code></pre>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>O que cada parte significa</h3>
+              <div class="command-body">
+                <ul class="key-list compact-list">
+                  <li><strong><code>create_clock</code>:</strong> cria o objeto de clock usado pelo motor de timing.</li>
+                  <li><strong><code>-name master_clk</code>:</strong> dá um nome explícito ao clock. Isso melhora reports e scripts.</li>
+                  <li><strong><code>-period 20.0</code>:</strong> informa o período. Se a unidade da biblioteca for ns, isso significa 20 ns.</li>
+                  <li><strong><code>[get_ports clk]</code>:</strong> pega a porta física <code>clk</code> do top atual.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <p>
+            Sem esse comando, a ferramenta não sabe qual é o tempo disponível entre dois registradores. Ela pode até
+            elaborar o design, mas os reports de timing perdem o sentido. Por isso, um dos primeiros checks depois de
+            aplicar o SDC é verificar se o clock realmente apareceu:
+          </p>
+
+          <pre><code>report_clock
+check_timing</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="orcamento-reg">Orçamento reg-to-reg: por que o período não fica todo para a lógica</h2>
+          <p>
+            Um erro comum é pensar: “se o clock é de 2 ns, minha lógica pode atrasar 2 ns”. Não pode. O período total
+            precisa acomodar atraso clock-to-Q do registrador de lançamento, atraso da lógica combinacional, setup do
+            registrador de captura, incerteza de clock e margens.
+          </p>
+
+          <div class="equation">Tlogic_max ≈ Period - Tsetup - clock_uncertainty - outras margens</div>
+
+          <p>
+            Nos slides, aparece um exemplo com período de 2 ns, setup de 0,08 ns e incerteza de 0,14 ns. A ferramenta
+            reduz o orçamento interno porque parte do período precisa ser reservada para esses efeitos.
+          </p>
+
+          <pre><code>create_clock -period 2 [get_ports CLK]
+set_clock_uncertainty -setup 0.14 [get_clocks CLK]</code></pre>
+
+          <details class="nested-detail" open>
+            <summary>Por que a incerteza reduz o tempo disponível?</summary>
+            <div class="detail-body">
+              <p>
+                Em um mundo ideal, a borda de clock chega exatamente ao mesmo tempo em todos os registradores. No chip
+                real, a árvore de clock terá diferenças de atraso entre ramos, jitter e variações. Antes do layout, a
+                ferramenta ainda não sabe a árvore real, então você fornece uma estimativa. Essa margem torna a síntese
+                menos otimista.
+              </p>
+              <p>
+                Na prática, <code>set_clock_uncertainty</code> é uma forma de dizer: “não use o período inteiro como se
+                tudo fosse perfeito; reserve uma parte para imperfeições do clock”.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-real">Clock ideal, clock real e o que modelar antes do layout</h2>
+          <p>
+            Por padrão, o clock em síntese é ideal: drive infinito, transição zero, skew zero e latency zero. Isso ajuda
+            o fluxo a começar, mas pode deixar o resultado irreal se você não modelar nenhuma margem. Os slides destacam
+            quatro efeitos que merecem atenção antes do layout.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Uncertainty</h3>
+              <p>Margem para skew, jitter e incertezas. Afeta diretamente o tempo disponível para setup.</p>
+              <pre><code>set_clock_uncertainty -setup 0.2 [get_clocks master_clk]</code></pre>
+            </article>
+            <article class="concept-card">
+              <h3>Transition</h3>
+              <p>Modela a rampa do clock. Uma transição não instantânea pode afetar checks e atrasos.</p>
+              <pre><code>set_clock_transition 0.1 [get_clocks master_clk]</code></pre>
+            </article>
+            <article class="concept-card">
+              <h3>Source latency</h3>
+              <p>Atraso antes do clock chegar à porta do bloco, vindo da fonte externa.</p>
+              <pre><code>set_clock_latency -source -max 0.5 [get_clocks master_clk]</code></pre>
+            </article>
+            <article class="concept-card">
+              <h3>Network latency</h3>
+              <p>Atraso estimado da rede interna de clock antes de existir árvore real pós-layout.</p>
+              <pre><code>set_clock_latency -max 0.3 [get_clocks master_clk]</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="input-output-delay">Input delay e output delay: eles não criam atraso, eles reservam orçamento</h2>
+          <p>
+            Esta é uma das ideias mais importantes da aula. <code>set_input_delay</code> não significa “adicione um atraso
+            nessa entrada”. Ele significa: “quando o sinal chegar na minha porta, parte do período já foi consumida pelo
+            circuito externo”. A ferramenta então diminui o tempo disponível dentro do seu bloco.
+          </p>
+
+          <pre><code>set_input_delay -max 0.8 -clock master_clk [get_ports data_in]
+set_output_delay -max 0.8 -clock master_clk [get_ports data_out]</code></pre>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3><code>set_input_delay</code></h3>
+              <p>
+                Representa o tempo gasto antes do sinal entrar no bloco. Exemplo: clock-to-Q de um registrador externo
+                mais atraso de lógica externa antes da sua porta.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3><code>set_output_delay</code></h3>
+              <p>
+                Representa o tempo que precisa ser reservado depois que o sinal sai do bloco. Exemplo: setup do
+                registrador externo de captura e lógica externa depois da sua saída.
+              </p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Erro clássico:</strong> aplicar <code>set_input_delay</code> em <code>[all_inputs]</code> e esquecer
+            que o clock também é uma entrada. O clock deve ser removido da coleção.
+          </div>
+
+          <pre><code>set ALL_INP_EXC_CLK [remove_from_collection [all_inputs] [get_ports clk]]
+set_input_delay -max 0.8 -clock master_clk $ALL_INP_EXC_CLK</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="combinacional">E se o bloco ou caminho for puramente combinacional?</h2>
+          <p>
+            Um bloco combinacional não tem registradores internos, mas isso não significa que ele vive fora do tempo.
+            Ele pode estar entre um registrador externo que lança dados e outro registrador externo que captura dados.
+            Como não há clock físico dentro do bloco, você pode usar um <strong>clock virtual</strong>.
+          </p>
+
+          <pre><code>create_clock -name VCLK -period 2</code></pre>
+
+          <p>
+            Repare que o comando não termina com <code>[get_ports clk]</code>. O clock virtual não está conectado a uma
+            porta nem a um pino. Ele existe como referência temporal para <code>set_input_delay</code> e
+            <code>set_output_delay</code>.
+          </p>
+
+          <div class="equation">Tcombo_max = Period - uncertainty - input_delay - output_delay</div>
+
+          <pre><code>create_clock -period 2 -name VCLK
+set_clock_uncertainty -setup 0.3 [get_clocks VCLK]
+set_input_delay  -max 0.4 -clock VCLK [get_ports A]
+set_output_delay -max 0.3 -clock VCLK [get_ports B]</code></pre>
+
+          <p>Neste exemplo, o orçamento interno fica aproximadamente:</p>
+          <div class="equation">2.0 - 0.3 - 0.4 - 0.3 = 1.0 ns</div>
+        </section>
+
+        <section class="section">
+          <h2 id="time-budgeting">Time budgeting: quando você ainda não sabe o mundo externo</h2>
+          <p>
+            No começo do projeto, muitas vezes você ainda não conhece os atrasos reais dos blocos vizinhos. Os slides
+            deixam uma regra prática: é melhor criar um orçamento conservador do que deixar paths sem constraint.
+          </p>
+
+          <pre><code>create_clock -period 10 [get_ports CLK]
+
+set_input_delay -max 6 -clock CLK [all_inputs]
+remove_input_delay [get_ports CLK]
+set_output_delay -max 6 -clock CLK [all_outputs]</code></pre>
+
+          <p>
+            Esse exemplo não quer dizer que 6 ns é sempre correto. Ele ensina o método: dividir o período de clock entre
+            mundo externo e lógica interna. Depois, com mais informação, você troca estimativas genéricas por valores
+            mais realistas.
+          </p>
+
+          <details class="nested-detail" open>
+            <summary>Por que saídas registradas facilitam o orçamento?</summary>
+            <div class="detail-body">
+              <p>
+                Se todos os blocos têm saídas registradas, o atraso visto na entrada do bloco seguinte fica mais previsível:
+                normalmente é algo como clock-to-Q do registrador anterior mais uma pequena margem. Isso simplifica o
+                <code>set_input_delay</code> e reduz caminhos combinacionais longos atravessando fronteiras de blocos.
+              </p>
+              <pre><code>set CLK2Q_MAX 1.5
+set CLK2Q_MIN 0.2
+
+set ALL_INP_EXC_CLK [remove_from_collection [all_inputs] [get_ports CLK]]
+
+set_input_delay  -max $CLK2Q_MAX -clock CLK $ALL_INP_EXC_CLK
+set_output_delay -max [expr {10 - $CLK2Q_MIN}] -clock CLK [all_outputs]</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="load-transition">Carga de saída e transição de entrada: o lado elétrico do SDC</h2>
+          <p>
+            Depois de <code>create_clock</code>, <code>set_input_delay</code> e <code>set_output_delay</code>, ainda falta
+            modelar o comportamento elétrico. Os slides da aula 05 são diretos: esses constraints são necessários, mas
+            não suficientes para timing preciso de I/O.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card warn">
+              <h3><code>set_load</code></h3>
+              <p>
+                Modela a carga capacitiva que uma saída precisa dirigir. Sem isso, o DC NXT pode assumir carga zero e
+                ser otimista demais.
+              </p>
+              <pre><code>set_load -max 0.03 [get_ports B]</code></pre>
+            </article>
+            <article class="concept-card warn">
+              <h3><code>set_input_transition</code></h3>
+              <p>
+                Informa diretamente a transição máxima de uma entrada. Sinal de entrada lento aumenta atraso das células
+                que recebem esse sinal.
+              </p>
+              <pre><code>set_input_transition -max 0.12 [get_ports A]</code></pre>
+            </article>
+            <article class="concept-card warn">
+              <h3><code>set_driving_cell</code></h3>
+              <p>
+                Use quando você não sabe a transição numérica, mas quer modelar qual célula externa dirige a entrada.
+              </p>
+              <pre><code>set_driving_cell -max -lib_cell OR3B [get_ports A]</code></pre>
+            </article>
+          </div>
+
+          <p>
+            A diferença conceitual é esta: <code>set_input_delay</code> e <code>set_output_delay</code> falam de
+            orçamento temporal externo; <code>set_input_transition</code>, <code>set_driving_cell</code> e
+            <code>set_load</code> falam da qualidade elétrica dos sinais e da carga que o bloco precisa dirigir.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="sdc-inicial">Um SDC inicial para o nosso bloco</h2>
+          <p>
+            Para o seu laboratório, o primeiro SDC não precisa fingir precisão que ainda não temos. Ele precisa ser
+            limpo, comentado, conservador e fácil de validar. A versão abaixo é um ponto de partida didático para um
+            bloco síncrono com <code>clk</code> e <code>rst</code>.
+          </p>
+
+          <pre><code># ==============================================================================
+# SDC inicial do bloco
+# Objetivo: dar ao DC_NXT um contexto temporal e elétrico mínimo, mas explícito.
+# ==============================================================================
+
+reset_design
+
+# Clock principal.
+# Ajustar o período conforme a meta do professor ou conforme o experimento.
+create_clock -name master_clk -period 20.0 [get_ports clk]
+
+# Margens pré-layout para evitar otimismo excessivo.
+set_clock_uncertainty -setup 0.2 [get_clocks master_clk]
+set_clock_transition 0.1 [get_clocks master_clk]
+
+# Entradas de dados: remover clock da coleção.
+set ALL_INP_EXC_CLK [remove_from_collection [all_inputs] [get_ports clk]]
+set_input_delay -max 0.8 -clock master_clk $ALL_INP_EXC_CLK
+
+# Saídas: reservar tempo para o bloco externo.
+set_output_delay -max 0.8 -clock master_clk [all_outputs]
+
+# Modelo elétrico simples das saídas.
+set_load -max 0.050 [all_outputs]
+
+# Reset assíncrono não deve ser tratado como caminho comum de dados.
+set_false_path -from [get_ports rst]</code></pre>
+
+          <div class="project-bridge">
+            <strong>Ligação com o ambiente do professor:</strong> no clone atualizado, o SDC fica em
+            <code>PROJECT_ENVIROMENT/module_CPU_pdk_SAED/blocks/CPU/constraints/constraints.sdc</code>. A ideia é que
+            nosso projeto tenha uma pasta equivalente <code>constraints/constraints.sdc</code> quando migrarmos com calma.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="validacao">Validar o SDC é parte do trabalho</h2>
+          <p>
+            Escrever o arquivo é só metade do serviço. A outra metade é provar que a ferramenta leu e entendeu os
+            objetos esperados. Nos MDs, isso aparece com comandos de checagem e reports.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong><code>report_clock</code></strong>
+              Confirma que o clock existe, tem o período correto e foi associado ao objeto certo.
+            </div>
+            <div class="check-item">
+              <strong><code>report_port -verbose</code></strong>
+              Ajuda a descobrir se portas ficaram sem input delay, output delay, carga ou transição.
+            </div>
+            <div class="check-item">
+              <strong><code>check_timing</code></strong>
+              Mostra problemas como clock ausente, endpoints sem constraint e caminhos não analisados.
+            </div>
+            <div class="check-item">
+              <strong><code>report_constraint</code></strong>
+              Mostra violações de timing e design rules depois da aplicação das constraints.
+            </div>
+          </div>
+
+          <pre><code>source constraints.sdc
+report_clock
+report_port -verbose
+check_timing
+report_constraint -all_violators</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> se o <code>check_timing</code> disser que há paths sem constraint, o resultado
+            da síntese ainda não é confiável para conclusão.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="erros-comuns">Erros comuns que esta aula evita</h2>
+          <div class="concept-grid">
+            <article class="concept-card danger">
+              <h3>Confundir delay com atraso físico</h3>
+              <p><code>set_input_delay</code> não atrasa a entrada. Ele informa atraso já consumido fora do bloco.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Restringir o clock como dado</h3>
+              <p>Usar <code>[all_inputs]</code> sem remover o clock pode aplicar input delay ao próprio clock.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Esquecer carga nas saídas</h3>
+              <p>Sem <code>set_load</code>, a ferramenta pode assumir carga zero e subestimar atrasos.</p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Sintetizar sem checar timing</h3>
+              <p>Rodar <code>compile_ultra</code> sem <code>check_timing</code> é avançar sem saber se o problema foi especificado corretamente.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ambiente-professor">Como isso aparece no ambiente do professor</h2>
+          <p>
+            A atualização nova do professor deixou mais claro que o fluxo está caminhando para síntese completa e
+            simulação pós-síntese. No bloco CPU dele, o Makefile chama VCS para simulação, DC_NXT para síntese e há
+            suporte a gate-level simulation com <code>GL=1</code>.
+          </p>
+
+          <pre><code>cd PROJECT_ENVIROMENT/module_CPU_pdk_SAED/blocks/CPU
+make sim
+make synth
+make sim GL=1</code></pre>
+
+          <p>O script de síntese dele faz a sequência que queremos entender:</p>
+
+          <pre><code>analyze -format sverilog -vcs "-f ../../../verif/filelist.f"
+elaborate top_cpu
+current_design top_cpu
+link
+source ../../../constraints/constraints.sdc
+check_timing
+compile_ultra
+report_area
+report_timing
+report_power
+write -format verilog -hierarchy -output top_cpu_mapped.v
+write_sdf top_cpu_delays.sdf
+set_svf top_cpu.svf</code></pre>
+
+          <p>
+            Isso confirma a direção: primeiro RTL e simulação; depois SDC; depois síntese; depois netlist, SDF e SVF;
+            depois gate-level simulation e, mais adiante, Formality.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="perguntas">Perguntas de revisão para testar entendimento</h2>
+
+          <div class="quiz-card">
+            <strong>1. O que <code>create_clock</code> restringe automaticamente?</strong>
+            <p class="answer">Principalmente caminhos registrador-para-registrador associados àquele clock.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>2. Por que <code>set_input_delay</code> não deve ser interpretado como atraso físico da porta?</strong>
+            <p class="answer">Porque ele representa tempo consumido pelo mundo externo antes do sinal chegar ao bloco.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>3. Quando usar um clock virtual?</strong>
+            <p class="answer">Quando o bloco ou caminho precisa de referência temporal, mas não há clock físico conectado ao design atual.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>4. Por que <code>set_load</code> é necessário mesmo se já existe <code>set_output_delay</code>?</strong>
+            <p class="answer"><code>set_output_delay</code> reserva tempo externo; <code>set_load</code> modela carga capacitiva dirigida pela saída.</p>
+          </div>
+
+          <div class="quiz-card">
+            <strong>5. Qual comando deve ser usado para descobrir se há paths sem constraint?</strong>
+            <p class="answer"><code>check_timing</code>, complementado por reports como <code>report_port -verbose</code>.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo passo de projeto</h2>
+          <p>
+            O próximo movimento prático é aplicar esta aula no seu próprio laboratório: criar uma cópia de trabalho,
+            identificar portas do top, escrever <code>constraints/constraints.sdc</code>, adaptar um script mínimo de
+            DC_NXT e rodar apenas até as checagens de constraints. Antes de perseguir netlist perfeita, precisamos que
+            o SDC seja coerente.
+          </p>
+          <p>
+            Depois disso, avançamos para <code>compile_ultra</code>, reports e geração dos artefatos
+            <code>mapped.v</code>, <code>.sdf</code>, <code>.sdc</code> final e <code>.svf</code>.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/04_Constraints_Reg_to_Reg_and_IO_Timing_parte_A.md">04 Constraints parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_Constraints_Reg_to_Reg_and_IO_Timing_parte_B.md">04 Constraints parte B</a>,
+          <a data-md-source href="../../assets/md_normalizado/05_Constraints_Input_Transition_and_Output_Loading.md">05 Input Transition and Output Loading</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2a_introducao_e_constraints.html">Anterior: Introdução à Síntese</a>
+          <a href="bloco_1_2c_compile_ultra_tecnicas_dc_nxt.html">Próxima: compile_ultra</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VHDL for Verification</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">02 VHDL Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">VHDL Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">02 VHDL Refresher</a><span>/</span>Verification
+    </nav>
+
+    <h1 class="page-title">VHDL for Verification</h1>
+    <p class="lead">
+      Aula sobre testbench em VHDL: DUT, estímulos, clock, delays, asserts, arquivos,
+      procedures, packages, debug e self-checking.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Esta aula usa VHDL fora do mundo da síntese. O objetivo não é criar hardware,
+            mas criar um ambiente que testa hardware.
+          </p>
+          <pre><code>RTL VHDL       -> design que pode ser sintetizado
+Testbench VHDL -> ambiente que só existe na simulação</code></pre>
+          <p>
+            Um testbench fraco apenas aplica sinais. Um testbench melhor aplica sinais,
+            calcula o esperado, compara a resposta e gera um relatório claro.
+          </p>
+          <div class="callout">
+            <strong>Frase da aula:</strong> testbench bom não só estimula; ele verifica.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="dut-testbench">DUT e testbench</h2>
+          <p>
+            DUT significa <em>Design Under Test</em>. É o bloco que queremos verificar.
+            O testbench fica ao redor dele, criando sinais, clock, reset, estímulos e checks.
+          </p>
+          <p>Um testbench VHDL normalmente tem entidade sem portas:</p>
+          <pre><code>entity twoBitAdder_tb is
+end twoBitAdder_tb;</code></pre>
+          <p>
+            Ele não precisa de portas porque é o topo da simulação. Ele cria internamente
+            os sinais que ligam no DUT.
+          </p>
+          <pre><code>dut: entity work.twoBitAdder
+    port map (
+        x => x,
+        y => y,
+        z => z
+    );</code></pre>
+          <details class="nested-detail">
+            <summary>Exemplo didático do somador de 2 bits</summary>
+            <div class="detail-body">
+              <p>
+                O DUT dos slides soma dois operandos de 2 bits e gera uma saída de 3 bits.
+                O terceiro bit é necessário para o carry.
+              </p>
+              <pre><code>z <= ('0' & x) + ('0' & y);</code></pre>
+              <p>
+                A concatenação com <code>'0'</code> amplia os operandos antes da soma.
+                Isso evita perder o carry em casos como <code>3 + 3 = 6</code>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="assert-report">Assert e report</h2>
+          <p>
+            Em Verilog você viu chamadas com <code>$</code>, como <code>$display</code>.
+            VHDL usa outro estilo. Para checar comportamento, uma construção central é
+            <code>assert</code>.
+          </p>
+          <pre><code>assert z = expected
+    report "Adder mismatch"
+    severity error;</code></pre>
+          <p>
+            Isso transforma uma expectativa em regra executável. Se a saída não bate com
+            o esperado, o testbench acusa. É o primeiro passo para sair da dependência de
+            olhar waveform manualmente.
+          </p>
+          <details class="nested-detail">
+            <summary>Por que isso é melhor que só imprimir?</summary>
+            <div class="detail-body">
+              <p>
+                Uma mensagem comum informa algo. Um assert define uma condição de sucesso.
+                Em uma regressão, o assert permite que o teste falhe automaticamente sem
+                depender de você abrir o Verdi e inspecionar cada sinal.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="clock">Clock generator</h2>
+          <p>
+            Clock em testbench é modelo de tempo. Ele é necessário para estimular DUTs
+            sequenciais, mas não é RTL sintetizável.
+          </p>
+          <pre><code>clk_process : process
+begin
+    clk <= '0';
+    wait for clk_period / 2;
+    clk <= '1';
+    wait for clk_period / 2;
+end process;</code></pre>
+          <p>
+            Esse padrão gera um clock de 50% duty cycle. Em projetos maiores, o testbench
+            pode ter múltiplos clocks, fases diferentes ou jitter, mas o primeiro passo é
+            manter clock e reset simples e confiáveis.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="delays">Inertial e transport delay</h2>
+          <p>
+            O slide de delays tem valor visual real porque mostra forma de onda. VHDL permite
+            modelar atrasos de duas formas importantes.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_timing_delays.png" alt="Waveforms mostrando inertial delay e transport delay em VHDL">
+            <figcaption>
+              A imagem mostra a diferença: inertial pode rejeitar glitches curtos; transport propaga o pulso com atraso.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Delay</th><th>Como pensar</th><th>Uso didático</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Inertial</td><td>porta real que pode ignorar pulso curto</td><td>modela rejeição de glitch</td></tr>
+                <tr><td>Transport</td><td>fio/canal que transporta mudanças</td><td>modela atraso de propagação</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Para RTL sintetizável, delays de simulação não entram. Para testbench e modelos,
+            eles ajudam a criar cenários temporais.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="self-checking">Self-checking testbench</h2>
+          <p>
+            Este é o conceito mais importante da aula. Um self-checking testbench compara
+            automaticamente a resposta observada com a resposta esperada.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/self_checking_testbench.png" alt="Arquitetura de self-checking testbench com stimulus generator, driver, DUT, checker, scoreboard e coverage">
+            <figcaption>
+              Esta figura é estratégica: ela mostra a arquitetura de um testbench que decide sozinho se o DUT passou.
+            </figcaption>
+          </figure>
+          <ul class="key-list compact-list">
+            <li><strong>Stimulus generator:</strong> cria casos de teste.</li>
+            <li><strong>Driver:</strong> converte casos em sinais do DUT.</li>
+            <li><strong>Receiver/monitor:</strong> captura resposta do DUT.</li>
+            <li><strong>Checker:</strong> compara observado com esperado.</li>
+            <li><strong>Scoreboard:</strong> guarda histórico ou modelo esperado.</li>
+            <li><strong>Coverage:</strong> mede o quanto foi testado.</li>
+          </ul>
+          <details class="nested-detail" open>
+            <summary>Checker versus waveform</summary>
+            <div class="detail-body">
+              <p>
+                Waveform responde "o que aconteceu no tempo?". Checker responde "isso está correto?".
+                Os dois são úteis, mas têm funções diferentes. O ideal é o checker apontar a falha e
+                a waveform ajudar a investigar a causa.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arquivos">File I/O e TEXTIO</h2>
+          <p>
+            Testbenches complexos podem ler vetores de entrada e escrever resultados em arquivos.
+            Em VHDL, isso normalmente passa por <code>TEXTIO</code>.
+          </p>
+          <pre><code>arquivo de vetores -> testbench -> DUT -> log de resultados</code></pre>
+          <details class="nested-detail">
+            <summary>Quando vale usar arquivos?</summary>
+            <div class="detail-body">
+              <p>
+                Use arquivos quando há muitos casos, quando os vetores vêm de uma referência externa
+                ou quando você quer repetir regressões. Isso é ótimo para verificação, mas deve ficar
+                fora do RTL sintetizável.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="subprogramas">Functions, procedures e packages</h2>
+          <p>
+            Functions e procedures evitam testbenches enormes e repetitivos.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Recurso</th><th>Melhor uso em testbench</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Function</td><td>calcular resultado esperado, conversões, pequenas decisões puras</td></tr>
+                <tr><td>Procedure</td><td>aplicar transação, dirigir sinais, encapsular sequência temporal</td></tr>
+                <tr><td>Package</td><td>compartilhar tipos, constantes, functions e procedures</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details class="nested-detail">
+            <summary>Exemplo de function para expected result</summary>
+            <div class="detail-body">
+              <pre><code>function expected_sum(
+    a : unsigned(1 downto 0);
+    b : unsigned(1 downto 0)
+) return unsigned is
+begin
+    return ('0' & a) + ('0' & b);
+end function;</code></pre>
+              <p>
+                Essa function permite que o checker compare o DUT com um resultado esperado calculado
+                pelo testbench.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="debug">Debug metódico</h2>
+          <p>Debug não é abrir waveform ao acaso. O fluxo recomendado é:</p>
+          <ul class="key-list compact-list">
+            <li>Detectar mismatch entre observado e esperado.</li>
+            <li>Decidir se a origem está no DUT ou no testbench.</li>
+            <li>Isolar o sinal, transação ou estado onde a divergência começa.</li>
+            <li>Corrigir e repetir a simulação.</li>
+            <li>Confirmar que a correção não quebrou outro caso.</li>
+          </ul>
+          <p>
+            Logs e waveform são ferramentas. O objetivo final é um relatório claro: <code>PASSED</code>
+            ou <code>FAILED</code>.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="avancado">CRV, FLI e HVL</h2>
+          <p>
+            Os slides também citam recursos mais avançados. Eles são importantes como cultura de verificação,
+            mas não precisam dominar o primeiro laboratório.
+          </p>
+          <details class="nested-detail">
+            <summary>Constraint Random Verification</summary>
+            <div class="detail-body">
+              <p>
+                CRV gera estímulos aleatórios dentro de regras. A ideia não é sortear qualquer coisa, mas
+                explorar muitos casos válidos e medir cobertura. Em VHDL, bibliotecas como OSVVM ajudam nisso.
+              </p>
+            </div>
+          </details>
+          <details class="nested-detail">
+            <summary>FLI e HVL</summary>
+            <div class="detail-body">
+              <p>
+                FLI conecta o simulador a código externo, como C/C++/Java. HVLs são linguagens/metodologias
+                com recursos fortes para verificação, como randomização, assertions, coverage e transações.
+                SystemVerilog/UVM aparecem mais nesse mundo do que VHDL puro.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="filelists">Ligação com filelists</h2>
+          <p>
+            O ponto prático para o ambiente do professor:
+          </p>
+          <pre><code>filelist.f     -> RTL + testbench + packages de simulação
+filelist_rtl.f -> somente RTL sintetizável</code></pre>
+          <p>
+            Clock generator, <code>TEXTIO</code>, dumps, procedures de estímulo e self-checking pertencem
+            ao mundo da simulação.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/03_VHDL_for_Verification.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/03_VHDL_for_Verification.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_2_1_introducao_e_sintese.html">Anterior: Introdução e Síntese</a>
+          <a href="bloco_2_3_vhdl_reference_designs.html">Próxima: VHDL Reference Designs</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

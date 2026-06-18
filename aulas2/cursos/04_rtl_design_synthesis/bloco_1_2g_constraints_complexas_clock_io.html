@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Constraints Complexas de Clock e I/O</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Constraints Complexas
+    </nav>
+
+    <h1 class="page-title">Constraints Complexas de Clock e I/O</h1>
+    <p class="lead">
+      Esta aula aprofunda os detalhes que fazem um SDC deixar de ser “mínimo” e passar a representar melhor o mundo
+      externo: waveform, duty-cycle, bordas de descida, múltiplos caminhos de I/O, driving cell, carga, latência de clock
+      e clocks virtuais.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Até agora, o SDC foi tratado como uma forma de dizer: “este bloco tem um clock, entradas chegam depois de
+            certo tempo, saídas precisam ficar prontas antes de certo tempo”. Isso é suficiente para começar. Mas o curso
+            mostra que, quando o ambiente externo fica menos idealizado, os detalhes importam: o clock pode ter duty-cycle
+            diferente, a interface pode ser lançada na borda de descida, a mesma porta pode ter mais de um caminho externo
+            e as latências de clock podem mudar antes e depois de CTS.
+          </p>
+          <p>
+            O objetivo não é complicar o SDC do CPU sem necessidade. O objetivo é aprender a não cometer erros silenciosos:
+            usar o nome errado do clock, embutir offset em waveform, esquecer <code>-add_delay</code>, modelar duas vezes
+            o mesmo atraso externo, propagar clocks virtuais indevidamente ou interpretar <code>set_output_delay</code>
+            como atraso interno.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-port-object">Porta de clock versus objeto de clock</h2>
+          <p>
+            Um ponto simples causa muitos erros: <code>Clk</code> pode ser o nome da porta física, mas o objeto de clock
+            pode ter outro nome. Depois que você cria um clock com <code>-name</code>, comandos como
+            <code>set_input_delay</code>, <code>set_output_delay</code>, <code>set_clock_latency</code> e
+            <code>set_clock_uncertainty</code> devem referenciar o objeto de clock correto.
+          </p>
+
+          <pre><code>create_clock -period 2.0 -name My_CLK [get_ports Clk]
+
+# Correto: usa o nome do objeto de clock
+set_input_delay -max 0.6 -clock My_CLK [get_ports A]
+
+# Perigoso: se não existir objeto chamado Clk, a constraint falha ou não pega o clock pretendido
+set_input_delay -max 0.6 -clock Clk [get_ports A]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Memorização útil:</strong> porta é conectividade. Clock é objeto temporal. Eles podem ter o mesmo
+            nome, mas não são a mesma coisa no raciocínio da ferramenta.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="waveform">Waveform e duty-cycle</h2>
+          <p>
+            Quando você escreve <code>create_clock -period 2</code>, a ferramenta assume uma forma de onda padrão:
+            borda de subida em 0 ns, borda de descida na metade do período e duty-cycle de 50%. Para um período de 2 ns,
+            isso equivale a waveform <code>{0 1}</code>.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Clock padrão</h3>
+              <pre><code>create_clock -period 2 [get_ports Clk]</code></pre>
+              <p>Rise em 0 ns, fall em 1 ns, próximo rise em 2 ns.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Duty-cycle diferente</h3>
+              <pre><code>create_clock -period 2 \
+  -waveform {0 0.6} \
+  [get_ports Clk]</code></pre>
+              <p>Clock fica alto de 0 a 0.6 ns. O período continua 2 ns.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Waveform complexa</h3>
+              <pre><code>create_clock -period 1.6 \
+  -waveform {0 0.4 0.6 1.4} \
+  [get_ports Clk]</code></pre>
+              <p>Valores alternam rise/fall dentro do período.</p>
+            </article>
+          </div>
+
+          <p>
+            A waveform descreve bordas dentro de um período repetitivo. Ela deve ser usada para duty-cycle e padrões de
+            borda reais, não como atalho para deslocar artificialmente a chegada do clock.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="offset">Por que offset via waveform não é recomendado</h2>
+          <p>
+            Os slides mostram um clock com waveform <code>{0.4 1.4}</code>, que desloca a primeira borda de subida para
+            0.4 ns. Tecnicamente isso cria um clock deslocado, mas o material alerta que definir offset diretamente em
+            <code>-waveform</code> não é recomendado. O motivo é conceitual: waveform deveria descrever a forma periódica
+            do clock; atraso de chegada do clock deveria ser modelado como latência.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Menos recomendado</h3>
+              <pre><code>create_clock -period 2 \
+  -waveform {0.4 1.4} \
+  [get_ports Clk]</code></pre>
+              <p>Mistura forma do clock com deslocamento de chegada.</p>
+            </div>
+            <div class="note-box">
+              <h3>Mais claro</h3>
+              <pre><code>create_clock -period 2 \
+  -waveform {0 1} \
+  [get_ports Clk]
+
+set_clock_latency -source -max 0.4 \
+  [get_clocks Clk]</code></pre>
+              <p>Separa waveform de latência.</p>
+            </div>
+          </div>
+
+          <p>
+            Essa separação fica ainda mais importante quando o fluxo passa de pré-CTS para pós-CTS. Antes da árvore de
+            clock ser construída, latências são estimativas. Depois, parte da latência pode vir da rede propagada.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-fall">Input delay relativo à borda de descida</h2>
+          <p>
+            Nem toda interface externa lança dados na borda de subida. Se o bloco externo lança em borda de descida,
+            você precisa dizer isso no delay. Caso contrário, a ferramenta pode usar a borda errada como referência e
+            calcular uma janela temporal incorreta.
+          </p>
+
+          <pre><code>create_clock -period 3.6 -waveform {0 1.2} [get_ports Clk]
+
+# Dado externo lançado na borda de descida do clock de referência
+set_input_delay -max 1.3 \
+  -clock Clk \
+  -clock_fall \
+  [get_ports A]</code></pre>
+
+          <div class="timing-map">
+            <div class="timing-node external">Borda de descida externa</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Atraso externo</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Porta A</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node internal">Captura interna</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="add-delay">Múltiplos input/output delays no mesmo port</h2>
+          <p>
+            Uma porta pode receber dados por mais de um caminho externo ou ser capturada por mais de uma condição externa.
+            Se você aplica múltiplas constraints na mesma porta, precisa usar <code>-add_delay</code> para não sobrescrever
+            a anterior.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Input com dois caminhos</h3>
+              <pre><code>set_input_delay -max 0.3 \
+  -clock Clk -clock_fall \
+  [get_ports A]
+
+set_input_delay -max 1.2 \
+  -clock Clk -add_delay \
+  [get_ports A]</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Output com duas capturas externas</h3>
+              <pre><code>set_output_delay -max 2.5 \
+  -clock Clk [get_ports B]
+
+set_output_delay -max 0.7 \
+  -clock Clk -clock_fall -add_delay \
+  [get_ports B]</code></pre>
+            </div>
+          </div>
+
+          <p>
+            A ferramenta deve considerar a constraint mais restritiva em cada análise relevante. O erro clássico é
+            acreditar que escreveu duas constraints, mas a segunda substituiu a primeira.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="input-delay-zero-load">Driving cell e a armadilha de contar atraso duas vezes</h2>
+          <p>
+            <code>set_input_delay</code> informa o tempo externo já consumido antes do sinal chegar ao bloco. Já
+            <code>set_driving_cell</code> modela a célula externa que dirige o input, permitindo que a ferramenta calcule
+            transição de entrada com base na força do driver e na carga vista.
+          </p>
+
+          <pre><code>set_input_delay -max 0.48 -clock Clk [get_ports A]
+
+set_driving_cell -max \
+  -lib_cell FD1 \
+  -pin Qn \
+  [get_ports A]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Pegadinha importante:</strong> se o input delay que você recebeu já inclui atraso do driver carregado
+            pela entrada do seu bloco, e você também modela <code>set_driving_cell</code>, pode criar pessimismo e contar
+            parte do efeito duas vezes. O curso recomenda, ao usar <code>set_driving_cell</code>, que o input delay seja
+            baseado em uma condição de saída externa sem carga do bloco atual, quando esse detalhe está disponível.
+          </div>
+
+          <p>
+            Em laboratório acadêmico, muitas vezes não temos esse nível de informação. Nesse caso, usar
+            <code>set_input_transition</code> ou um <code>set_driving_cell</code> conservador é uma aproximação, mas deve
+            ficar documentado como hipótese.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="load-input-output">Carga externa em input e output</h2>
+          <p>
+            <code>set_load</code> costuma aparecer em outputs, porque a saída do bloco dirige capacitâncias externas.
+            Mas o material também mostra que, em alguns cenários, um input pode estar conectado a outros blocos externos,
+            e essa carga externa adicional afeta o driver que alimenta nossa entrada.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Output load</h3>
+              <pre><code>set_load -max 0.050 [all_outputs]</code></pre>
+              <p>Modela carga que nossas saídas precisam dirigir.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Input load externo</h3>
+              <pre><code>set_driving_cell -max \
+  -lib_cell NAND2_3 \
+  [get_ports INPUT_A]
+
+set_load -max 0.012 \
+  [get_ports INPUT_A]</code></pre>
+              <p>Modela carga extra vista pelo driver externo além do nosso bloco.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Load budgeting</h3>
+              <p>Quando ainda não sabemos a carga real, usamos hipóteses conservadoras para não otimizar em mundo ideal.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="output-delay-complexo">Output delay em caminhos externos complexos</h2>
+          <p>
+            <code>set_output_delay</code> não é o atraso da lógica interna até a saída. Ele representa o tempo que o
+            circuito externo precisa depois que nosso bloco entrega a saída. Portanto, quanto maior o output delay, menor
+            o tempo restante para nosso bloco gerar a saída.
+          </p>
+
+          <div class="timing-map">
+            <div class="timing-node internal">Registrador interno</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Lógica interna</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Porta B</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node external">Tempo externo reservado</div>
+          </div>
+
+          <pre><code># Reserva 0.8 ns para o circuito externo depois da saída B
+set_output_delay -max 0.8 -clock Clk [get_ports B]</code></pre>
+
+          <p>
+            Se existem dois caminhos externos a partir da mesma saída, por exemplo um capturado na borda de subida e outro
+            na borda de descida, use múltiplos <code>set_output_delay</code> com <code>-add_delay</code>.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="argumentos-tcl">Ordem dos argumentos em Tcl: flexível, mas não mágica</h2>
+          <p>
+            Os comandos Tcl da Synopsys permitem certa flexibilidade de ordem, mas isso não significa que você pode
+            misturar valores sem estrutura. Em especial, não se coloca dois valores numéricos no mesmo
+            <code>set_output_delay</code> achando que eles representam duas condições. Para condições múltiplas, use
+            comandos separados e <code>-add_delay</code>.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Errado como intenção</h3>
+              <pre><code># Não represente dois delays assim
+set_output_delay -max 2.5 0.7 \
+  -clock Clk [get_ports B]</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Correto</h3>
+              <pre><code>set_output_delay -max 2.5 \
+  -clock Clk [get_ports B]
+
+set_output_delay -max 0.7 \
+  -clock Clk -clock_fall -add_delay \
+  [get_ports B]</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="pre-post-cts">Pré-CTS e pós-CTS: clock ideal versus clock propagado</h2>
+          <p>
+            CTS significa Clock Tree Synthesis. Antes da árvore de clock existir, a ferramenta trata o clock como ideal
+            ou usa latências estimadas. Depois da CTS, a rede de clock pode ser propagada, e a latência passa a vir da
+            própria rede física de clock.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Momento</th><th>Modelo comum</th><th>Cuidado</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Pré-CTS</td>
+                  <td>Clock ideal com <code>set_clock_latency</code> estimada.</td>
+                  <td>Não fingir precisão física que ainda não existe.</td>
+                </tr>
+                <tr>
+                  <td>Pós-CTS</td>
+                  <td>Clock propagado em redes reais do design.</td>
+                  <td>Propagar só clocks apropriados, não clocks virtuais de I/O.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Pré-CTS: latência estimada
+set_clock_latency -source -max 0.7 [get_clocks Clk]
+set_clock_latency -max 0.3 [get_clocks Clk]
+
+# Pós-CTS: propagar clocks reais do design
+set_propagated_clock [get_clocks Clk]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Erro perigoso dos slides:</strong> usar <code>set_propagated_clock [all_clocks]</code> pode propagar
+            também clocks virtuais ou clocks de referência de I/O. Isso distorce a análise. Seja específico.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="latencias-io">Latências independentes para I/O</h2>
+          <p>
+            Quando o clock usado como referência de I/O não tem a mesma latência do clock interno, você precisa escolher
+            um método explícito. O curso apresenta duas famílias de solução: clocks virtuais externos ou delays com
+            latência incluída.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Método 1: clock virtual externo</h3>
+              <p>Crie um clock sem porta física para representar o domínio externo. Use esse clock em input/output delay.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Método 2: latência incluída</h3>
+              <p>Informe que o delay já inclui network/source latency externa usando opções específicas.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Objetivo</h3>
+              <p>Evitar que latências internas e externas sejam somadas, ignoradas ou propagadas no lugar errado.</p>
+            </article>
+          </div>
+
+          <pre><code># Método com clock virtual externo
+create_clock -name EXT_CLK -period 10.0
+
+set_input_delay -max 2.0 \
+  -clock EXT_CLK \
+  [get_ports data_in]
+
+set_output_delay -max 2.5 \
+  -clock EXT_CLK \
+  [get_ports data_out]</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="latencia-incluida">Network/source latency incluída no delay</h2>
+          <p>
+            Em algumas situações, o número de input/output delay que você recebeu já inclui parte da latência de clock
+            externa. Para evitar contar essa latência de forma errada, existem opções como
+            <code>-network_latency_included</code> e <code>-source_latency_included</code>.
+          </p>
+
+          <pre><code># Input delay com network latency já incluída
+set_input_delay -max 2.0 \
+  -clock EXT_CLK \
+  -network_latency_included \
+  [get_ports data_in]
+
+# Output delay com source e network latency já incluídas
+set_output_delay -max 2.5 \
+  -clock EXT_CLK \
+  -source_latency_included \
+  -network_latency_included \
+  [get_ports data_out]</code></pre>
+
+          <p>
+            Essas opções são avançadas porque dependem de saber exatamente o que o número de delay representa. Se você
+            não sabe se a latência externa já está incluída, a melhor decisão é documentar a hipótese e validar com
+            alguém do fluxo físico/STA.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="aplicacao-cpu">Aplicação no CPU do professor: o que usar agora</h2>
+          <p>
+            O SDC atual do CPU já usa um modelo simples e razoável para começar: clock principal, uncertainty, transition,
+            input delay, output delay, load e false path de reset. Isso é bom para a fase atual.
+          </p>
+
+          <pre><code>create_clock -name master_clk -period 20.0 [get_ports clk]
+set_clock_uncertainty 0.2 [get_clocks master_clk]
+set_clock_transition 0.1  [get_clocks master_clk]
+
+set_input_delay -clock master_clk 0.8 \
+  [remove_from_collection [all_inputs] [get_ports clk]]
+
+set_output_delay -clock master_clk 0.8 [all_outputs]
+set_load 0.050 [all_outputs]
+set_false_path -from [get_ports rst]</code></pre>
+
+          <div class="project-bridge">
+            <strong>Próximo refinamento plausível:</strong> se quisermos melhorar o SDC sem inventar complexidade, o
+            passo natural é checar unidades da biblioteca, revisar se <code>0.8</code> e <code>0.050</code> fazem sentido
+            e talvez trocar uma transição fixa por <code>set_driving_cell</code> usando uma célula real da SAED. Mas isso
+            deve ser feito como hipótese documentada, não como decoração.
+          </div>
+
+          <p>
+            Para este bloco CPU, não há motivo imediato para usar waveform complexa, <code>-clock_fall</code>,
+            <code>-add_delay</code>, clocks virtuais externos ou latências incluídas, a menos que o professor introduza
+            uma interface ou cenário que exija isso.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="script-consolidado">Script consolidado de referência</h2>
+          <p>
+            Este script reúne os padrões da aula. Ele é uma referência de estudo, não um SDC recomendado inteiro para o
+            CPU atual.
+          </p>
+
+          <pre><code># Clock com nome explícito e duty-cycle diferente
+create_clock -period 2.0 \
+  -waveform {0 0.6} \
+  -name My_CLK \
+  [get_ports Clk]
+
+# Offset modelado por latência, não por waveform deslocada
+set_clock_latency -source -max 0.4 [get_clocks My_CLK]
+
+# Input delay comum
+set_input_delay -max 0.6 \
+  -clock My_CLK \
+  [get_ports A]
+
+# Input lançado por borda de descida
+set_input_delay -max 0.3 \
+  -clock My_CLK \
+  -clock_fall \
+  [get_ports B]
+
+# Segundo caminho de entrada no mesmo port
+set_input_delay -max 1.2 \
+  -clock My_CLK \
+  -add_delay \
+  [get_ports B]
+
+# Driver externo e carga externa adicional
+set_driving_cell -max \
+  -lib_cell NAND2_3 \
+  [get_ports INPUT_A]
+
+set_load -max 0.012 [get_ports INPUT_A]
+
+# Output com múltiplas condições externas
+set_output_delay -max 2.5 \
+  -clock My_CLK \
+  [get_ports OUT_B]
+
+set_output_delay -max 0.7 \
+  -clock My_CLK \
+  -clock_fall \
+  -add_delay \
+  [get_ports OUT_B]
+
+# Clock virtual externo
+create_clock -name EXT_CLK -period 10.0
+
+set_input_delay -max 2.0 \
+  -clock EXT_CLK \
+  [get_ports data_in]
+
+# Pós-CTS: propagar apenas clocks reais apropriados
+set_propagated_clock [get_clocks My_CLK]</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="erros-comuns">Erros comuns que esta aula evita</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Erro</th><th>Por que dói</th><th>Como pensar corretamente</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Usar nome da porta em vez do objeto de clock</td>
+                  <td>A constraint pode referenciar clock inexistente ou errado.</td>
+                  <td>Depois de <code>-name</code>, use o nome do objeto.</td>
+                </tr>
+                <tr>
+                  <td>Modelar offset via waveform</td>
+                  <td>Mistura forma periódica com latência.</td>
+                  <td>Use waveform para bordas e latência para chegada.</td>
+                </tr>
+                <tr>
+                  <td>Esquecer <code>-clock_fall</code></td>
+                  <td>A ferramenta usa a borda errada como referência.</td>
+                  <td>Declare a borda externa real de lançamento/captura.</td>
+                </tr>
+                <tr>
+                  <td>Esquecer <code>-add_delay</code></td>
+                  <td>A segunda constraint substitui a primeira.</td>
+                  <td>Use <code>-add_delay</code> para múltiplos caminhos no mesmo port.</td>
+                </tr>
+                <tr>
+                  <td>Propagar <code>[all_clocks]</code> pós-CTS</td>
+                  <td>Clocks virtuais/I/O podem virar propagados indevidamente.</td>
+                  <td>Propague clocks reais e apropriados de forma específica.</td>
+                </tr>
+                <tr>
+                  <td>Interpretar output delay como atraso interno</td>
+                  <td>O orçamento de tempo fica invertido.</td>
+                  <td>Output delay é tempo reservado para o mundo externo.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="perguntas">Perguntas de revisão</h2>
+          <div class="quiz-card">
+            <strong>1. Qual a diferença entre porta de clock e objeto de clock?</strong>
+            <p class="answer">A porta é conectividade física/RTL; o objeto de clock é a entidade temporal criada por <code>create_clock</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>2. O que <code>-waveform {0 0.6}</code> define?</strong>
+            <p class="answer">Define borda de subida em 0 ns e borda de descida em 0.6 ns dentro do período, alterando o duty-cycle.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>3. Por que offset via waveform não é recomendado?</strong>
+            <p class="answer">Porque offset é atraso de chegada do clock; é mais claro modelar isso com <code>set_clock_latency</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>4. Quando usar <code>-clock_fall</code>?</strong>
+            <p class="answer">Quando o delay é relativo à borda de descida do clock de referência.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>5. Quando usar <code>-add_delay</code>?</strong>
+            <p class="answer">Quando há múltiplas constraints de input/output delay no mesmo port que devem coexistir.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>6. O que <code>set_driving_cell</code> modela?</strong>
+            <p class="answer">Modela a célula externa que dirige uma entrada, ajudando a calcular slew/transição de entrada.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>7. Por que não usar <code>set_propagated_clock [all_clocks]</code> sem pensar?</strong>
+            <p class="answer">Porque clocks virtuais ou clocks de referência de I/O podem ser propagados indevidamente.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>8. O que significa <code>-network_latency_included</code>?</strong>
+            <p class="answer">Indica que o delay informado já inclui latência de rede de clock, evitando contagem incorreta.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo bloco do site</h2>
+          <p>
+            O próximo bloco deve entrar em <strong>SPG Flow, Congestion e Layout GUI</strong>. A ponte é natural: depois
+            de modelar timing de forma mais realista, a síntese começa a considerar efeitos físicos como posicionamento,
+            congestionamento, camadas de roteamento e estimativas mais próximas do backend.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/10_Constraints_Complex_Design_Considerations_parte_A.md">Constraints Complex Design Considerations parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/10_Constraints_Complex_Design_Considerations_parte_B.md">Constraints Complex Design Considerations parte B</a>,
+          <a data-md-source href="../../assets/md_normalizado/05_Constraints_Input_Transition_and_Output_Loading.md">Input Transition and Output Loading</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2f_multiplos_clocks_exceptions.html">Anterior: Múltiplos Clocks</a>
+          <a href="bloco_1_2h_spg_congestion_layout_gui.html">Próxima: SPG e Congestionamento</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

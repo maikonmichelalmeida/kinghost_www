@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timing Analysis e Ajuste de SDC</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Timing Analysis
+    </nav>
+
+    <h1 class="page-title">Timing Analysis e Ajuste de SDC</h1>
+    <p class="lead">
+      Esta aula transforma os reports de timing em ação prática: como ler um caminho, como decidir se o problema está no
+      SDC, no RTL, na arquitetura, no ambiente de I/O ou apenas na estratégia de compile.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Depois da síntese, o report de timing é a conversa mais honesta que a ferramenta tem com você. Ele mostra se
+            o circuito consegue respeitar o clock e quais caminhos estão consumindo tempo demais. A dificuldade é que
+            ele parece assustador no começo: muitas colunas, nomes longos, células de biblioteca, increments, arrival,
+            required e slack.
+          </p>
+          <p>
+            A meta aqui é criar o reflexo correto: ler primeiro o tipo de caminho, depois a conta de timing, depois a
+            causa provável e só então escolher a correção. Um erro comum é usar <code>set_false_path</code> ou
+            <code>set_multicycle_path</code> cedo demais para "limpar" report. Isso pode esconder um bug real. Timing
+            analysis bem feita separa o que precisa ser otimizado do que realmente não deve ser analisado.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="onde-entra">Onde esta aula entra no fluxo</h2>
+          <p>
+            O fluxo de síntese não é linear no sentido ingênuo. Você não escreve SDC uma vez, roda compile uma vez e
+            aceita o resultado. O ciclo real é iterativo.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>1. SDC inicial</strong><p>Clock, I/O delay, load, transition e incertezas plausíveis.</p></div>
+            <div class="flow-step"><strong>2. Compile</strong><p>DC_NXT tenta mapear e otimizar com base nessas regras.</p></div>
+            <div class="flow-step"><strong>3. Reports</strong><p>Timing, constraints, QoR, área e potência mostram o estado.</p></div>
+            <div class="flow-step"><strong>4. Diagnóstico</strong><p>Separar violação real, constraint errada e exceção legítima.</p></div>
+            <div class="flow-step"><strong>5. Ajuste</strong><p>Corrigir SDC, RTL, path groups ou estratégia de compile.</p></div>
+            <div class="flow-step"><strong>6. Recompile</strong><p>Rodar novamente e confirmar que a melhora é real.</p></div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Regra de ouro:</strong> timing analysis não é procurar um comando que faça o report ficar verde.
+            É descobrir se o design, as constraints e o modelo de ambiente estão contando a mesma história.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="sta">Static Timing Analysis em linguagem humana</h2>
+          <p>
+            Static Timing Analysis, ou STA, calcula se sinais conseguem atravessar caminhos combinacionais entre eventos
+            de clock. Ela não simula todos os valores possíveis como um testbench. Em vez disso, analisa atrasos máximos
+            e mínimos em caminhos estruturais.
+          </p>
+
+          <div class="timing-map">
+            <div class="timing-node internal">Clock lança dado</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Clock-to-Q</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Lógica + nets</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node internal">Clock captura dado</div>
+          </div>
+
+          <div class="equation">
+            data arrival time = clock launch + clock-to-Q + delay combinacional + delay de net
+          </div>
+          <div class="equation">
+            data required time = clock capture + período - setup - uncertainty - margens
+          </div>
+          <div class="equation">
+            slack = required - arrival
+          </div>
+
+          <p>
+            Se o slack é positivo, o dado chegou antes do prazo. Se é negativo, chegou tarde. A ferramenta pode tentar
+            diminuir atraso escolhendo células mais rápidas, duplicando lógica, inserindo buffers, mudando hierarquia ou
+            reestruturando datapaths. Mas se o prazo foi definido errado no SDC, a ferramenta estará otimizando um
+            problema mal descrito.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="setup-hold">Setup e hold: os dois lados da análise</h2>
+          <p>
+            Em curso de RTL, muitas vezes falamos mais de setup porque é intuitivo: o dado precisa chegar antes da borda
+            de captura. Mas hold também importa: logo depois da borda de captura, o dado antigo precisa permanecer estável
+            por um tempo mínimo.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Setup</h3>
+              <p>
+                Verifica se o caminho é rápido o suficiente para entregar o dado até a próxima borda relevante.
+                Violação de setup costuma pedir redução de atraso, relaxamento legítimo de constraint ou pipeline.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Hold</h3>
+              <p>
+                Verifica se o caminho não é rápido demais logo após a borda de captura. Violação de hold costuma pedir
+                buffers, ajuste de skew ou correção de exceção mal aplicada.
+              </p>
+            </article>
+            <article class="concept-card danger">
+              <h3>Armadilha</h3>
+              <p>
+                Ao aplicar multicycle para setup, você quase sempre precisa ajustar hold. Relaxar setup sem pensar no
+                hold é uma fonte clássica de constraint perigosa.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ler-report">Como ler um timing report em camadas</h2>
+          <p>
+            Não comece olhando todas as linhas de célula. Primeiro entenda a história geral do caminho. Depois aproxime
+            o zoom.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>Camada 1: que tipo de path é este?</h3>
+              <div class="command-body">
+                <p>
+                  Veja <code>Startpoint</code>, <code>Endpoint</code>, <code>Path Group</code>, <code>Path Type</code> e
+                  clock de lançamento/captura. Isso diz se o caminho é reg-to-reg, input-to-reg, reg-to-output,
+                  input-to-output, setup ou hold.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>Camada 2: a conta fecha?</h3>
+              <div class="command-body">
+                <p>
+                  Procure <code>data arrival time</code>, <code>data required time</code> e <code>slack</code>. Se o
+                  required parece estranho, talvez o SDC esteja errado. Se o arrival é enorme, talvez o RTL ou o caminho
+                  físico esteja pesado.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>Camada 3: onde o tempo foi gasto?</h3>
+              <div class="command-body">
+                <p>
+                  Na seção de path delay, compare <code>Incr</code> e <code>Path</code>. <code>Incr</code> é o atraso
+                  incremental daquela etapa. <code>Path</code> é o acumulado. Valores grandes em nets podem indicar
+                  fanout ou carga; valores grandes em células podem indicar lógica pesada.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>Camada 4: o padrão se repete?</h3>
+              <div class="command-body">
+                <p>
+                  Um único caminho falhando pode ser um problema local. Muitos caminhos semelhantes falhando indicam
+                  padrão: input delay mal modelado, clock agressivo, path group sem prioridade, interface mal
+                  especificada ou arquitetura insuficiente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="comandos">Comandos essenciais para investigar timing</h2>
+          <p>
+            O Job Aid do curso mostra muitas opções. Para começar bem, monte uma pequena rotina de investigação.
+          </p>
+
+          <pre><code># Triagem geral
+report_constraint -all_violators
+report_qor
+
+# Pior caminho detalhado
+report_timing -max_paths 1 -nworst 1
+
+# Mais caminhos para ver padrão
+report_timing -max_paths 20 -nworst 5
+
+# Mais detalhes físicos/eléctricos
+report_timing -max_paths 10 -nets -capacitance -transition
+
+# Ver grupos de caminho
+report_path_group
+
+# Conferir clocks e portas
+report_clock
+report_port -verbose</code></pre>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Comando</th><th>Resposta que ele dá</th><th>Quando usar</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>report_constraint -all_violators</code></td>
+                  <td>Quais regras estão violadas.</td>
+                  <td>Primeira triagem após compile.</td>
+                </tr>
+                <tr>
+                  <td><code>report_timing</code></td>
+                  <td>Detalhe caminho por caminho.</td>
+                  <td>Investigar causa de setup/hold.</td>
+                </tr>
+                <tr>
+                  <td><code>report_qor</code></td>
+                  <td>Resumo de WNS, TNS, área e estado geral.</td>
+                  <td>Comparar rodadas de síntese.</td>
+                </tr>
+                <tr>
+                  <td><code>report_path_group</code></td>
+                  <td>Como os caminhos estão agrupados.</td>
+                  <td>Quando um grupo domina a otimização.</td>
+                </tr>
+                <tr>
+                  <td><code>report_timing_requirements -ignored</code></td>
+                  <td>Exceções ignoradas ou inválidas.</td>
+                  <td>Depois de adicionar false path, multicycle ou clock groups.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="maxpaths-nworst"><code>max_paths</code> versus <code>nworst</code></h2>
+          <p>
+            Os slides chamam atenção para uma diferença que confunde bastante. <code>max_paths</code> controla o total de
+            caminhos reportados. <code>nworst</code> controla quantos caminhos piores são reportados por endpoint.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3><code>-max_paths</code></h3>
+              <p>
+                Limita o número total de caminhos. Se você pede <code>-max_paths 10</code>, quer no máximo dez caminhos
+                no report.
+              </p>
+              <pre><code>report_timing -max_paths 10</code></pre>
+            </div>
+            <div class="note-box">
+              <h3><code>-nworst</code></h3>
+              <p>
+                Limita quantos caminhos por endpoint aparecem. É útil quando um endpoint sozinho domina o report e
+                esconde outros endpoints problemáticos.
+              </p>
+              <pre><code>report_timing -max_paths 20 -nworst 3</code></pre>
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Uso prático:</strong> se o report sempre mostra variações do mesmo endpoint, use <code>-nworst</code>
+            para enxergar se existem outros endpoints também perigosos.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="wns-tns">WNS e TNS: diagnóstico rápido</h2>
+          <p>
+            WNS e TNS não dizem a causa do problema, mas dizem o formato do problema.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Situação</th><th>Leitura provável</th><th>Primeira ação</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>WNS pequeno negativo, TNS pequeno</td>
+                  <td>Poucos caminhos quase fechando.</td>
+                  <td>Investigar path crítico, path group e incremental compile.</td>
+                </tr>
+                <tr>
+                  <td>WNS muito negativo, TNS pequeno</td>
+                  <td>Um caminho estruturalmente ruim.</td>
+                  <td>Olhar RTL/datapath; talvez pipeline ou reescrita.</td>
+                </tr>
+                <tr>
+                  <td>WNS negativo moderado, TNS enorme</td>
+                  <td>Muitos caminhos falhando.</td>
+                  <td>Suspeitar de SDC, clock agressivo ou ambiente mal modelado.</td>
+                </tr>
+                <tr>
+                  <td>WNS positivo, DRC violando</td>
+                  <td>Timing fecha, mas transição/capacitância/fanout não.</td>
+                  <td>Olhar max transition, max capacitance, loads e fanout.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="path-groups">Path groups: orientar a otimização</h2>
+          <p>
+            O DC_NXT otimiza tentando reduzir custo. Se todos os caminhos competem do mesmo jeito, a ferramenta pode
+            gastar esforço onde você não quer. Path groups deixam você dizer: "este conjunto de caminhos merece atenção".
+          </p>
+
+          <pre><code>group_path -name REG2REG \
+  -from [all_registers] \
+  -to   [all_registers]
+
+group_path -name INPUTS \
+  -from [all_inputs] \
+  -to   [all_registers]
+
+group_path -name OUTPUTS \
+  -from [all_registers] \
+  -to   [all_outputs]
+
+group_path -name REG2REG \
+  -critical_range 0.3 \
+  -weight 2</code></pre>
+
+          <p>
+            <code>-critical_range</code> inclui caminhos próximos do pior caminho, para evitar que a ferramenta corrija
+            um caminho e deixe vários quase críticos para trás. <code>-weight</code> dá prioridade relativa. Isso deve
+            ser usado com cuidado: aumentar peso de um grupo pode melhorar esse grupo e piorar outros.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="decidir">Decidir a correção: SDC, RTL ou compile?</h2>
+          <p>
+            O passo mais importante não é saber comandos. É escolher a categoria correta da correção.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Corrigir SDC</strong>
+              Use quando clocks, I/O delays, loads, transitions ou clock groups estão modelados de forma errada.
+            </div>
+            <div class="check-item">
+              <strong>Corrigir RTL</strong>
+              Use quando o caminho é realmente longo: datapath grande, mux profundo, comparador enorme, fanout estrutural.
+            </div>
+            <div class="check-item">
+              <strong>Ajustar compile</strong>
+              Use quando a intenção está correta, mas a ferramenta precisa de foco: path groups, effort, incremental, ungroup.
+            </div>
+            <div class="check-item">
+              <strong>Adicionar exception</strong>
+              Use só quando existe justificativa funcional: caminho falso real, multicycle real, clocks assíncronos reais.
+            </div>
+          </div>
+
+          <details class="expand-block" open>
+            <summary>Como saber se é problema de SDC?</summary>
+            <div class="detail-body">
+              <p>
+                Desconfie do SDC quando o report mostra caminhos que não deveriam existir, quando portas aparecem sem
+                delay de entrada/saída, quando clocks virtuais não foram usados para interfaces externas ou quando todos
+                os inputs/outputs parecem críticos de forma artificial.
+              </p>
+              <pre><code>report_clock
+report_port -verbose
+check_timing
+report_timing_requirements -ignored</code></pre>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary>Como saber se é problema de RTL?</summary>
+            <div class="detail-body">
+              <p>
+                Desconfie do RTL quando o mesmo tipo de caminho aparece longo mesmo com constraints plausíveis: cadeia
+                combinacional profunda, operação aritmética larga, mux em cascata, lógica de controle misturada com
+                datapath ou registradores faltando entre estágios naturalmente longos.
+              </p>
+              <p>
+                Nessa situação, aumentar esforço de compile pode ajudar um pouco, mas não substitui arquitetura. Às
+                vezes a solução real é pipeline, particionamento, redução de fanout ou simplificação de expressão.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="exceptions">Exceptions: remédio forte, não maquiagem</h2>
+          <p>
+            Timing exceptions dizem à ferramenta que certos caminhos não seguem a regra padrão de um ciclo. Elas são
+            necessárias em designs reais, mas perigosas quando usadas para calar reports.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3><code>set_false_path</code></h3>
+              <p>
+                Remove caminho da análise. Use quando funcionalmente o dado nunca precisa ser capturado daquela forma.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3><code>set_multicycle_path</code></h3>
+              <p>
+                Diz que um caminho tem mais de um ciclo para propagar. Precisa tratar setup e hold corretamente.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3><code>set_clock_groups</code></h3>
+              <p>
+                Define relações entre domínios de clock: assíncronos, logicamente exclusivos ou fisicamente exclusivos.
+              </p>
+            </article>
+          </div>
+
+          <pre><code># Exemplo: clocks assíncronos reais
+set_clock_groups -asynchronous \
+  -group [get_clocks clk_a] \
+  -group [get_clocks clk_b]
+
+# Exemplo: multicycle de setup com hold ajustado
+set_multicycle_path 3 -setup -from [get_cells U_SRC/*] -to [get_cells U_DST/*]
+set_multicycle_path 2 -hold  -from [get_cells U_SRC/*] -to [get_cells U_DST/*]
+
+# Sempre verificar exceções ignoradas
+report_timing_requirements -ignored</code></pre>
+
+          <div class="lesson-note">
+            <strong>Importante para prova e laboratório:</strong> uma exception inválida pode não proteger nada. Uma
+            exception ampla demais pode esconder um bug. Por isso, depois de qualquer exception, rode
+            <code>report_timing_requirements -ignored</code> e faça um report filtrado no caminho que você queria afetar.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="multicycle">Multicycle: por que hold costuma ser setup - 1</h2>
+          <p>
+            Um multicycle path existe quando a lógica foi projetada para levar mais de um ciclo entre launch e capture.
+            O comando de setup muda a borda de captura usada na análise. Só que a análise de hold também muda de forma
+            implícita se você não corrigir. Por isso aparece a regra prática: se setup é relaxado para N ciclos, hold
+            normalmente precisa ser ajustado para N-1.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>Default</strong><p>Setup captura na próxima borda. Hold verifica borda muito próxima.</p></div>
+            <div class="flow-step"><strong>Setup N</strong><p>Captura é empurrada para uma borda mais distante.</p></div>
+            <div class="flow-step"><strong>Hold N-1</strong><p>Recoloca a checagem de hold no ponto correto.</p></div>
+          </div>
+
+          <pre><code>set_multicycle_path 4 -setup -from [get_clocks src_clk] -to [get_clocks dst_clk]
+set_multicycle_path 3 -hold  -from [get_clocks src_clk] -to [get_clocks dst_clk]</code></pre>
+
+          <p>
+            Não aplique isso por fórmula cega. Antes, confirme que existe uma razão funcional: enable, protocolo, FSM,
+            handshake ou arquitetura que realmente só captura depois de vários ciclos.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="io-timing">Quando o problema está nos I/Os</h2>
+          <p>
+            Muitos problemas de timing em blocos pequenos não estão no reg-to-reg interno, mas nas interfaces. O SDC de
+            I/O é uma forma de dizer quanto tempo o mundo externo já gastou antes de entregar uma entrada, ou quanto
+            tempo o mundo externo precisa depois de receber uma saída.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Entrada</h3>
+              <p>
+                <code>set_input_delay</code> representa o tempo consumido pelo bloco anterior antes de o sinal chegar ao
+                nosso input. Quanto maior o input delay, menor o tempo interno disponível.
+              </p>
+              <pre><code>set_input_delay -clock master_clk 0.8 \
+  [remove_from_collection [all_inputs] [get_ports clk]]</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Saída</h3>
+              <p>
+                <code>set_output_delay</code> representa o tempo que o bloco externo precisa depois da nossa saída.
+                Quanto maior o output delay, menor o tempo que nosso bloco pode gastar até a saída.
+              </p>
+              <pre><code>set_output_delay -clock master_clk 0.8 [all_outputs]</code></pre>
+            </div>
+          </div>
+
+          <p>
+            Se o report mostra muitos caminhos de input ou output críticos, revise se os delays são realistas. Não é
+            errado começar com valores simplificados no laboratório, mas é importante saber que eles são hipóteses.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="clock-virtual">Clock virtual: quando a interface não usa o clock interno diretamente</h2>
+          <p>
+            Um clock virtual é um clock sem porta física no design. Ele representa o clock do dispositivo externo. Isso
+            é muito útil quando o bloco se comunica com outro domínio ou com uma interface cujo clock de referência não
+            deve ser tratado como o clock interno.
+          </p>
+
+          <pre><code>create_clock -name ext_clk -period 20.0
+
+set_input_delay  -clock ext_clk 3.0 [get_ports data_in]
+set_output_delay -clock ext_clk 2.0 [get_ports data_out]</code></pre>
+
+          <p>
+            No começo do nosso laboratório, o bloco CPU provavelmente pode usar um clock simples. Mas quando você começar
+            a justificar interfaces mais realistas, clocks virtuais serão uma forma mais correta de modelar o ambiente
+            externo sem bagunçar o clock interno.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="fluxo-projeto">Fluxo recomendado para o nosso projeto agora</h2>
+          <p>
+            Para o que o professor pediu até aqui, a prática mais útil é criar uma rotina curta: rodar síntese, ler
+            reports, ajustar SDC de forma pequena e repetir. Não precisamos ainda fazer Formality; mas já precisamos
+            produzir uma base que não atrapalhe Formality depois.
+          </p>
+
+          <pre><code>cd PROJECT_ENVIROMENT/module_CPU_pdk_SAED/blocks/CPU
+
+# Limpar e rodar a base
+make clean
+make sim
+make synth
+
+# Depois da síntese, olhar:
+ls tools/dc_nxt/rpt
+ls tools/dc_nxt/outputs
+
+# Reports principais
+less tools/dc_nxt/rpt/top_cpu_qor.rpt
+less tools/dc_nxt/rpt/top_cpu_timing.rpt
+less tools/dc_nxt/rpt/top_cpu_area.rpt
+less tools/dc_nxt/rpt/top_cpu_power.rpt
+
+# Fechar com simulação gate-level
+make sim GL=1</code></pre>
+
+          <div class="project-bridge">
+            <strong>Aplicação direta no seu bloco:</strong> o primeiro SDC não precisa ser perfeito. Ele precisa ser
+            explícito, auditável e melhor que "sem constraints". Depois dos reports, a gente melhora com base em evidência.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="checklist">Checklist de auditoria de timing</h2>
+          <div class="check-grid">
+            <div class="check-item"><strong>Clock existe?</strong><code>report_clock</code> mostra o clock esperado?</div>
+            <div class="check-item"><strong>Portas têm ambiente?</strong>Inputs têm delay/transition? Outputs têm delay/load?</div>
+            <div class="check-item"><strong>Violação é real?</strong>O caminho mostrado existe funcionalmente?</div>
+            <div class="check-item"><strong>Path group faz sentido?</strong>Reg-to-reg, input e output estão separados?</div>
+            <div class="check-item"><strong>Exceção foi aplicada?</strong><code>report_timing_requirements -ignored</code> está limpo?</div>
+            <div class="check-item"><strong>Rodada melhorou?</strong>Compare WNS/TNS/área/power antes e depois.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="erros-comuns">Erros comuns de iniciante</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Erro</th><th>Por que é perigoso</th><th>Correção mental</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Usar false path para sumir com violação</td>
+                  <td>Pode esconder caminho funcional real.</td>
+                  <td>Justifique funcionalmente antes de aplicar.</td>
+                </tr>
+                <tr>
+                  <td>Não ajustar hold em multicycle</td>
+                  <td>Setup relaxa, mas hold pode ficar incorreto.</td>
+                  <td>Para setup N, revise hold N-1.</td>
+                </tr>
+                <tr>
+                  <td>Confiar só em <code>report_timing</code></td>
+                  <td>Você pode ignorar DRCs e violações agregadas.</td>
+                  <td>Use também <code>report_constraint</code> e <code>report_qor</code>.</td>
+                </tr>
+                <tr>
+                  <td>Não modelar I/O</td>
+                  <td>O bloco fica otimizado como se o mundo externo fosse ideal.</td>
+                  <td>Use input/output delay, transition e load.</td>
+                </tr>
+                <tr>
+                  <td>Mudar várias coisas por rodada</td>
+                  <td>Você perde a causa da melhora ou piora.</td>
+                  <td>Faça uma mudança pequena, rode e compare reports.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="perguntas">Perguntas de revisão</h2>
+          <div class="quiz-card">
+            <strong>1. O que significa slack negativo?</strong>
+            <p class="answer">O dado chegou depois do tempo requerido; o caminho viola timing para aquela análise.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>2. Por que <code>report_constraint</code> e <code>report_timing</code> são complementares?</strong>
+            <p class="answer">O primeiro mostra o quadro geral de violações; o segundo explica caminhos específicos em detalhe.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>3. Quando usar <code>set_false_path</code>?</strong>
+            <p class="answer">Quando há justificativa funcional de que aquele caminho não deve ser analisado como caminho temporal real.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>4. Qual é a armadilha do multicycle?</strong>
+            <p class="answer">Relaxar setup sem corrigir hold pode criar uma constraint temporal errada.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>5. O que <code>-nworst</code> ajuda a enxergar?</strong>
+            <p class="answer">Ajuda a limitar caminhos por endpoint, evitando que um único endpoint esconda outros problemas.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>6. Por que clock virtual é útil?</strong>
+            <p class="answer">Ele modela o clock de um bloco externo sem criar uma porta de clock física dentro do design.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo bloco do site</h2>
+          <p>
+            O próximo bloco deve aprofundar <strong>múltiplos clocks, generated clocks e timing exceptions</strong>. Esta
+            aula preparou a leitura do report; a próxima deve ensinar a modelar relações entre clocks sem esconder bugs.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/07_Timing_Analysis.md">Timing Analysis</a>,
+          <a data-md-source href="../../assets/md_normalizado/08_Constraints_Multiple_Clocks_and_Exceptions_parte_A.md">Multiple Clocks and Exceptions parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/08_Constraints_Multiple_Clocks_and_Exceptions_parte_B.md">Multiple Clocks and Exceptions parte B</a>,
+          <a data-md-source href="../../assets/md_normalizado/13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md">Job Aid DC_NXT</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2d_reports_netlist_gate_level.html">Anterior: Reports e Gate-Level</a>
+          <a href="bloco_1_2f_multiplos_clocks_exceptions.html">Próxima: Múltiplos Clocks</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

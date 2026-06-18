@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog for Design</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>For Design
+    </nav>
+
+    <h1 class="page-title">SystemVerilog for Design</h1>
+    <p class="lead">
+      Aula sobre interfaces, modports, guidelines de síntese, packages e a fronteira entre RTL,
+      verificação e modelagem em SystemVerilog.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Apesar do nome "for Design", este bloco mistura recursos de design, verificação e modelagem.
+            A habilidade mais importante é classificar cada recurso antes de usar.
+          </p>
+          <pre><code>design RTL        -> interfaces, modports, packages, guidelines de síntese
+verificação       -> assertions, clocking blocks, program blocks
+modelagem/OOP     -> classes, herança, polimorfismo, DPI, dynamic arrays</code></pre>
+          <div class="callout">
+            <strong>Regra prática:</strong> se um recurso ajuda a organizar sinais e lógica que viram hardware,
+            ele pode pertencer ao RTL. Se cria objetos, randomiza, comunica processos de teste ou chama C/C++,
+            provavelmente pertence ao testbench.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="interfaces">Interfaces</h2>
+          <p>
+            Interfaces são o tópico mais importante deste bloco para projeto. Elas agrupam sinais relacionados
+            e reduzem o erro de conectar protocolos manualmente.
+          </p>
+          <pre><code class="language-systemverilog">interface bus_if;
+    logic        valid;
+    logic        ready;
+    logic [31:0] data;
+    logic [3:0]  id;
+endinterface</code></pre>
+          <p>
+            Sem interface, cada módulo carrega uma lista de portas. Com interface, o protocolo aparece como
+            uma unidade. Isso melhora manutenção, revisão e evolução do design.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_interface_bus_topology.png" alt="Topologia visual de módulos conectados por interface/barramento">
+            <figcaption>
+              Recorte estratégico: a interface representa uma estrutura comum de comunicação, não só uma lista curta de fios.
+            </figcaption>
+          </figure>
+          <ul class="key-list compact-list">
+            <li>Reduz erro humano em conexões.</li>
+            <li>Centraliza sinais de protocolo.</li>
+            <li>Pode conter parâmetros, constantes, funções, tasks e assertions.</li>
+            <li>Pode ser usada em design quando o fluxo de síntese suporta o estilo escolhido.</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="modports">Ports e modports</h2>
+          <p>
+            Interfaces podem ter portas, como clock. Também podem ter <code>modport</code>, que define a visão
+            de cada módulo sobre a interface.
+          </p>
+          <pre><code class="language-systemverilog">interface intf(input bit clk);
+    logic [2:0] s1;
+    logic       s2;
+    logic       q;
+
+    modport s(input clk, s1, s2, output q);
+endinterface</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_interface_ports_modports.png" alt="Interfaces entre módulos, com ports e modports">
+            <figcaption>
+              O modport evita que todos os módulos enxerguem a interface do mesmo jeito. Ele expressa direção e papel.
+            </figcaption>
+          </figure>
+          <details class="expand-block" open>
+            <summary>Interface não é restrita a testbench</summary>
+            <div class="detail-body">
+              <p>
+                O quiz do slide diz que a frase "Use of interface is restricted to testbench modules" é falsa.
+                Interfaces podem entrar em design. A ressalva é prática: a ferramenta e o estilo do projeto precisam
+                aceitar a forma usada. Em ambiente de disciplina, siga o padrão do professor e valide com VCS/DC.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="guidelines">Guidelines de síntese</h2>
+          <p>
+            O slide de guidelines é o mais aplicável ao nosso projeto. Ele transforma SystemVerilog em estilo de RTL
+            limpo e sintetizável.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Prática</th><th>Por que importa</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Use <code>always_comb</code>, <code>always_ff</code> e <code>always_latch</code> conforme a intenção.</td><td>A ferramenta e o revisor entendem se é combinacional, FF ou latch.</td></tr>
+                <tr><td>Não misture bordas positiva e negativa sem arquitetura clara.</td><td>Evita confusão de timing e síntese.</td></tr>
+                <tr><td>Use <code>=</code> em combinacional e <code>&lt;=</code> em sequencial.</td><td>Preserva o modelo de atualização de registradores.</td></tr>
+                <tr><td>Escolha <code>if</code>/<code>case</code>, <code>unique</code> e <code>priority</code> conforme a lógica pretendida.</td><td>Reduz mismatch entre simulação e síntese.</td></tr>
+                <tr><td>Nomeie sinais pelo significado.</td><td>Facilita waveform, revisão e debug.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code class="language-systemverilog">always_comb begin
+    y = a & b;
+end
+
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) q <= '0;
+    else        q <= d;
+end</code></pre>
+          <div class="callout">
+            <strong>Para o projeto:</strong> este slide vira checklist. Antes de rodar síntese, confira estilo de clock,
+            reset, atribuições, nomes, `case` completo e separação entre RTL e testbench.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="packages">Packages e escopo</h2>
+          <p>
+            Packages organizam definições compartilhadas: tipos, parâmetros, constantes, funções e classes.
+            Em RTL, são úteis para centralizar enums, structs e parâmetros de protocolo.
+          </p>
+          <pre><code class="language-systemverilog">package cpu_pkg;
+    typedef enum logic [2:0] {
+        OP_ADD,
+        OP_SUB,
+        OP_AND,
+        OP_OR
+    } opcode_t;
+
+    parameter int XLEN = 32;
+endpackage</code></pre>
+          <p>
+            O operador <code>::</code> acessa um item dentro de um escopo:
+          </p>
+          <pre><code class="language-systemverilog">cpu_pkg::opcode_t op;</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_package_scope_overview.png" alt="Visão de package SystemVerilog com import e operador de escopo">
+            <figcaption>
+              Recorte estratégico: packages reduzem bagunça de tipos globais e o operador <code>::</code> resolve colisão de nomes.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="oop">OOP: classes, herança e polimorfismo</h2>
+          <p>
+            Os slides de OOP ensinam conceitos importantes para verificação. Uma classe encapsula dados e métodos.
+            Herança permite que uma classe filha reaproveite propriedades e métodos da classe pai.
+          </p>
+          <pre><code class="language-systemverilog">class ethernet_packet;
+    bit [7:0]  header;
+    bit [12:0] payload;
+
+    function void display();
+        $display("header=%0h payload=%0h", header, payload);
+    endfunction
+endclass
+
+class network_packet extends ethernet_packet;
+    bit parity;
+
+    function void display();
+        super.display();
+        $display("parity=%0b", parity);
+    endfunction
+endclass</code></pre>
+          <details class="nested-detail">
+            <summary>Por que isso aparece em "for Design"?</summary>
+            <div class="detail-body">
+              <p>
+                Porque SystemVerilog é uma linguagem unificada. O curso mostra recursos de modelagem e verificação
+                junto com design. Para RTL sintetizável, classes normalmente não entram no DUT; para testbench,
+                elas são a base de transações, drivers, monitores e scoreboards.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="clocking">Clocking e program blocks</h2>
+          <p>
+            Clocking blocks ajudam testbench a amostrar e dirigir sinais em relação ao clock, reduzindo races.
+          </p>
+          <pre><code class="language-systemverilog">clocking cb @(posedge clk);
+    default input #1ns output #2ns;
+    input  data;
+    output valid;
+endclocking</code></pre>
+          <p>
+            Program blocks particionam código de teste e identificam claramente o que pertence ao testbench.
+          </p>
+          <pre><code class="language-systemverilog">program test(input logic clk);
+    initial begin
+        // sequência de teste
+    end
+endprogram</code></pre>
+          <p>
+            Esses recursos não descrevem o hardware principal; eles organizam o ambiente de simulação.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="assertions">Assertions e propriedades</h2>
+          <p>
+            Assertions transformam uma regra esperada em checagem executável. Immediate assertions são locais;
+            concurrent assertions usam clock e propriedades temporais.
+          </p>
+          <pre><code class="language-systemverilog">assert property (@(posedge clk) req |-> ##[1:2] ack);</code></pre>
+          <p>
+            O operador <code>|-&gt;</code> significa implicação temporal: se o antecedente ocorre, o consequente
+            deve ocorrer na janela especificada.
+          </p>
+          <details class="expand-block" open>
+            <summary>Exemplo útil para arbiter</summary>
+            <div class="detail-body">
+              <pre><code class="language-systemverilog">assert property (@(posedge clk) disable iff (!rst_n)
+    $onehot0(grant)
+) else $error("Mais de um grant ativo");</code></pre>
+              <p>
+                Esse tipo de assertion pega erro de protocolo cedo: em um arbiter, normalmente zero ou um grant
+                deve estar ativo, nunca vários ao mesmo tempo.
+              </p>
+            </div>
+          </details>
+          <p>
+            Severidades como <code>$fatal</code>, <code>$error</code>, <code>$warning</code> e <code>$info</code>
+            controlam como a falha aparece no log.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="dpi">DPI e integração com C/C++</h2>
+          <p>
+            DPI permite chamar funções C/C++ a partir de SystemVerilog, ou exportar funções SystemVerilog para C.
+            Isso é útil para modelos de referência e co-simulação.
+          </p>
+          <pre><code class="language-systemverilog">import "DPI-C" function int golden_model(input int a, input int b);</code></pre>
+          <p>
+            Para o projeto RTL, pense nisso como recurso de testbench/simulação. A síntese não transforma uma função C++
+            em portas lógicas.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="tipos">Strings, arrays dinâmicos e queues</h2>
+          <p>
+            O slide mostra tipos muito bons para testbench: <code>string</code>, dynamic arrays, associative arrays
+            e queues.
+          </p>
+          <pre><code class="language-systemverilog">string name = "SystemVerilog";
+int dyn_array[];
+int assoc_array[string];
+int queue[$];</code></pre>
+          <p>
+            Um scoreboard pode usar associative array para guardar respostas esperadas por endereço. Uma queue pode
+            armazenar transações pendentes. Para RTL sintetizável, use estruturas de tamanho definido e inferível.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="cast">`$cast`</h2>
+          <p>
+            <code>$cast</code> faz conversão controlada. Como task, falha pode gerar erro de runtime. Como function,
+            você testa sucesso ou falha.
+          </p>
+          <pre><code class="language-systemverilog">if ($cast(target, source)) begin
+    // sucesso
+end else begin
+    // falha controlada
+end</code></pre>
+          <p>
+            É especialmente útil com enums e objetos de classe em testbench. Em RTL comum, casting deve ser explícito,
+            simples e motivado por largura/tipo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="quiz">Quizzes explicados</h2>
+          <div class="quiz-card">
+            <strong>A child class carrying forward all properties and methods from parent class is called...</strong>
+            <p class="answer">Inheritance.</p>
+          </div>
+          <div class="quiz-card">
+            <strong><code>::</code> is used to avoid name same collision.</strong>
+            <p class="answer">Scope resolution operator.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Implication operator.</strong>
+            <p class="answer"><code>|-&gt;</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Use of interface is restricted to testbench modules.</strong>
+            <p class="answer">False. Interfaces can be used in design when supported by the flow.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">O que levar para o projeto</h2>
+          <ul class="key-list compact-list">
+            <li>Use interfaces se elas clarearem conexões e forem aceitas pelo fluxo Synopsys/professor.</li>
+            <li>Use packages para centralizar tipos, parâmetros, enums e structs compartilhados.</li>
+            <li>Faça RTL com <code>always_comb</code> e <code>always_ff</code> bem separados.</li>
+            <li>Mantenha OOP, DPI, queues e dynamic arrays no testbench/modelagem.</li>
+            <li>Use assertions para checar protocolos, FSMs, FIFOs e arbiters.</li>
+            <li>Documente em filelists/makefiles quais arquivos são RTL, testbench, interfaces e packages.</li>
+          </ul>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/02_SystemVerilog_for_Design.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_SystemVerilog_for_Design.md">texto extraído</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_SystemVerilog_for_Design.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_1_systemverilog_introduction.html">Anterior: SystemVerilog Introduction</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_3_systemverilog_for_verification_1.html">Próxima: Verification-1</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

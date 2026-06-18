@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog for Verification-1</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>Verification-1
+    </nav>
+
+    <h1 class="page-title">SystemVerilog for Verification-1</h1>
+    <p class="lead">
+      Nesta aula o foco sai do RTL sintetizável e entra no testbench moderno:
+      componentes, transações, comunicação entre processos, arrays úteis para verificação
+      e checagem automática com scoreboard.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="virada-mental">A virada mental</h2>
+          <p>
+            Em RTL, a pergunta principal é: <strong>que hardware este código descreve?</strong>
+            Em verificação, a pergunta muda: <strong>como eu provo que esse hardware se comporta
+            como deveria?</strong> Essa diferença parece pequena, mas muda toda a arquitetura do código.
+          </p>
+          <p>
+            Um testbench fraco apenas força sinais nas entradas e deixa o aluno olhando waveform.
+            Um testbench melhor cria estímulos, aplica esses estímulos com um protocolo correto,
+            observa as saídas, compara com uma expectativa e emite erro quando algo não bate.
+            É isso que a aula começa a montar.
+          </p>
+          <div class="callout">
+            <strong>Ideia-chave:</strong> SystemVerilog é uma HVL, uma Hardware Verification Language.
+            Ele ainda entende tempo, clock e sinais, mas também traz abstrações de software como
+            classes, filas, objetos, mailboxes, eventos e semáforos.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="arquitetura">Arquitetura de testbench</h2>
+          <p>
+            O bloco mais importante da aula é este fluxo. Ele aparece nos slides por meio de classes
+            como <code>test</code>, <code>environment</code>, <code>generator</code>, <code>driver</code>,
+            <code>monitor</code> e <code>scoreboard</code>. Em vez de decorar cada classe isolada,
+            enxergue a cadeia completa:
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_testbench_architecture_clean.png" alt="Arquitetura limpa de testbench com test, environment, generator, driver, interface, DUT, monitor e scoreboard">
+            <figcaption>
+              Diagrama limpo criado a partir dos slides: o generator cria transações, o driver converte
+              transações em sinais, o DUT responde, o monitor reconstrói transações observadas e o scoreboard decide PASS/FAIL.
+            </figcaption>
+          </figure>
+          <p>
+            A separação por componentes evita um erro muito comum: escrever um testbench gigante em um
+            único <code>initial begin</code>. Esse estilo até funciona em exercícios pequenos, mas fica
+            difícil de reutilizar, debugar e ampliar. Quando cada componente tem uma responsabilidade,
+            o ambiente cresce de forma mais controlada.
+          </p>
+
+          <div class="priority-grid">
+            <div class="priority-card">
+              <h3>Test</h3>
+              <p>Escolhe o cenário. Ele cria o ambiente e manda rodar uma configuração de teste.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Environment</h3>
+              <p>É o container. Instancia componentes, cria canais de comunicação e conecta tudo.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Generator</h3>
+              <p>Cria transações abstratas, muitas vezes randomizadas, e envia ao driver.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Driver</h3>
+              <p>Transforma a transação em sinais reais no protocolo do DUT.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Monitor</h3>
+              <p>Observa sinais do DUT e reconstrói o que realmente aconteceu.</p>
+            </div>
+            <div class="priority-card">
+              <h3>Scoreboard</h3>
+              <p>Compara observado contra esperado. Sem ele, a verificação ainda depende muito de waveform.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="transacao">Transação: o objeto que carrega intenção</h2>
+          <p>
+            O slide mostra uma classe de item/transação. Uma transação é uma operação em nível mais alto
+            que os sinais individuais. Em vez de o generator pensar em <code>vld</code>, <code>addr</code>,
+            <code>data</code> e ciclos de clock, ele pensa em “uma escrita”, “uma leitura”, “um pacote”,
+            “um comando” ou “um item”.
+          </p>
+          <pre><code class="language-systemverilog">class switch_item;
+    rand bit [7:0]  addr;
+    rand bit [15:0] data;
+endclass</code></pre>
+          <p>
+            O modificador <code>rand</code> indica que esses campos podem ser randomizados. Isso é essencial
+            em verificação porque o objetivo não é testar apenas um caso bonito, mas explorar muitas combinações
+            de entrada. Mesmo que este bloco ainda não aprofunde constraints, ele já prepara a ideia:
+            o generator cria itens e o restante do testbench sabe como aplicá-los.
+          </p>
+          <details class="expand-block">
+            <summary>Por que não dirigir sinais diretamente no generator?</summary>
+            <div class="detail-body">
+              <p>
+                Porque isso mistura intenção com protocolo. O generator deveria dizer “teste este item”.
+                O driver deveria saber como um item vira sinais no barramento. Se amanhã o protocolo mudar,
+                você muda o driver. Se amanhã quiser gerar casos diferentes, você muda o generator.
+                Essa separação é a base de testbenches reutilizáveis.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="generator-driver">Generator e driver</h2>
+          <p>
+            O generator cria a massa de estímulos. O driver consome essa massa e conversa com o DUT.
+            Nos quizzes, essa diferença aparece como <strong>push</strong> e <strong>pop</strong>:
+            o generator coloca itens na mailbox; o driver retira itens dela.
+          </p>
+          <pre><code class="language-systemverilog">task generator_run();
+    repeat (num_transactions) begin
+        item = new();
+        assert(item.randomize());
+        drv_mbx.put(item);   // generator empurra para a mailbox
+        @(drv_done);         // espera o driver terminar
+    end
+endtask</code></pre>
+          <pre><code class="language-systemverilog">task driver_run();
+    forever begin
+        drv_mbx.get(item);   // driver retira da mailbox
+
+        vif.vld  <= 1'b1;
+        vif.addr <= item.addr;
+        vif.data <= item.data;
+
+        @(posedge vif.clk);
+        vif.vld <= 1'b0;
+
+        -> drv_done;         // avisa que terminou
+    end
+endtask</code></pre>
+          <p>
+            Repare que o driver usa uma <code>virtual interface</code>, geralmente chamada de
+            <code>vif</code>. A interface real existe no topo do testbench, conectada ao DUT.
+            A classe driver não é um módulo; ela não tem portas físicas. Por isso recebe uma referência
+            virtual para conseguir ler e escrever sinais.
+          </p>
+          <div class="callout">
+            <strong>Tradução da arquitetura:</strong> o generator trabalha no mundo dos objetos;
+            o driver traduz objeto para waveform; o monitor traduz waveform de volta para objeto;
+            o scoreboard compara objetos.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="comunicacao">Event, semaphore e mailbox</h2>
+          <p>
+            Os slides colocam três mecanismos lado a lado, mas eles resolvem problemas diferentes.
+            O erro conceitual comum é tratar todos como “canais”. Não são.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_communication_mechanisms.png" alt="Comparação entre event, semaphore e mailbox">
+            <figcaption>
+              A diferença prática: event sincroniza, semaphore controla acesso e mailbox transporta dados ou transações.
+            </figcaption>
+          </figure>
+
+          <h3>Event</h3>
+          <p>
+            Um <code>event</code> é um sinal de sincronização no testbench. Ele não carrega dado.
+            Ele apenas permite que uma thread diga a outra: “isso aconteceu”.
+          </p>
+          <pre><code class="language-systemverilog">event drv_done;
+
+// Dispara o evento
+-> drv_done;
+
+// Espera o evento acontecer
+@(drv_done);</code></pre>
+          <p>
+            O operador <code>-&gt;</code> é o gatilho do evento. Se o quiz pergunta o que dispara
+            um evento criado, a resposta é exatamente esse operador.
+          </p>
+
+          <h3>Semaphore</h3>
+          <p>
+            Um <code>semaphore</code> controla acesso a recurso compartilhado. Pense nele como um conjunto
+            de chaves. Se há uma chave, só uma thread entra por vez; se há três chaves, até três threads
+            podem entrar simultaneamente. Isso é diferente de transportar dados.
+          </p>
+          <pre><code class="language-systemverilog">semaphore token;
+
+initial begin
+    token = new(1);      // uma chave: exclusão mútua
+end
+
+task use_shared_resource();
+    token.get(1);        // pega a chave
+    // região crítica: usa o recurso compartilhado
+    token.put(1);        // devolve a chave
+endtask</code></pre>
+          <p>
+            Por isso o quiz marca como falsa a ideia de que componentes acessam dados compartilhados
+            por um canal dedicado usando semaphore. O semaphore não é o canal de dados; ele é a trava.
+          </p>
+
+          <h3>Mailbox</h3>
+          <p>
+            A <code>mailbox</code> é uma fila de comunicação entre threads/classes. Ela é o mecanismo natural
+            para passar transações do generator para o driver e do monitor para o scoreboard.
+          </p>
+          <pre><code class="language-systemverilog">mailbox #(switch_item) drv_mbx;
+
+initial begin
+    drv_mbx = new();
+end
+
+// Producer
+drv_mbx.put(item);
+
+// Consumer
+drv_mbx.get(item);</code></pre>
+          <details class="expand-block" open>
+            <summary>Resumo de decisão: qual usar?</summary>
+            <div class="detail-body">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Mecanismo</th><th>Serve para</th><th>Não serve para</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><code>event</code></td><td>Avisar que algo aconteceu.</td><td>Transportar transações.</td></tr>
+                    <tr><td><code>semaphore</code></td><td>Controlar acesso concorrente a recurso compartilhado.</td><td>Ser fila de dados.</td></tr>
+                    <tr><td><code>mailbox</code></td><td>Passar dados/objetos entre componentes.</td><td>Garantir exclusão mútua de recurso fora da fila.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="loops">Loops em verificação</h2>
+          <p>
+            Os slides listam <code>forever</code>, <code>repeat</code>, <code>while</code>,
+            <code>for</code>, <code>do while</code> e <code>foreach</code>. A parte importante não é
+            memorizar a sintaxe isolada, mas reconhecer o padrão de uso em testbench.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Loop</th><th>Uso típico em verificação</th><th>Exemplo mental</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>forever</code></td><td>Processos permanentes.</td><td>Driver e monitor rodando enquanto a simulação vive.</td></tr>
+                <tr><td><code>repeat</code></td><td>Número fixo de estímulos.</td><td>Gerar 100 transações.</td></tr>
+                <tr><td><code>foreach</code></td><td>Percorrer arrays.</td><td>Verificar todas as entradas de uma tabela esperada.</td></tr>
+                <tr><td><code>while</code></td><td>Condição dinâmica.</td><td>Rodar enquanto ainda houver pacotes pendentes.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code class="language-systemverilog">forever begin
+    mon_mbx.get(observed);
+    scoreboard_check(observed);
+end
+
+foreach (expected_by_addr[addr]) begin
+    $display("addr=%0h expected=%0h", addr, expected_by_addr[addr]);
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="arrays">Arrays, queues e métodos úteis</h2>
+          <p>
+            SystemVerilog dá ao testbench estruturas de dados bem mais ricas que Verilog clássico.
+            Isso importa porque verificação lida com listas de transações, memórias esperadas,
+            logs, filas e buscas.
+          </p>
+          <pre><code class="language-systemverilog">int static_array[10];           // tamanho fixo
+int dynamic_array[];            // tamanho definido em runtime
+int expected_by_addr[int];      // associative array indexado por inteiro
+switch_item pending[$];         // queue de transações</code></pre>
+          <p>
+            Em RTL sintetizável, você normalmente prefere tamanhos definidos e estruturas inferíveis.
+            Em testbench, a flexibilidade é uma virtude: uma queue pode crescer conforme chegam transações;
+            um associative array pode guardar o valor esperado por endereço sem modelar uma memória física completa.
+          </p>
+
+          <h3>O papel do <code>with</code></h3>
+          <p>
+            O slide de quiz diz que <code>find_last()</code> exige <code>with</code>, enquanto
+            <code>max()</code> não exige. A razão é simples: métodos de busca precisam saber
+            <strong>qual condição</strong> define o item procurado.
+          </p>
+          <pre><code class="language-systemverilog">int values[] = '{4, 7, 2, 5, 7, 1, 6, 3, 1};
+int result[$];
+
+result = values.find_last(x) with (x < 3);</code></pre>
+          <p>
+            Leia assim: “procure o último elemento <code>x</code> do array tal que <code>x &lt; 3</code>”.
+            Sem o <code>with</code>, faltaria a pergunta: último que satisfaz o quê?
+          </p>
+          <pre><code class="language-systemverilog">int maximum[$];
+maximum = values.max();</code></pre>
+          <p>
+            Já <code>max()</code> tem o critério embutido: maior valor. Ele não precisa de uma cláusula
+            para saber o que procurar.
+          </p>
+
+          <details class="expand-block">
+            <summary>Métodos de array que aparecem no slide</summary>
+            <div class="detail-body">
+              <ul class="key-list compact-list">
+                <li><code>find()</code>, <code>find_first()</code>, <code>find_last()</code>: retornam elementos que satisfazem uma condição.</li>
+                <li><code>find_index()</code>: retorna índices, não os valores.</li>
+                <li><code>min()</code>, <code>max()</code>, <code>unique()</code>: resumem ou removem duplicações.</li>
+                <li><code>sort()</code>, <code>rsort()</code>, <code>reverse()</code>, <code>shuffle()</code>: reorganizam a ordem.</li>
+                <li><code>sum()</code>, <code>product()</code>, <code>and()</code>, <code>or()</code>, <code>xor()</code>: reduzem vários elementos a um resultado.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="scoreboard">Scoreboard: transformar simulação em veredito</h2>
+          <p>
+            O scoreboard é a diferença entre “simulei” e “verifiquei”. Ele recebe o comportamento observado
+            e compara com uma regra esperada. Para o exemplo de switch dos slides, a regra pode ser:
+            endereços de uma faixa saem pela porta A; os demais saem pela porta B.
+          </p>
+          <pre><code class="language-systemverilog">task scoreboard_run();
+    forever begin
+        scb_mbx.get(item);
+
+        if (item.addr inside {[8'h00:8'h3f]}) begin
+            if (item.addr_a !== item.addr || item.data_a !== item.data)
+                $error("Mismatch na porta A");
+        end else begin
+            if (item.addr_b !== item.addr || item.data_b !== item.data)
+                $error("Mismatch na porta B");
+        end
+    end
+endtask</code></pre>
+          <p>
+            O operador <code>!==</code> é importante em verificação porque compara também valores
+            desconhecidos ou alta impedância. Usar apenas <code>!=</code> pode mascarar problemas com
+            <code>X</code> e <code>Z</code>, justamente os valores que muitas vezes denunciam reset incompleto,
+            conexão faltando ou lógica não inicializada.
+          </p>
+          <details class="expand-block" open>
+            <summary>O que observar quando encontrar um scoreboard no ambiente do professor?</summary>
+            <div class="detail-body">
+              <p>
+                Procure de onde vem a transação observada, onde fica a regra esperada e como o erro é reportado.
+                Um bom scoreboard não é só um <code>$display</code>. Ele deve gerar falha clara, com dados suficientes
+                para você reproduzir o problema.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="top-interface">Top, interface e DUT</h2>
+          <p>
+            O <code>testbench_top</code> costuma ser o único lugar que parece mais “hardware”: ele instancia
+            a interface real, o DUT e o test. As classes usam referências, mas a conexão física dos sinais
+            acontece no topo.
+          </p>
+          <pre><code class="language-systemverilog">module testbench_top;
+    bit clk;
+
+    always #5 clk = ~clk;
+
+    switch_if sif(clk);
+    switch dut (
+        .clk   (clk),
+        .rstn  (sif.rstn),
+        .vld   (sif.vld),
+        .addr  (sif.addr),
+        .data  (sif.data)
+    );
+
+    initial begin
+        test t0 = new();
+        t0.e0.vif = sif;
+        t0.run();
+    end
+endmodule</code></pre>
+          <p>
+            Esse padrão explica por que o ambiente separa tanto arquivos de RTL, interface e testbench.
+            O DUT deveria continuar independente do test. O testbench é quem o envolve, aplica estímulo e mede resultado.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="quiz">Quizzes explicados</h2>
+          <div class="quiz-card">
+            <strong>“________ is used to trigger the created event.”</strong>
+            <p class="answer"><code>-&gt;</code></p>
+            <p>O evento é disparado com <code>-&gt; nome_do_evento;</code>. Quem espera usa <code>@(nome_do_evento)</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>“Generator ________ the data to/from the mailbox.”</strong>
+            <p class="answer">Pushes.</p>
+            <p>O generator produz transações e coloca na mailbox com <code>put</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>“Driver ________ the data to/from mailbox.”</strong>
+            <p class="answer">Pops.</p>
+            <p>O driver consome transações da mailbox com <code>get</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>“All components can access shared data through dedicated channel using semaphore.”</strong>
+            <p class="answer">False.</p>
+            <p>Semaphore controla acesso a recurso. Canal de dados entre componentes é papel típico da mailbox.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>“Which array method requires <code>with</code>?”</strong>
+            <p class="answer"><code>find_last()</code>.</p>
+            <p>Métodos de busca precisam de critério. <code>max()</code> já possui critério embutido.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Como isso ajuda no projeto</h2>
+          <p>
+            Quando formos explorar o ambiente do professor, este bloco ajuda a ler a pasta de testbench
+            com menos “ruído”. Se aparecer <code>mailbox</code>, procure produtor e consumidor.
+            Se aparecer <code>event</code>, procure quem dispara e quem espera. Se aparecer
+            <code>virtual interface</code>, procure onde a interface real foi conectada. Se aparecer
+            <code>scoreboard</code>, procure a regra de comparação.
+          </p>
+          <ul class="key-list compact-list">
+            <li>Generator cria estímulos em forma de objeto.</li>
+            <li>Mailbox transporta esses objetos entre componentes.</li>
+            <li>Driver converte objeto em protocolo de sinais.</li>
+            <li>Monitor observa o DUT sem interferir.</li>
+            <li>Scoreboard compara comportamento observado com comportamento esperado.</li>
+            <li>Loops, queues e associative arrays são ferramentas de organização do testbench, não necessariamente hardware sintetizável.</li>
+          </ul>
+          <div class="callout">
+            <strong>Resumo para guardar:</strong>
+            <code>Generator -&gt; Mailbox -&gt; Driver -&gt; Interface -&gt; DUT -&gt; Monitor -&gt; Mailbox -&gt; Scoreboard</code>.
+            Se esse fluxo estiver claro, os códigos longos dos slides viram uma arquitetura compreensível.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/03_SystemVerilog_for_Verification-1.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/03_SystemVerilog_for_Verification-1.md">texto extraído</a>,
+          <a data-md-source href="../../assets/md_normalizado/03_SystemVerilog_for_Verification-1.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_2_systemverilog_for_design.html">Anterior: SystemVerilog for Design</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_4_systemverilog_for_verification_2.html">Próximo: Verification-2</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

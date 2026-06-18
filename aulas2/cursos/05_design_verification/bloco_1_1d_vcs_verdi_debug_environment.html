@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VCS and Verdi Debug Environment</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">05 Design Verification</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Design Verification</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">05 Design Verification</a><span>/</span>VCS e Verdi
+    </nav>
+
+    <h1 class="page-title">VCS and Verdi Debug Environment</h1>
+    <p class="lead">
+      Esta aula fecha o curso de verificação mostrando o fluxo de ferramenta: VCS para analisar, elaborar e simular; Verdi
+      para depurar comportamento, waveform, schematic, hierarquia e cobertura.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Depois de falar de metodologia, HVLs e UVM, precisamos entender a ferramenta concreta. VCS é o simulador da
+            Synopsys. Verdi é o ambiente de debug. No laboratório, isso aparece como comandos em Makefile: compilar RTL e
+            testbench, elaborar a hierarquia, rodar a simulação, gerar FSDB, abrir Verdi e analisar cobertura.
+          </p>
+          <p>
+            A visão importante é: erro de análise, erro de elaboração e erro de simulação são problemas diferentes. Waveform
+            ajuda a investigar, mas o testbench precisa acusar erro automaticamente. Coverage ajuda a medir progresso, mas
+            precisa ser interpretada com checkers e plano de verificação. Essa aula amarra todos esses pontos.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="vcs-no-fluxo">Onde VCS entra no fluxo?</h2>
+          <p>
+            VCS entra na etapa dinâmica do fluxo RTL: ele executa o modelo do design e do testbench ao longo do tempo. Ele
+            é usado para simulação lógica, debug, assertions, cobertura e regressão. Mas ele não substitui síntese, Formality
+            ou STA. Ele responde uma pergunta específica: dado este modelo e este testbench, o comportamento simulado bateu
+            com as expectativas?
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. RTL + testbench</strong>
+              Arquivos de design, pacotes, interfaces, módulos e verificadores.
+            </div>
+            <div class="flow-step">
+              <strong>2. VCS</strong>
+              Analisa, elabora, compila e executa a simulação.
+            </div>
+            <div class="flow-step">
+              <strong>3. Artefatos</strong>
+              Logs, status PASS/FAIL, FSDB, coverage database e executável de simulação.
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Para o nosso Makefile:</strong> o target de simulação deve deixar claro quais fontes entram, qual é o
+            top do testbench, se debug/FSDB está habilitado e onde ficam logs/resultados.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="tres-etapas">As três etapas: análise, elaboração e simulação</h2>
+          <p>
+            Um dos pontos mais úteis do curso é separar mentalmente as etapas. Muitos iniciantes chamam tudo de "erro de
+            simulação", mas VCS passa por fases diferentes. Entender a fase economiza tempo de debug.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>O que acontece</th>
+                  <th>Erro típico</th>
+                  <th>Como pensar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Design analysis</td>
+                  <td>Arquivos são lidos e checados sintaticamente/semanticamente.</td>
+                  <td>Erro de sintaxe, pacote não encontrado, include ausente, tipo inválido.</td>
+                  <td>A ferramenta ainda nem montou o design; conserte fonte, ordem ou filelist.</td>
+                </tr>
+                <tr>
+                  <td>Elaboration</td>
+                  <td>Hierarquia é construída, parâmetros resolvidos, instâncias conectadas.</td>
+                  <td>Módulo não encontrado, largura incompatível, parâmetro errado, binding falho.</td>
+                  <td>O design existe, mas a montagem da hierarquia está quebrada.</td>
+                </tr>
+                <tr>
+                  <td>Simulation</td>
+                  <td>O executável roda no tempo, testbench aplica estímulos e verifica respostas.</td>
+                  <td>Assertion falha, timeout, X inesperado, mismatch no scoreboard, deadlock.</td>
+                  <td>Agora é comportamento; use logs, FSDB, waveform, monitor e checker.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Exemplo genérico de fluxo VCS
+vcs -full64 -sverilog -f filelist.f -top tb_top -debug_access+all -l comp.log
+./simv -l sim.log</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> se não gerou <code>simv</code>, o problema é antes da simulação. Se gerou
+            <code>simv</code> e falhou rodando, aí investigue comportamento.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="debug-habilitado">Debug precisa ser habilitado antes</h2>
+          <p>
+            Você só consegue depurar bem aquilo que foi preservado na compilação/simulação. Se compilar sem acesso de debug,
+            pode abrir Verdi e descobrir que sinais internos, hierarquia, classes ou variáveis não estão disponíveis como
+            você precisa. Por isso os comandos de simulação do ambiente costumam ter opções de debug.
+          </p>
+
+          <pre><code># Exemplos comuns, dependem do setup do laboratório
+vcs -sverilog -debug_access+all -kdb -lca -f filelist.f -top tb_top
+
+# Em testbench, geração de FSDB costuma aparecer assim:
+initial begin
+  $fsdbDumpfile("test.fsdb");
+  $fsdbDumpvars(0, tb_top);
+end</code></pre>
+
+          <p>
+            No nosso laboratório anterior apareceu arquivo <code>test.fsdb</code>. Isso é ótimo: significa que a simulação
+            gerou uma base de debug que o Verdi consegue abrir para waveform e navegação temporal.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="fsdb">FSDB: o arquivo central de debug</h2>
+          <p>
+            FSDB é um banco de dados de waveform/debug usado pelo Verdi. Ele não é o design, não substitui o RTL e não diz
+            sozinho se o teste passou. Ele registra sinais e eventos para investigação. Quando há erro, o FSDB permite voltar
+            ao tempo do problema, seguir sinais, navegar hierarquia e entender causa.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Log</h3>
+              <p>Mostra mensagens, erros, warnings, PASS/FAIL e trilha textual.</p>
+            </article>
+            <article class="concept-card">
+              <h3>FSDB</h3>
+              <p>Guarda evolução temporal dos sinais e dados de debug.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Coverage DB</h3>
+              <p>Guarda métricas de cobertura coletadas em uma ou várias simulações.</p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Uso saudável:</strong> primeiro leia o erro no log. Depois abra FSDB no ponto do erro. Waveform sem
+            hipótese vira passeio longo demais.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="verdi">Verdi não é só waveform viewer</h2>
+          <p>
+            É comum pensar no Verdi como "o programa que abre waveform". Ele faz isso, mas o curso mostra que Verdi é um
+            ambiente de debug. Ele conecta waveform, source, schematic, hierarquia, objetos de SystemVerilog/UVM, coverage
+            e navegação temporal.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Visão</th>
+                  <th>Quando usar</th>
+                  <th>Pergunta que responde</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Waveform</td>
+                  <td>Quando há problema temporal, protocolo, ciclo, X, reset ou handshake.</td>
+                  <td>Quando e como o sinal mudou?</td>
+                </tr>
+                <tr>
+                  <td>Source</td>
+                  <td>Quando precisa ligar evento de simulação a linha de RTL/testbench.</td>
+                  <td>Qual código produziu este comportamento?</td>
+                </tr>
+                <tr>
+                  <td>Schematic</td>
+                  <td>Quando a conectividade ou fanin/fanout importam.</td>
+                  <td>De onde vem este sinal e para onde ele vai?</td>
+                </tr>
+                <tr>
+                  <td>Hierarchy</td>
+                  <td>Quando precisa localizar instâncias e módulos.</td>
+                  <td>Em que parte do design está o problema?</td>
+                </tr>
+                <tr>
+                  <td>Coverage</td>
+                  <td>Quando quer entender buracos de execução ou cenário.</td>
+                  <td>O que ainda não exercitei?</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="interactive-post">Debug interativo versus postprocessing</h2>
+          <p>
+            Os slides separam dois modos de debug. No debug interativo, você controla a simulação enquanto ela roda: para,
+            observa, inspeciona e talvez avança. No postprocessing, você roda a simulação, gera FSDB/log e depois abre no
+            Verdi. Em regressão, postprocessing é mais comum, porque você não quer ficar interagindo manualmente com cada
+            teste.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Interactive debug</h3>
+              <p>
+                Bom quando você está caçando uma falha específica e precisa controlar execução. Mais manual, menos adequado
+                para regressão grande.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>Postprocessing debug</h3>
+              <p>
+                Bom para fluxo automatizado: roda teste, salva log/FSDB, abre depois o caso que falhou. É o modelo natural
+                para Makefile e regressão.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="coverage-verdi">Coverage no VCS/Verdi</h2>
+          <p>
+            Coverage no Verdi fecha o ciclo das aulas anteriores. VCS coleta dados; Verdi ajuda a visualizar, filtrar,
+            navegar no source e justificar exclusões. O importante é separar code coverage de functional coverage.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Line coverage</h3>
+              <p>Quais linhas executaram.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Branch coverage</h3>
+              <p>Quais lados de decisões foram tomados.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Condition coverage</h3>
+              <p>Quais subexpressões booleanas variaram.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Toggle coverage</h3>
+              <p>Quais bits alternaram 0→1 e 1→0.</p>
+            </article>
+            <article class="concept-card">
+              <h3>FSM coverage</h3>
+              <p>Quais estados e transições foram visitados.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Functional coverage</h3>
+              <p>Quais cenários do plano foram exercitados.</p>
+            </article>
+          </div>
+
+          <p>
+            No Verdi, a visão de cobertura costuma conectar números ao source: uma linha não coberta aponta para trecho de
+            RTL; uma branch não coberta mostra qual caminho faltou; uma FSM com estado não visitado mostra buraco de cenário
+            ou estado inalcançável. Isso orienta novos testes.
+          </p>
+
+          <details class="expand-block">
+            <summary>Coverage exclusion precisa de revisão</summary>
+            <div class="detail-body">
+              <p>
+                Excluir cobertura é dizer: "este trecho não precisa ser coberto por uma razão válida". Isso pode ser correto
+                para código morto intencional, modo não usado ou lógica protegida por configuração. Mas é perigoso se virar
+                atalho para melhorar número. Toda exclusão deve ter justificativa.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="assertions">Assertions e debug</h2>
+          <p>
+            Assertions transformam regras em verificadores executáveis. Em vez de perceber manualmente na waveform que um
+            protocolo falhou, uma assertion acusa no ciclo da violação. Isso encurta o caminho até o bug.
+          </p>
+
+          <pre><code>// Exemplo didático: se valid sobe, deve permanecer até ready
+property valid_until_ready;
+  @(posedge clk) disable iff (!rst_n)
+    valid && !ready |=> valid;
+endproperty
+
+assert property (valid_until_ready);</code></pre>
+
+          <p>
+            Para o CPU, assertions simples já ajudam muito: reset inicializa registradores visíveis, write enable não fica X,
+            PC não vira X, sinais de controle mutuamente exclusivos não ativam juntos, e instruções inválidas seguem uma
+            política definida.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="fluxo-mental">Fluxo mental para rodar simulação</h2>
+          <p>
+            Este é o roteiro prático que devemos levar para os Makefiles do professor e para nosso projeto:
+          </p>
+
+          <ol>
+            <li>Confirmar filelist: RTL, testbench, packages e includes estão na ordem correta.</li>
+            <li>Compilar com VCS salvando log de compilação.</li>
+            <li>Se compilar, rodar <code>simv</code> salvando log de simulação.</li>
+            <li>Fazer o testbench emitir PASS/FAIL claro.</li>
+            <li>Gerar FSDB quando houver debug ou quando regressão estiver configurada para guardar falhas.</li>
+            <li>Abrir Verdi no FSDB e no source quando houver falha.</li>
+            <li>Coletar coverage para orientar próximos testes.</li>
+          </ol>
+
+          <pre><code># Ideia de targets que queremos reconhecer no ambiente
+make sim
+make waves
+make verdi
+make cov
+make clean</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="quando-da-errado">Quando algo dá errado</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sintoma</th>
+                  <th>Provável fase</th>
+                  <th>Primeira ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Arquivo não encontrado, package inexistente, syntax error.</td>
+                  <td>Análise/compilação.</td>
+                  <td>Checar filelist, includes, ordem de compilação e extensão de arquivo.</td>
+                </tr>
+                <tr>
+                  <td>Instância sem módulo, parâmetro inválido, port mismatch.</td>
+                  <td>Elaboração.</td>
+                  <td>Checar top, hierarquia, nomes de módulos, parâmetros e larguras de portas.</td>
+                </tr>
+                <tr>
+                  <td>Timeout, assertion fail, scoreboard mismatch.</td>
+                  <td>Simulação.</td>
+                  <td>Ler log, abrir FSDB no tempo do erro e seguir sinais/monitor/checker.</td>
+                </tr>
+                <tr>
+                  <td>Waveform sem sinais internos.</td>
+                  <td>Configuração de debug.</td>
+                  <td>Recompilar com debug access adequado e dumping correto.</td>
+                </tr>
+                <tr>
+                  <td>Coverage baixa apesar de testes passando.</td>
+                  <td>Plano/regressão.</td>
+                  <td>Criar novos testes, revisar plano ou justificar exclusões.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="aplicacao-cpu">Aplicação no nosso CPU</h2>
+          <p>
+            A partir deste curso, nosso próximo passo prático deve ser transformar a simulação do CPU em fluxo reprodutível
+            de verificação. Não basta abrir Verdi e olhar sinais; precisamos que cada teste diga se passou, gere log e, se
+            falhar, deixe FSDB para investigação.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Target de compilação</strong>
+              Gera executável e log. Falha se VCS encontrar erro.
+            </div>
+            <div class="check-item">
+              <strong>Target de simulação</strong>
+              Roda teste, gera PASS/FAIL e sim.log.
+            </div>
+            <div class="check-item">
+              <strong>Target de waveform</strong>
+              Abre Verdi com FSDB e source quando necessário.
+            </div>
+            <div class="check-item">
+              <strong>Target de regressão</strong>
+              Roda vários testes nomeados e retorna erro se qualquer um falhar.
+            </div>
+            <div class="check-item">
+              <strong>Target de coverage</strong>
+              Coleta e/ou abre cobertura para guiar novos testes.
+            </div>
+            <div class="check-item">
+              <strong>Documentação</strong>
+              Explica quais testes existem e o que cada um cobre.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fechamento-curso">Fechamento do curso 05</h2>
+          <p>
+            O curso inteiro agora forma uma sequência coerente. Primeiro entendemos que simulação não basta. Depois vimos
+            metodologia e coverage. Em seguida vimos HVLs e UVM como forma de escalar ambientes. Por fim, vimos VCS/Verdi
+            como ferramentas concretas para executar, depurar e medir.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Conceito</strong>
+              Verificação busca evidência de correção contra especificação.
+            </div>
+            <div class="flow-step">
+              <strong>Método</strong>
+              Plano, coverage, self-check, regressão e fechamento de buracos.
+            </div>
+            <div class="flow-step">
+              <strong>Arquitetura</strong>
+              Driver, monitor, scoreboard, coverage e ambiente reutilizável.
+            </div>
+            <div class="flow-step">
+              <strong>Ferramenta</strong>
+              VCS roda; Verdi depura; coverage orienta próximos testes.
+            </div>
+            <div class="flow-step">
+              <strong>Projeto</strong>
+              Makefile deve automatizar simulação, debug e regressão.
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Próxima ação recomendada:</strong> aplicar isso no CPU: organizar testes nomeados, deixar PASS/FAIL
+            automático, gerar FSDB sob demanda e preparar regressão. Depois conectamos isso ao esqueleto do ambiente do
+            professor.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. VCS faz quais etapas principais?</strong>
+            Análise/compilação, elaboração e simulação.
+          </div>
+          <div class="quiz-card">
+            <strong>2. Por que FSDB não é o design?</strong>
+            Porque FSDB é um banco de dados de sinais/eventos para debug; o design continua sendo o RTL/testbench.
+          </div>
+          <div class="quiz-card">
+            <strong>3. Qual diferença entre debug interativo e postprocessing?</strong>
+            Interativo controla a simulação ao vivo; postprocessing analisa logs/FSDB depois da execução.
+          </div>
+          <div class="quiz-card">
+            <strong>4. O que Verdi acrescenta além de waveform?</strong>
+            Source, schematic, hierarquia, debug de objetos, coverage e navegação integrada.
+          </div>
+          <div class="quiz-card">
+            <strong>5. O que fazer quando coverage está baixa?</strong>
+            Criar testes, revisar plano, investigar código morto ou justificar exclusões.
+          </div>
+          <div class="quiz-card">
+            <strong>6. Como isso se conecta ao Makefile?</strong>
+            Targets devem compilar, simular, abrir waves/debug, rodar regressão, coletar coverage e limpar resultados.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>04_VCS_and_Verdi_Debug_Environment.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1c_hardware_verification_languages.html">Anterior: HVL e UVM</a>
+          <a href="index.html">Voltar ao curso concluído</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#vcs-no-fluxo">VCS no fluxo</a>
+        <a href="#tres-etapas">Três etapas</a>
+        <a href="#debug-habilitado">Debug habilitado</a>
+        <a href="#fsdb">FSDB</a>
+        <a href="#verdi">Verdi</a>
+        <a href="#interactive-post">Debug modes</a>
+        <a href="#coverage-verdi">Coverage</a>
+        <a href="#assertions">Assertions</a>
+        <a href="#fluxo-mental">Fluxo mental</a>
+        <a href="#quando-da-errado">Erros</a>
+        <a href="#aplicacao-cpu">CPU</a>
+        <a href="#fechamento-curso">Fechamento</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

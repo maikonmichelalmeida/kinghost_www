@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FSM, X, case, arrays e structs em SystemVerilog</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">06 SystemVerilog for RTL Design</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog RTL</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">06 SystemVerilog for RTL Design</a><span>/</span>FSM, X e estruturas
+    </nav>
+
+    <h1 class="page-title">FSM, `X`, `case`, arrays e structs em RTL</h1>
+    <p class="lead">
+      Esta aula continua a anterior: depois de aprender `enum`, `always_comb`, `always_ff`, `unique` e `priority`, agora
+      vamos ver como essas escolhas afetam máquinas de estado, comparação com wildcards, tri-state e organização de dados.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            A parte B do curso mostra que SystemVerilog tem recursos poderosos, mas cada recurso tem uma intenção. Uma FSM
+            com `enum` pode ficar limpa, mas pode virar uma FSM de 32 bits se você esquecer a largura. Um `case` pode parecer
+            cobrir tudo, mas ainda gerar latch se faltarem defaults. Um `x` pode parecer don't-care, mas em comparação comum
+            ele é unknown. Uma `struct packed` pode ser excelente para barramentos, mas uma fila dinâmica é outro mundo,
+            muito mais voltado a simulação.
+          </p>
+          <p>
+            A mensagem central é: escreva RTL de modo que a ferramenta não precise adivinhar. Declare largura, declare
+            exclusividade quando ela realmente existir, use operadores de wildcard apropriados e escolha estruturas de dados
+            que façam sentido para hardware sintetizável.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa mental do bloco</h2>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>FSM</strong>
+              `enum`, largura explícita, binary, one-hot, `unique` e `unique0`.
+            </div>
+            <div class="flow-step">
+              <strong>Unknown</strong>
+              `x` é desconhecido, não wildcard automático.
+            </div>
+            <div class="flow-step">
+              <strong>Comparações</strong>
+              `==?`, `!=?`, `case inside`, `casez` e `casex`.
+            </div>
+            <div class="flow-step">
+              <strong>Interconexão</strong>
+              Tri-state precisa de net e atribuição contínua.
+            </div>
+            <div class="flow-step">
+              <strong>Dados</strong>
+              Arrays packed/unpacked, structs e início de union.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fsm-enum">FSM com enum: o detalhe que muda tudo</h2>
+          <p>
+            A aula começa com uma FSM em SystemVerilog usando `enum`. A intenção é boa: nomes de estado deixam a máquina
+            muito mais legível que números mágicos. O problema é que o primeiro exemplo não especifica o tipo base do enum.
+          </p>
+
+          <pre><code>// Cuidado: sem tipo base explícito, o enum pode assumir int
+typedef enum {IDLE, INIT, START} state_enum;
+
+state_enum st, nxt;</code></pre>
+
+          <p>
+            Se o tipo base assume `int`, a variável de estado pode ter 32 bits. Para três estados, isso é enorme e abre espaço
+            para uma pergunta da síntese: "o que faço com todos os outros valores possíveis que cabem em 32 bits?". Se o
+            `case` só cobre `IDLE`, `INIT` e `START`, não cobre todos os valores possíveis do tipo. Somado a isso, se
+            `nxt` e `dout` não recebem default no `always_comb`, a ferramenta infere latch.
+          </p>
+
+          <div class="warning callout">
+            <strong>Armadilha do slide:</strong> `typedef enum {IDLE, INIT, START} state_enum;` parece pequeno, mas pode não
+            ser. Para RTL, prefira sempre declarar a largura.
+          </div>
+
+          <pre><code>// Forma mais segura para RTL
+typedef enum logic [1:0] {
+  IDLE,
+  INIT,
+  START
+} state_enum;
+
+state_enum st, nxt;
+
+always_comb begin
+  nxt  = st;
+  dout = 1'b0;
+
+  unique case (st)
+    IDLE:  if (select) nxt = INIT;
+    INIT:  begin dout = 1'b1; nxt = START; end
+    START: begin dout = 1'b0; nxt = IDLE; end
+    default: begin nxt = IDLE; dout = 1'b0; end
+  endcase
+end
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n)
+    st &lt;= IDLE;
+  else
+    st &lt;= nxt;
+end</code></pre>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Largura explícita</h3>
+              <p>`enum logic [1:0]` diz à ferramenta que a FSM tem dois bits, não um inteiro genérico.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Default em combinacional</h3>
+              <p>`nxt = st` e `dout = 0` eliminam caminhos sem atribuição.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Default no case</h3>
+              <p>Ajuda a tratar estado inválido de modo previsível, especialmente depois de reset, X ou falha.</p>
+            </article>
+          </div>
+
+          <details class="expand-block">
+            <summary>Self-check: enum variável não é tipo</summary>
+            <div class="detail-body">
+              <p>O slide mostra algo como:</p>
+              <pre><code>enum logic [1:0] {IDLE, INIT, START} state_enum;
+
+state_enum st, nxt;</code></pre>
+              <p>
+                Isso não cria um tipo chamado `state_enum`; cria uma variável chamada `state_enum`. Para criar um tipo e
+                depois declarar variáveis desse tipo, precisa usar `typedef`.
+              </p>
+              <pre><code>typedef enum logic [1:0] {
+  IDLE,
+  INIT,
+  START
+} state_enum;
+
+state_enum st, nxt;</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="binary-onehot">Binary versus one-hot: não é só gosto</h2>
+          <p>
+            O curso compara estilos de codificação de FSM porque eles influenciam a Quality of Results, ou QoR. QoR é o
+            conjunto de métricas que a síntese entrega: área, timing, número de células, número de nets e, em fluxo mais
+            completo, consumo e congestionamento.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Estilo</th>
+                  <th>Ideia</th>
+                  <th>Vantagem típica</th>
+                  <th>Custo típico</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Binary</td>
+                  <td>Usa o menor número de bits para codificar os estados.</td>
+                  <td>Menos flip-flops.</td>
+                  <td>Decodificação combinacional pode ser mais complexa.</td>
+                </tr>
+                <tr>
+                  <td>One-hot</td>
+                  <td>Um bit por estado; em estado válido, só um bit fica em 1.</td>
+                  <td>Decodificação simples e, muitas vezes, timing melhor.</td>
+                  <td>Mais flip-flops.</td>
+                </tr>
+                <tr>
+                  <td>One-hot com `case (1'b1)`</td>
+                  <td>O `case` testa qual bit do estado está ativo.</td>
+                  <td>Expressa diretamente a intenção one-hot.</td>
+                  <td>Precisa garantir que a FSM realmente seja one-hot.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Para uma FSM pequena, binary costuma ser natural. Para controladoras com muitos estados e caminhos críticos de
+            decodificação, one-hot pode melhorar timing porque a lógica para saber "estou neste estado?" pode ser apenas ler
+            um bit. Não existe resposta universal: a síntese mede e otimiza, mas o estilo de RTL dá pistas importantes.
+          </p>
+
+          <pre><code>// One-hot com case em 1'b1
+always_comb begin
+  nxt  = '0;
+  dout = 1'b0;
+
+  unique case (1'b1)
+    st[0]: if (en) begin
+      nxt[1] = 1'b1;
+    end else begin
+      nxt[0] = 1'b1;
+    end
+
+    st[1]: begin
+      dout   = ^a;
+      nxt[2] = 1'b1;
+    end
+
+    st[2]: begin
+      dout   = ^(a + b);
+      nxt[0] = 1'b1;
+    end
+
+    default: nxt[0] = 1'b1;
+  endcase
+end</code></pre>
+
+          <div class="lesson-note">
+            <strong>Leitura correta:</strong> `case (1'b1)` parece estranho no começo. Ele não está comparando estado com um
+            número; está perguntando qual expressão de item vale 1. Em one-hot, cada item costuma ser `st[i]`.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="unique0">`unique` e `unique0`: exatamente uma ou no máximo uma</h2>
+          <p>
+            A parte A já apresentou `unique`. A parte B acrescenta `unique0`, e essa diferença é uma daquelas que aparecem
+            como pegadinha.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>`unique`</h3>
+              <p>
+                Você está dizendo que exatamente uma alternativa válida deve casar. Se nenhuma casar ou se mais de uma casar,
+                há violação da intenção.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>`unique0`</h3>
+              <p>
+                Você está dizendo que no máximo uma alternativa deve casar. Nenhuma alternativa casar pode ser permitido.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            Em termos de síntese, essas palavras podem ajudar a ferramenta a reconhecer exclusividade e evitar lógica de
+            prioridade desnecessária. Em termos de simulação, elas ajudam a denunciar quando o mundo real do sinal não bateu
+            com a promessa do código.
+          </p>
+
+          <div class="warning callout">
+            <strong>Regra prática:</strong> use `unique` ou `unique0` apenas quando você entende a propriedade que está
+            prometendo. Em FSM one-hot, `unique case (1'b1)` é forte e útil, mas só se o estado realmente tiver um único bit
+            ativo em operação normal.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="x-unknown">`X` é unknown, não don't-care</h2>
+          <p>
+            Esta é talvez a parte mais importante do bloco para evitar bugs conceituais. O slide diz: para simulação,
+            `x` é unknown, não don't-care. E reforça que, no enquadramento do curso, em comparação comum para síntese o
+            designer também não deve tratar `x` como wildcard.
+          </p>
+
+          <pre><code>if (In_A[7:0] == 8'b00xx11xx) begin
+  Data_Out = 1'b1;
+end else begin
+  Data_Out = 1'b0;
+end</code></pre>
+
+          <p>
+            O iniciante olha para `00xx11xx` e pensa: "quero comparar os bits 7:6 e 3:2, ignorando os outros". Mas `==` não
+            faz isso. Ele compara com um padrão que contém desconhecidos. Se o resultado da igualdade é unknown, o `if` não
+            entra no `then`. Em SystemVerilog, no teste de `if`, apenas 1 é verdadeiro; 0, X e Z não são tratados como true.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card danger">
+              <h3>Errado</h3>
+              <p>Usar `x` dentro de `==` esperando wildcard.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Certo</h3>
+              <p>Usar operador próprio de comparação com máscara: `==?` ou `!=?`.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Mais seguro ainda</h3>
+              <p>Manter `X` como sinal de problema em simulação, não como ferramenta casual de otimização.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="wildcard">`==?` e `!=?`: comparação com máscara</h2>
+          <p>
+            Para dizer "compare só alguns bits e ignore outros", SystemVerilog fornece operadores específicos:
+            <code>==?</code> e <code>!=?</code>. Eles tratam <code>x</code>, <code>z</code> e <code>?</code> no operando da
+            direita como wildcards. O lado direito deve ser constante.
+          </p>
+
+          <pre><code>logic [3:0] din;
+logic       dout;
+
+assign dout = (din ==? 4'b???0);
+
+// Equivalente lógico:
+// dout = ~din[0];</code></pre>
+
+          <p>
+            No exemplo, os três bits mais altos do padrão da direita são `?`, então não participam da comparação. O único bit
+            realmente testado é o bit 0, que precisa ser 0.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Detalhe de prova:</strong> wildcards valem no operando da direita. Se o sinal do lado esquerdo vier com
+            `X` ou `Z`, isso não vira don't-care automaticamente.
+          </div>
+
+          <pre><code>// Decodificação didática de opcode: compara só campos relevantes
+always_comb begin
+  is_load_store = 1'b0;
+
+  if (opcode ==? 8'b10??_00??)
+    is_load_store = 1'b1;
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="case-inside">`case inside`, `casez` e `casex`</h2>
+          <p>
+            A aula então separa três ideias que muita gente mistura: `case` comum, `case inside` e os wildcards legados
+            `casez`/`casex`.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Construção</th>
+                  <th>Como pensar</th>
+                  <th>Cuidado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>case</code></td>
+                  <td>Compara itens de forma comum. `?`, `x` e `z` são valores desconhecidos, não wildcard.</td>
+                  <td>Não use `3'b0?0` esperando casar com 000 e 010.</td>
+                </tr>
+                <tr>
+                  <td><code>case inside</code></td>
+                  <td>Permite expressar pertencimento a conjuntos e intervalos.</td>
+                  <td>Ótimo para clareza, mas ainda exige defaults e intenção de síntese clara.</td>
+                </tr>
+                <tr>
+                  <td><code>casez</code></td>
+                  <td>Trata `z` e `?` como don't-care nos itens.</td>
+                  <td>Mais explícito que `casex`, mas ainda requer cuidado.</td>
+                </tr>
+                <tr>
+                  <td><code>casex</code></td>
+                  <td>Trata `x`, `z` e `?` como don't-care nos itens.</td>
+                  <td>Pode mascarar `X` real de simulação e esconder bug.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>// case inside: pertencimento a conjunto/faixa
+always_comb begin
+  action = ACTION_DEFAULT;
+
+  case (status) inside
+    3'b000, 3'b001:      action = ACTION_A;
+    [3'b010:3'b101]:     action = ACTION_B;
+    default:             action = ACTION_C;
+  endcase
+end</code></pre>
+
+          <details class="expand-block">
+            <summary>Por que `casex` é tão perigoso?</summary>
+            <div class="detail-body">
+              <p>
+                `casex` pode tratar um `X` vindo do design como don't-care. Só que `X` em simulação muitas vezes é justamente
+                o sinal de que algo está errado: reset incompleto, múltiplos drivers, sinal não inicializado ou caminho sem
+                atribuição. Se você usa `casex`, pode esconder essa evidência e seguir com uma simulação aparentemente limpa.
+              </p>
+              <p>
+                Em RTL moderno, prefira `case inside`, `==?`, `unique case`, `priority case` ou codificação explícita. Use
+                `casex` apenas se houver motivo muito claro e revisão cuidadosa.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="tristate">Tri-state: regra de síntese</h2>
+          <p>
+            O slide de tri-state é curto, mas importante. Para sintetizar tri-state conforme mostrado no curso, o sinal deve
+            ser uma net, como <code>wire</code>, e deve ser dirigido por atribuição contínua. O ramo com <code>'z</code>
+            expressa alta impedância.
+          </p>
+
+          <pre><code>wire D_Out;
+
+assign D_Out = (Use_B) ? B : 'z;</code></pre>
+
+          <p>
+            Isso significa: quando <code>Use_B</code> vale 1, o sinal dirige <code>B</code>. Quando vale 0, ele não dirige o
+            barramento, deixando alta impedância. Em ASIC moderno, tri-state interno muitas vezes é evitado ou convertido em
+            mux. Ainda assim, para pinos de I/O ou barramentos específicos, a regra da aula é: tri-state sintetizável precisa
+            de net e continuous assignment.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Para o CPU:</strong> dentro do datapath, normalmente pense em mux, não em tri-state. Se aparecer `'z` em
+            lógica interna, trate como ponto de revisão antes de síntese.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="arrays">Arrays packed e unpacked</h2>
+          <p>
+            SystemVerilog separa duas dimensões que o Verilog antigo deixava menos expressivas: dimensões packed e unpacked.
+            Isso é fundamental para modelar memórias, barramentos e matrizes de registros sem perder o mapa mental.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Packed</h3>
+              <p>
+                Fica antes do nome. Representa bits agrupados como um vetor contínuo. É natural para barramentos e campos
+                bit-a-bit.
+              </p>
+              <pre><code>logic [7:0] byte_value;</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Unpacked</h3>
+              <p>
+                Fica depois do nome. Representa coleção de elementos. É natural para memórias, bancos de registradores e
+                tabelas fixas.
+              </p>
+              <pre><code>logic [7:0] memory [0:127];</code></pre>
+            </div>
+          </div>
+
+          <p>
+            No exemplo <code>logic [7:0] memory [0:127];</code>, cada elemento tem 8 bits packed e existem 128 elementos
+            unpacked. Isso conversa diretamente com banco de registradores e memória do CPU.
+          </p>
+
+          <pre><code>// Banco de 32 registradores, cada um com 32 bits
+logic [31:0] regfile [0:31];
+
+assign read_data = regfile[read_addr];</code></pre>
+
+          <details class="expand-block">
+            <summary>Dynamic arrays, queues e associative arrays</summary>
+            <div class="detail-body">
+              <p>
+                O curso cita arrays dinâmicos, filas e arrays associativos, mas o ponto prático para RTL é separar linguagem
+                de design sintetizável de linguagem de testbench. Recursos dinâmicos são muito úteis em simulação,
+                scoreboards, filas de transações e modelos de referência. Para RTL sintetizável comum, prefira estruturas de
+                tamanho fixo.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="structs">Struct packed versus unpacked</h2>
+          <p>
+            `struct` ajuda a dar nome a grupos de sinais. Em vez de passar vários sinais soltos, você pode agrupar campos que
+            pertencem ao mesmo conceito: uma instrução decodificada, uma transação de barramento, um pacote de controle.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Como pensar</th>
+                  <th>Uso natural</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>struct packed</code></td>
+                  <td>Um vetor de bits com campos nomeados.</td>
+                  <td>Barramentos, instruções, pacotes de controle, campos que precisam virar bits contínuos.</td>
+                </tr>
+                <tr>
+                  <td><code>struct</code> unpacked</td>
+                  <td>Uma coleção de membros separados.</td>
+                  <td>Organização lógica de variáveis, especialmente quando não precisa tratar como vetor único.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>typedef struct packed {
+  logic        valid;
+  logic [4:0]  rd;
+  logic [2:0]  alu_op;
+  logic        mem_read;
+  logic        mem_write;
+} control_t;
+
+control_t ctrl;
+
+always_comb begin
+  ctrl = '0;
+
+  if (is_add) begin
+    ctrl.valid  = 1'b1;
+    ctrl.rd     = instr[11:7];
+    ctrl.alu_op = ALU_ADD;
+  end
+end</code></pre>
+
+          <p>
+            Repare como isso pode ajudar no nosso CPU: sinais de controle deixam de ficar espalhados como fios soltos e passam
+            a formar um grupo com nome. Isso não deve virar abstração exagerada, mas pode deixar decode e controle muito mais
+            revisáveis.
+          </p>
+
+          <details class="expand-block">
+            <summary>Quando `struct packed` é melhor que vários sinais?</summary>
+            <div class="detail-body">
+              <p>
+                Use quando os campos viajam juntos, são atribuídos juntos ou representam uma unidade conceitual. Por exemplo:
+                controle de uma instrução decodificada, resposta de uma ALU ou interface interna simples. Evite quando o
+                agrupamento só torna conexões mais difíceis sem melhorar entendimento.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="union">Union: múltiplas visões do mesmo armazenamento</h2>
+          <p>
+            O bloco termina começando o assunto de `union`. A ideia é parecida com C: permitir que o mesmo espaço seja visto
+            por formatos diferentes.
+          </p>
+
+          <pre><code>typedef union {
+  tcp_t          tcp_h;
+  udp_t          udp_h;
+  logic [63:0]   bits;
+  logic [7:0][7:0] bytes;
+} union_unpacked_t;</code></pre>
+
+          <p>
+            Em design digital, isso é útil quando o mesmo conjunto de bits pode ser interpretado por campos diferentes. Mas
+            esta parte só abre o tema; a continuação entra no próximo bloco. Para o estudo atual, basta guardar a ideia:
+            `struct` agrupa campos; `union` permite visões alternativas do mesmo armazenamento.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="aplicacao">Aplicação no nosso projeto</h2>
+          <p>
+            Esta aula dá um conjunto de revisões bem concreto para o CPU e para qualquer bloco que vamos encaixar no ambiente
+            automatizado do professor.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>FSMs</strong>
+              Declarar enum com largura explícita e usar defaults em `always_comb`.
+            </div>
+            <div class="check-item">
+              <strong>Estados inválidos</strong>
+              Ter `default` ou estratégia clara para recuperar para estado seguro.
+            </div>
+            <div class="check-item">
+              <strong>QoR</strong>
+              Ver se binary ou one-hot faz mais sentido depois de olhar reports de área/timing.
+            </div>
+            <div class="check-item">
+              <strong>Wildcards</strong>
+              Não usar `x` em `==` como máscara; usar `==?` quando a máscara for intencional.
+            </div>
+            <div class="check-item">
+              <strong>Case</strong>
+              Evitar `casex` como hábito; preferir formas explícitas.
+            </div>
+            <div class="check-item">
+              <strong>Dados</strong>
+              Usar arrays fixos e structs quando eles deixarem o RTL mais claro e sintetizável.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. O que acontece se `enum` não tiver tipo base explícito?</strong>
+            Pode assumir `int`, frequentemente 32 bits, criando uma FSM maior que o necessário e dificultando cobertura total
+            dos valores possíveis.
+          </div>
+
+          <div class="quiz-card">
+            <strong>2. Por que `nxt` sem default em `always_comb` pode gerar latch?</strong>
+            Porque há caminhos em que `nxt` não recebe novo valor; para preservar valor anterior, a síntese precisa memória.
+          </div>
+
+          <div class="quiz-card">
+            <strong>3. Qual a diferença entre `unique` e `unique0`?</strong>
+            `unique` espera exatamente uma correspondência válida. `unique0` espera no máximo uma correspondência válida.
+          </div>
+
+          <div class="quiz-card">
+            <strong>4. `x` em `==` significa don't-care?</strong>
+            Não. Em comparação comum, `x` é unknown. Para máscara, use `==?` ou `!=?`.
+          </div>
+
+          <div class="quiz-card">
+            <strong>5. Onde os wildcards de `==?` valem?</strong>
+            No operando da direita, que deve ser constante. `x` ou `z` no lado esquerdo não viram wildcard.
+          </div>
+
+          <div class="quiz-card">
+            <strong>6. Qual a diferença entre packed e unpacked?</strong>
+            Packed é vetor de bits contínuo; unpacked é coleção de elementos.
+          </div>
+
+          <div class="quiz-card">
+            <strong>7. Quando usar `struct packed`?</strong>
+            Quando a estrutura representa bits físicos agrupados, como campos de controle, instrução ou barramento.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ponte">Ponte com o próximo bloco</h2>
+          <p>
+            O próximo bloco continua a partir de `union` e avança para interfaces, modports, suporte de síntese, parâmetros
+            e wrappers. Isso começa a conectar estilo RTL com organização de projeto maior: não apenas como um módulo é
+            escrito, mas como vários módulos conversam por contratos mais estruturados.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base: <code>01_SystemVerilog_for_RTL_Design_parte_B.md</code>. Os slides deste bloco foram convertidos em exemplos
+          editáveis e explicação didática; não usei prints como figura porque o material era majoritariamente código e texto.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1a_logic_always_comb_always_ff_fsm.html">Anterior: bases de RTL</a>
+          <a href="bloco_1_1c_interfaces_modports_wrappers.html">Próximo: interfaces e wrappers</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#mapa">Mapa mental</a>
+        <a href="#fsm-enum">FSM com enum</a>
+        <a href="#binary-onehot">Binary x one-hot</a>
+        <a href="#unique0">unique0</a>
+        <a href="#x-unknown">X unknown</a>
+        <a href="#wildcard">==? e !=?</a>
+        <a href="#case-inside">case inside</a>
+        <a href="#tristate">Tri-state</a>
+        <a href="#arrays">Arrays</a>
+        <a href="#structs">Structs</a>
+        <a href="#union">Union</a>
+        <a href="#aplicacao">Projeto</a>
+        <a href="#revisao">Revisão</a>
+        <a href="#ponte">Próximo bloco</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

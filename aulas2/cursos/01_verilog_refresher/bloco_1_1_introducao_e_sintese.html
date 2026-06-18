@@ -1,0 +1,260 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Verilog: Introducao e Sintese</title><link rel="stylesheet" href="../../assets/css/style.css"></head><body><header class="site-header"><div class="header-inner"><div class="brand"><a class="brand-title" href="../../index.html">Conhecimento RTL</a><span class="brand-subtitle">01 Verilog Refresher</span></div><nav class="top-nav" aria-label="Navegação principal"><a href="../../index.html">Cursos</a><a href="index.html">Verilog Refresher</a></nav></div></header><main class="page"><nav class="breadcrumbs" aria-label="Você está aqui"><a href="../../index.html">Raiz</a><span>/</span><a href="index.html">01 Verilog Refresher</a><span>/</span>Introducao e Sintese</nav><h1 class="page-title">Verilog: Introducao e Sintese</h1><p class="lead">Aula didatica reconstruida a partir dos slides: conceitos em ordem pedagogica, exemplos explicados e detalhes apenas quando ajudam.</p><div class="layout"><article data-content><section class="section"><h2 id="introducao">Introducao</h2>
+</section>
+<section class="section"><h2 id="como-estudar-esta-aula">Como estudar esta aula</h2><p>Esta aula foi reconstruida a partir dos slides do curso Synopsys. Ela nao segue a ordem mecanica de cada slide; ela reorganiza o conteudo para estudo.</p>
+<p>Use este arquivo como material principal. O arquivo <code>cobertura_slide_a_slide.md</code> fica como auditoria: ele mostra de qual conteudo visual vieram as ideias.</p>
+</section>
+<section class="section"><h2 id="objetivo-da-aula">Objetivo da aula</h2><p>Ao final desta aula, voce deve conseguir responder:</p>
+<ul class="key-list compact-list">
+<li>o que significa escrever hardware em Verilog;</li>
+<li>por que Verilog nao deve ser lido como uma linguagem comum de software;</li>
+<li>qual e a diferenca entre simulacao, compilacao e sintese;</li>
+<li>quais estilos de codigo tendem a gerar hardware claro;</li>
+<li>quais estilos geram latch, prioridade indesejada, erro de sintese ou netlist ruim;</li>
+<li>por que o ambiente do professor separa simulacao de sintese.</li>
+</ul>
+</section>
+<section class="section"><h2 id="a-ideia-central">A ideia central</h2><p>Verilog e uma linguagem de descricao de hardware. Isso muda tudo.</p>
+<p>Quando voce escreve C, Python ou Java, normalmente esta descrevendo uma sequencia de instrucoes executada por um processador. Quando escreve RTL em Verilog, voce descreve uma estrutura de hardware: registradores, multiplexadores, somadores, decodificadores, maquinas de estado, memorias e conexoes.</p>
+<p>Por isso, o mesmo codigo Verilog pode ter duas leituras:</p>
+<ul class="key-list compact-list">
+<li>leitura de simulacao: &quot;o comportamento parece correto quando rodo o testbench?&quot;;</li>
+<li>leitura de sintese: &quot;que circuito a ferramenta consegue construir a partir disso?&quot;.</li>
+</ul>
+<p>Um codigo pode simular bem e ainda assim ser ruim, perigoso ou impossivel para sintese.</p>
+</section>
+<section class="section"><h2 id="rtl-entra-na-sintese-netlist-sai-da-sintese">RTL entra na sintese, netlist sai da sintese</h2><p>O primeiro quiz dos slides reforca uma frase essencial:</p>
+<pre><code>RTL design is input to synthesis tool to generate design netlist.</code></pre>
+<p>A ferramenta de sintese recebe uma descricao RTL e gera uma netlist. A netlist e uma descricao estrutural do circuito em termos de celulas, portas ou blocos da tecnologia alvo.</p>
+<p>Essa separacao explica por que o curso insiste tanto em &quot;estilo RTL&quot;. A ferramenta nao sintetiza a sua intencao mental; ela sintetiza o padrao de hardware que consegue reconhecer no seu codigo.</p>
+<details class="nested-detail"><summary>Aprofundamento: compilacao nao e sintese</summary><div class="detail-body"><p>Compilar e checar/transformar codigo para que o simulador execute. Sintetizar e transformar RTL em hardware.</p>
+<p>Na pratica:</p>
+<pre><code>Compilacao:
+codigo Verilog -&gt; representacao executavel pelo simulador
+
+Sintese:
+RTL Verilog -&gt; netlist de celulas/portas</code></pre>
+<p>Se o simulador aceita um recurso, isso nao significa que a sintese aceita. Exemplos comuns: <code>#10</code>, <code>$display</code>, <code>$finish</code>, <code>$dumpvars</code>, <code>initial</code> para estimulos, <code>fork/join</code> e muitos controles de tempo.</p></div></details>
+</section>
+<section class="section"><h2 id="concorrencia-o-ponto-mental-mais-importante">Concorrencia: o ponto mental mais importante</h2><p>Verilog descreve procedimentos concorrentes. Blocos <code>always</code>, <code>initial</code> e atribuicoes <code>assign</code> existem ao mesmo tempo. Dentro de um bloco procedural pode haver sequencia, mas os blocos do modulo representam hardware em paralelo.</p>
+<p>Exemplo conceitual:</p>
+<pre><code>assign z = sel ? a : b;
+
+always @(posedge clk) begin
+    q &lt;= z;
+end</code></pre>
+<p>O <code>assign</code> nao &quot;roda antes&quot; do <code>always</code> como uma funcao de software. Ele descreve uma logica combinacional continuamente ativa. O <code>always</code> descreve registradores sensiveis ao clock.</p>
+<details class="nested-detail"><summary>Detalhe importante: <code>reg</code> nao significa sempre flip-flop</summary><div class="detail-body"><p>Em Verilog classico, <code>reg</code> significa uma variavel atribuida em bloco procedural. Ela pode virar flip-flop, latch ou apenas logica combinacional, dependendo do estilo.</p>
+<p>O que decide o hardware inferido e o contexto:</p>
+<ul class="key-list compact-list">
+<li><code>always @(posedge clk)</code> tende a inferir registrador;</li>
+<li><code>always @(*)</code> completo tende a inferir logica combinacional;</li>
+<li><code>always @(*)</code> incompleto pode inferir latch.</li>
+</ul></div></details>
+</section>
+<section class="section"><h2 id="niveis-de-modelagem-em-verilog">Niveis de modelagem em Verilog</h2><p>Os slides organizam Verilog em tres niveis:</p>
+<ul class="key-list compact-list">
+<li>behavioral modeling;</li>
+<li>RTL-level modeling;</li>
+<li>structural/gate-level modeling.</li>
+</ul>
+<p>Para o seu projeto e para o ambiente do professor, o nivel mais importante e RTL.</p>
+<p>Behavioral modeling pode usar constructs muito abstratos e nem sempre sintetizaveis. Structural modeling instancia blocos ou portas explicitamente. RTL fica no meio: descreve registradores, transferencia de dados, logica combinacional e controle de forma sintetizavel.</p>
+<details class="nested-detail"><summary>Detalhe: netlist e gate-level</summary><div class="detail-body"><p>Depois da sintese, a ferramenta pode gerar uma netlist Verilog. Esse Verilog pos-sintese e estrutural: muitas instancias de celulas, portas e conexoes. Ele nao e escrito para ser bonito; ele e escrito para representar o circuito gerado.</p></div></details>
+</section>
+<section class="section"><h2 id="blocos-digitais-que-o-rtl-descreve">Blocos digitais que o RTL descreve</h2><p>Os slides listam blocos basicos:</p>
+<ul class="key-list compact-list">
+<li>portas logicas;</li>
+<li>muxes e demuxes;</li>
+<li>encoders e decoders;</li>
+<li>somadores, comparadores e circuitos aritmeticos;</li>
+<li>contadores e timers;</li>
+<li>registradores, FIFOs e memorias;</li>
+<li>maquinas de estado.</li>
+</ul>
+<p>Isso e uma pista de estudo: quando voce ve uma estrutura Verilog, tente perguntar &quot;que hardware isso vira?&quot;.</p>
+<p>Exemplos:</p>
+<pre><code>assign y = sel ? a : b;</code></pre>
+<p>Vira um multiplexador.</p>
+<pre><code>always @(posedge clk) begin
+    q &lt;= d;
+end</code></pre>
+<p>Vira um flip-flop.</p>
+<pre><code>always @(*) begin
+    case (state)
+        IDLE: next = READ;
+        READ: next = WRITE;
+        default: next = IDLE;
+    endcase
+end</code></pre>
+<p>Vira logica combinacional de proximo estado.</p>
+</section>
+<section class="section"><h2 id="operadores-tambem-custam-hardware">Operadores tambem custam hardware</h2>
+Um erro comum e achar que operador e "de graca". Em RTL, operador vira circuito.
+
+- `+` vira somador;
+- `-` vira subtrator;
+- `==` vira comparador;
+- `? :` vira mux ou logica equivalente;
+- shift constante costuma virar apenas fios;
+- shift variavel exige circuito;
+- multiplicacao pode ser cara;
+- divisao e modulo por variavel costumam ser problemáticos para sintese simples.
+
+<h3>Exemplo: largura de resultado</h3>
+<p>Se voce soma dois valores de 32 bits, o resultado completo pode precisar de 33 bits por causa do carry.</p>
+<pre><code>reg [32:0] adder_reg;
+adder_reg &lt;= op_a + op_b;
+assign adder_out = adder_reg[31:0];
+assign carry_out = adder_reg[32];</code></pre>
+<p>Esse padrao aparece no lab e e um bom exemplo de pensamento RTL: largura de sinal e parte do hardware.</p>
+</section>
+<section class="section"><h2 id="a-regra-de-ouro-da-logica-combinacional">A regra de ouro da logica combinacional</h2><p>Logica combinacional nao deve lembrar valor anterior. Se o codigo deixa uma saida sem atribuicao em algum caminho, a ferramenta pode inferir um latch.</p>
+<p>Padrao ruim:</p>
+<pre><code>always @(*) begin
+    if (sel)
+        y = a;
+end</code></pre>
+<p>Se <code>sel</code> for zero, <code>y</code> nao recebe valor. Para preservar o valor antigo, a ferramenta infere armazenamento.</p>
+<p>Padrao melhor:</p>
+<pre><code>always @(*) begin
+    y = b;
+    if (sel)
+        y = a;
+end</code></pre>
+<p>Ou:</p>
+<pre><code>always @(*) begin
+    case (sel)
+        1&#x27;b0: y = b;
+        1&#x27;b1: y = a;
+        default: y = b;
+    endcase
+end</code></pre>
+<details class="nested-detail"><summary>Aprofundamento: sensitivity list</summary><div class="detail-body"><p>Em Verilog antigo, era comum escrever:</p>
+<pre><code>always @(a or b or sel)</code></pre>
+<p>Se voce esquece um sinal lido dentro do bloco, a simulacao pode ficar incoerente. Por isso, para combinacional, prefira:</p>
+<pre><code>always @(*)</code></pre>
+<p>Em SystemVerilog, voce vera <code>always_comb</code>, que deixa a intencao ainda mais clara.</p></div></details>
+</section>
+<section class="section"><h2 id="if-else-e-prioridade"><code>if-else</code> e prioridade</h2><p>Nested <code>if-else</code> comunica prioridade. A primeira condicao verdadeira vence.</p>
+<p>Exemplo:</p>
+<pre><code>always @(*) begin
+    if (x[0])
+        y = 2&#x27;b00;
+    else if (x[1])
+        y = 2&#x27;b01;
+    else if (x[2])
+        y = 2&#x27;b10;
+    else if (x[3])
+        y = 2&#x27;b11;
+    else
+        y = 2&#x27;bxx;
+end</code></pre>
+<p>Isso e adequado para um priority encoder. Mas se a intencao era tratar alternativas exclusivas e paralelas, um <code>case</code> pode expressar melhor o circuito.</p>
+<details class="nested-detail"><summary>Nuance: prioridade pode custar timing</summary><div class="detail-body"><p>Uma cadeia de prioridade pode virar uma cascata de logica. Cascatas longas tendem a piorar atraso. Isso nao significa que <code>if-else</code> e proibido; significa que deve ser usado quando a prioridade e realmente a intencao.</p></div></details>
+</section>
+<section class="section"><h2 id="case-e-otimizacao-de-sintese"><code>case</code> e otimizacao de sintese</h2><p><code>case</code> ajuda a expressar selecao entre alternativas. Ele pode gerar logica mais paralela quando as condicoes sao exclusivas.</p>
+<p>Mas <code>case</code> incompleto tambem pode inferir latch.</p>
+<p>Padrao recomendado:</p>
+<pre><code>always @(*) begin
+    y = 2&#x27;b00;
+    case (sel)
+        2&#x27;d0: y = a;
+        2&#x27;d1: y = b;
+        2&#x27;d2: y = c;
+        2&#x27;d3: y = d;
+        default: y = 2&#x27;b00;
+    endcase
+end</code></pre>
+<details class="nested-detail"><summary>Aprofundamento: <code>parallel_case</code> e cuidado</summary><div class="detail-body"><p>Os slides citam otimizacao com <code>parallel_case</code>. Isso e um ponto delicado. A diretiva informa ao sintetizador que as alternativas sao paralelas/exclusivas. Se essa promessa for falsa, simulacao RTL e netlist podem divergir.</p>
+<p>Em SystemVerilog moderno, e mais comum preferir <code>unique case</code> ou <code>priority case</code>, porque a intencao fica mais explicita e pode gerar checagens melhores.</p>
+<p>Para o seu uso agora, a regra conservadora e: escreva <code>case</code> completo, com <code>default</code>, e evite depender de diretivas perigosas sem necessidade.</p></div></details>
+</section>
+<section class="section"><h2 id="logica-sequencial">Logica sequencial</h2>
+Logica sequencial guarda estado. O padrao classico e:
+
+```verilog
+always @(posedge clk or negedge reset_n) begin
+    if (!reset_n)
+        q <= 1'b0;
+    else
+        q <= d;
+end
+```
+
+Como o reset aparece na lista de sensibilidade, ele e assincrono. Se o reset aparece apenas dentro de `always @(posedge clk)`, ele e sincrono.
+
+<h3>Regra pratica</h3>
+<ul class="key-list compact-list">
+<li>use nonblocking (<code>&lt;=</code>) em logica sequencial;</li>
+<li>use blocking (<code>=</code>) em logica combinacional;</li>
+<li>nao misture os dois estilos no mesmo bloco sem motivo muito claro;</li>
+<li>evite multiplos blocos dirigindo a mesma variavel.</li>
+</ul>
+</section>
+<section class="section"><h2 id="fsm-sintetizavel">FSM sintetizavel</h2><p>Uma maquina de estados bem escrita normalmente separa:</p>
+<p>1. registrador de estado atual;</p>
+<p>2. logica combinacional de proximo estado;</p>
+<p>3. logica de saida.</p>
+<p>Padrao conceitual:</p>
+<pre><code>always @(posedge clk or negedge reset_n) begin
+    if (!reset_n)
+        state &lt;= IDLE;
+    else
+        state &lt;= next_state;
+end
+
+always @(*) begin
+    next_state = state;
+    case (state)
+        IDLE: next_state = READ;
+        READ: next_state = WRITE;
+        WRITE: next_state = IDLE;
+        default: next_state = IDLE;
+    endcase
+end</code></pre>
+<p>Esse estilo e legivel para humanos e para a ferramenta. Tambem evita latch no <code>next_state</code>.</p>
+<details class="nested-detail"><summary>Aprofundamento: a ferramenta pode recodificar estados</summary><div class="detail-body"><p>O sintetizador pode trocar a codificacao dos estados para otimizar area, timing ou potencia. Por isso, em geral, nao dependa de valores binarios internos da FSM, a menos que exista uma razao de interface ou debug.</p></div></details>
+</section>
+<section class="section"><h2 id="constructs-que-pertencem-ao-testbench-nao-ao-rtl">Constructs que pertencem ao testbench, nao ao RTL</h2><p>Os slides listam muitos recursos nao sintetizaveis ou perigosos para RTL:</p>
+<ul class="key-list compact-list">
+<li><code>initial</code> para estimulos;</li>
+<li>delays <code>#</code>;</li>
+<li><code>$display</code>, <code>$monitor</code>, <code>$finish</code>, <code>$dumpvars</code>;</li>
+<li><code>wait</code>, <code>fork/join</code>, <code>force/release</code>;</li>
+<li><code>real</code>, <code>time</code>, <code>event</code>;</li>
+<li>nomes hierarquicos;</li>
+<li>algumas primitivas gate-level e tipos especiais de net.</li>
+</ul>
+<p>Esses recursos podem ser excelentes em testbench. O erro e coloca-los no RTL que sera sintetizado.</p>
+</section>
+<section class="section"><h2 id="ligacao-com-o-ambiente-do-professor">Ligacao com o ambiente do professor</h2><p>Agora os Makefiles comecam a fazer sentido.</p>
+<p>Em simulacao, o ambiente precisa do RTL e do testbench:</p>
+<pre><code>filelist.f = RTL + testbench</code></pre>
+<p>Em sintese, o ambiente precisa apenas do RTL sintetizavel:</p>
+<pre><code>filelist_rtl.f = somente RTL</code></pre>
+<p>Se testbench entrar em sintese, voce leva junto delays, <code>$display</code>, <code>$finish</code>, dump de onda e outros recursos que nao sao hardware.</p>
+</section>
+<section class="section"><h2 id="checklist-para-usar-no-seu-rtl-lab2">Checklist para usar no seu RTL_LAB2</h2><p>Antes de tentar sintetizar:</p>
+<ul class="key-list compact-list">
+<li>cada registrador tem clock claro?</li>
+<li>reset esta modelado como sincrono ou assincrono de forma intencional?</li>
+<li>blocos combinacionais usam <code>@(*)</code> ou equivalente?</li>
+<li>todas as saidas recebem valor em todos os caminhos?</li>
+<li>nao ha testbench em <code>filelist_rtl.f</code>?</li>
+<li>nao ha <code>$display</code>, <code>#delay</code>, <code>$finish</code> no RTL?</li>
+<li><code>if-else</code> foi usado porque existe prioridade real?</li>
+<li><code>case</code> tem <code>default</code>?</li>
+<li>FSM tem reset e default?</li>
+<li>larguras de sinais aritmeticos consideram carry/overflow?</li>
+</ul>
+</section>
+<section class="section"><h2 id="quando-o-audio-seria-realmente-util">Quando o audio seria realmente util</h2><p>Para esta aula, audio nao parece obrigatorio em todos os slides. Eu priorizaria audio apenas se voce quiser entender com mais seguranca:</p>
+<ul class="key-list compact-list">
+<li>blocking vs nonblocking;</li>
+<li><code>parallel_case</code>;</li>
+<li>inferencia de latch;</li>
+<li>FSM;</li>
+<li>diferenca entre codigo que simula e codigo que sintetiza.</li>
+</ul>
+</section><p class="source-note">Base Markdown: <a data-md-source href="../../assets/md_normalizado/01_Verilog_Introduction.md">aula didatica</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_Verilog_for_Synthesis.md">cobertura slide a slide</a>.</p><nav class="pager" aria-label="Navegação entre aulas"><a href="index.html">Voltar ao curso</a><a href="bloco_1_1b_verificacao_verilog.html">Proxima: Verificacao</a></nav></article><aside class="toc" data-toc><h2>Nesta aula</h2></aside></div></main><footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer><script src="../../assets/js/app.js"></script></body></html>

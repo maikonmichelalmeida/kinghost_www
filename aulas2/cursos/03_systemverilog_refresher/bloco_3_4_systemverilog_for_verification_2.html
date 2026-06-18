@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog for Verification-2</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>Verification-2
+    </nav>
+
+    <h1 class="page-title">SystemVerilog for Verification-2</h1>
+    <p class="lead">
+      Continuação da verificação em SystemVerilog: coverage para medir lacunas,
+      constraints para gerar estímulos úteis e assertions para checar propriedades durante a simulação.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            A aula anterior montou a arquitetura do testbench. Esta aula responde a pergunta seguinte:
+            depois de gerar estímulos, aplicar no DUT, monitorar e comparar, <strong>como saber se o teste foi suficiente?</strong>
+          </p>
+          <p>
+            Rodar uma simulação sem medir cobertura é como experimentar alguns exemplos e torcer para que eles
+            representem o sistema inteiro. Em projetos reais, essa confiança precisa virar evidência.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_verification_closure.png" alt="Fluxo de verification closure com coverage, constraints e assertions">
+            <figcaption>
+              Os slides tratam coverage, constraints e assertions separadamente. Para estudar, a melhor leitura é vê-los como um ciclo de fechamento de verificação.
+            </figcaption>
+          </figure>
+          <div class="callout">
+            <strong>Resumo do bloco:</strong> coverage mostra o que faltou, constraints ajudam a gerar casos melhores
+            e assertions checam regras temporais ou lógicas enquanto a simulação roda.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="coverage">Coverage: medir o que foi exercitado</h2>
+          <p>
+            Coverage não prova sozinha que o design está correto. Ela mede progresso. Se um ponto nunca foi exercitado,
+            você não tem evidência sobre aquele comportamento. Por isso, coverage é uma ferramenta de decisão:
+            ela indica onde criar o próximo teste.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Tipo</th><th>O que mede</th><th>Exemplo de lacuna</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Line coverage</td><td>Statements executados.</td><td>Um ramo nunca chegou a executar.</td></tr>
+                <tr><td>Toggle coverage</td><td>Bits que alternaram 0â†’1 ou 1â†’0.</td><td>Um sinal ficou preso ou nunca foi estimulado.</td></tr>
+                <tr><td>Condition coverage</td><td>Subexpressões dentro de condicionais.</td><td>Um termo de <code>valid && ready && !full</code> nunca variou.</td></tr>
+                <tr><td>Branch coverage</td><td>Ramos de <code>if</code>, <code>case</code> e controle.</td><td>O <code>else</code> ou um item de <code>case</code> nunca foi tomado.</td></tr>
+                <tr><td>FSM coverage</td><td>Estados e transições legais.</td><td>Um estado de erro ou uma transição rara nunca foi visitada.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details class="expand-block" open>
+            <summary>Code coverage versus functional coverage</summary>
+            <div class="detail-body">
+              <p>
+                Code coverage olha para a estrutura do código HDL. Functional coverage olha para a intenção da especificação.
+                Um teste pode executar muitas linhas e ainda não cobrir o comportamento que importa. Por exemplo:
+                uma FIFO pode ter boa line coverage, mas nunca ter sido testada no caso quase cheia, quase vazia ou com
+                leitura e escrita simultâneas.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="functional-coverage">Functional coverage, covergroups e bins</h2>
+          <p>
+            Functional coverage é definida por você. Ela transforma objetivos de verificação em pontos observáveis.
+            Em SystemVerilog, a estrutura típica é <code>covergroup</code>, <code>coverpoint</code> e <code>bins</code>.
+          </p>
+          <pre><code class="language-systemverilog">class Test;
+    rand bit [3:0] my_reg1;
+    rand bit [2:0] my_reg2;
+
+    covergroup MyCovGrp;
+        coverpoint my_reg1 {
+            bins zero      = {0};
+            bins low_range = {[1:3]};
+            bins mid       = {[4:5]};
+            bins rest      = default;
+        }
+
+        coverpoint my_reg2;
+    endgroup
+endclass</code></pre>
+          <p>
+            O <code>covergroup</code> representa uma feature ou conjunto de objetivos. O <code>coverpoint</code>
+            observa uma variável ou expressão. Os <code>bins</code> dizem quais valores ou faixas contam como metas.
+          </p>
+          <details class="expand-block">
+            <summary>Como pensar em bons bins</summary>
+            <div class="detail-body">
+              <p>
+                Evite bins com nomes genéricos demais, como <code>feature1</code>, quando estiver criando material
+                de projeto. Nomes como <code>addr_zero</code>, <code>boundary_high</code>, <code>illegal_opcode</code>
+                e <code>unaligned_access</code> dizem por que aquele valor importa.
+              </p>
+            </div>
+          </details>
+          <p>
+            Cross coverage aparece quando cobrir variáveis separadas não basta. Talvez você tenha coberto pacotes grandes
+            e também porta B, mas nunca pacotes grandes na porta B. O cross captura essa combinação.
+          </p>
+          <pre><code class="language-systemverilog">covergroup PacketCov;
+    cp_size : coverpoint size {
+        bins small  = {[1:15]};
+        bins medium = {[16:127]};
+        bins large  = {[128:255]};
+    }
+
+    cp_port : coverpoint port {
+        bins port_a = {0};
+        bins port_b = {1};
+    }
+
+    size_x_port : cross cp_size, cp_port;
+endgroup</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="vcs-verdi">VCS e Verdi</h2>
+          <p>
+            O slide mostra que a coleta de coverage costuma estar desligada por padrão. Ela precisa ser habilitada
+            no simulador. Em VCS, a forma apresentada foi:
+          </p>
+          <pre><code class="language-bash">vcs -cm line|cond|fsm|tgl|branch|assert</code></pre>
+          <p>
+            Depois da simulação, o Verdi abre a base de cobertura:
+          </p>
+          <pre><code class="language-bash">verdi -cov -covdir my_test.vdb</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_verdi_coverage_view_crop.png" alt="Recorte do Verdi exibindo dados de coverage">
+            <figcaption>
+              Recorte útil do slide: o Verdi transforma porcentagens em uma navegação concreta por módulos, bins e trechos de código.
+            </figcaption>
+          </figure>
+          <p>
+            A parte importante para o laboratório é perceber que coverage muda o próximo passo. Se um bin ficou vermelho,
+            a pergunta não é “por que a ferramenta reclamou?”, mas sim: <strong>qual estímulo preciso criar para cobrir esse caso?</strong>
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="constraints">Constraints e randomização</h2>
+          <p>
+            Directed tests continuam úteis, mas não escalam para todos os cantos de um sistema digital complexo.
+            Constraint random verification usa randomização dentro de limites legais. A ideia é gerar variedade
+            sem gerar lixo.
+          </p>
+          <pre><code class="language-systemverilog">class downstream_data;
+    rand bit [7:0] addr;
+    rand bit [7:0] data;
+
+    constraint addr_range {
+        addr <= 8'h0B;
+    }
+endclass</code></pre>
+          <p>
+            Aqui <code>addr</code> é randomizado, mas o solver só pode escolher valores que obedecem à constraint.
+            Sem essa restrição, o testbench poderia criar endereços que não pertencem ao cenário que você quer verificar.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_constraints_distribution_map.png" alt="Mapa de leitura de rand, inside, dist, :=, :/ e solve-before">
+            <figcaption>
+              Diagrama limpo criado para estudar os operadores dos slides sem depender de print de código.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="inside">O operador inside</h2>
+          <p>
+            <code>inside</code> restringe uma variável a uma lista de valores ou faixas.
+          </p>
+          <pre><code class="language-systemverilog">constraint legal_addr {
+    addr inside {[8'h10:8'h3F]};
+}</code></pre>
+          <p>
+            Leitura: <code>addr</code> deve ficar entre <code>0x10</code> e <code>0x3F</code>.
+            Para excluir uma faixa, usa-se a negação:
+          </p>
+          <pre><code class="language-systemverilog">constraint avoid_reserved {
+    !(addr inside {[8'h80:8'h8F]});
+}</code></pre>
+          <p>
+            Isso aparece em endereços reservados, opcodes ilegais, modos proibidos e regiões de memória que não devem ser acessadas.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="dist">Weighted distribution: dist, := e :/</h2>
+          <p>
+            O operador <code>dist</code> não define apenas legalidade. Ele altera probabilidade.
+            Isso é importante porque randomização uniforme nem sempre testa bem casos raros.
+          </p>
+          <pre><code class="language-systemverilog">rand bit [2:0] typical;
+
+constraint u_dist {
+    typical dist { 0:=30, [1:4]:=20, 5:=40, 7:=10 };
+}</code></pre>
+          <p>
+            Com <code>:=</code>, o peso é aplicado a cada item. Portanto, na faixa <code>[1:4]:=20</code>,
+            cada valor da faixa recebe peso 20.
+          </p>
+          <pre><code class="language-systemverilog">constraint u_dist {
+    typical dist { 0:/30, [1:4]:/40, 5:/10, 7:/10 };
+}</code></pre>
+          <p>
+            Com <code>:/</code>, o peso é distribuído pela faixa. Portanto, <code>[1:4]:/40</code>
+            reparte o peso total 40 pelos quatro valores.
+          </p>
+          <details class="expand-block" open>
+            <summary>Por que isso importa tanto?</summary>
+            <div class="detail-body">
+              <p>
+                Se casos de borda são raros, uma distribuição uniforme pode quase não gerá-los.
+                Com pesos, você aumenta a chance de fronteiras, erros esperados, tamanhos extremos,
+                endereços reservados e combinações que costumam revelar bugs.
+              </p>
+              <pre><code class="language-systemverilog">constraint addr_bias {
+    addr dist {
+        8'h00 := 20,
+        8'hFF := 20,
+        [8'h01:8'hFE] :/ 60
+    };
+}</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="randc-static">randc, solve-before e constraints estáticas</h2>
+          <p>
+            <code>rand</code> permite que o solver escolha valores. <code>randc</code> é random cyclic:
+            tenta percorrer os valores possíveis antes de repetir. Isso ajuda quando você quer variedade mais uniforme,
+            por exemplo em opcodes ou seletores pequenos.
+          </p>
+          <p>
+            <code>solve-before</code> orienta a ordem lógica quando uma variável influencia outra.
+          </p>
+          <pre><code class="language-systemverilog">rand bit [1:0] kind;
+rand bit [7:0] data;
+
+constraint c_kind {
+    kind dist {0:=80, 1:=20};
+}
+
+constraint c_data {
+    if (kind == 0)
+        data inside {[0:15]};
+    else
+        data inside {[200:255]};
+}
+
+constraint c_order {
+    solve kind before data;
+}</code></pre>
+          <p>
+            Constraints também podem ser estáticas, ou desligadas com <code>constraint_mode()</code>.
+            Isso permite reutilizar a mesma classe em cenários normais e cenários de erro.
+          </p>
+          <pre><code class="language-systemverilog">pkt.addr_range.constraint_mode(0); // desliga
+assert(pkt.randomize());
+pkt.addr_range.constraint_mode(1); // religa</code></pre>
+          <div class="callout warning">
+            <strong>Cuidado:</strong> desligar constraint é poderoso, mas perigoso. Se o testbench esquecer uma
+            constraint desligada, pode gerar cenários ilegais sem intenção e confundir o debug.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="memoria">Constraints para particionar memória</h2>
+          <p>
+            O slide 09 mostra um exemplo mais realista: sortear blocos dentro de uma RAM. Isso ensina que constraint
+            não é apenas “menor que X”; ela pode expressar relações entre campos.
+          </p>
+          <pre><code class="language-systemverilog">class MemoryBlock;
+    bit [31:0] m_ram_start;
+    bit [31:0] m_ram_end;
+
+    rand bit [31:0] m_start_addr;
+    rand bit [31:0] m_end_addr;
+    rand int        m_block_size;
+
+    constraint c_addr {
+        m_start_addr > m_ram_start;
+        m_start_addr < m_ram_end;
+        m_end_addr == m_start_addr + m_block_size - 1;
+    }
+
+    constraint c_blk_size {
+        m_block_size inside {64, 128, 512};
+    }
+endclass</code></pre>
+          <p>
+            Em um projeto de processador, a mesma ideia pode gerar acessos alinhados, desalinhados, dentro de região,
+            fora de região, perto de fronteira ou cruzando limites de bloco.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="assertions">Assertions</h2>
+          <p>
+            Assertions checam propriedades do design. Se coverage pergunta “isso aconteceu?”, assertion pergunta
+            “quando isso aconteceu, a regra foi obedecida?”.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Tipo</th><th>Papel</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>assert</code></td><td>Exige que uma propriedade seja verdadeira na simulação.</td></tr>
+                <tr><td><code>assume</code></td><td>Declara uma suposição, principalmente para verificação formal.</td></tr>
+                <tr><td><code>cover</code></td><td>Mede se uma propriedade aconteceu.</td></tr>
+                <tr><td><code>restrict</code></td><td>Restringe computações formais e é ignorado por simuladores.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Immediate assertions são checadas quando a linha executa. Concurrent assertions são temporais e geralmente
+            amostradas por clock.
+          </p>
+          <pre><code class="language-systemverilog">property p_ack;
+    @(posedge clk) req |-> ##[1:2] ack;
+endproperty
+
+assert property (p_ack);</code></pre>
+          <p>
+            Leitura: se <code>req</code> ocorrer, <code>ack</code> deve ocorrer de 1 a 2 ciclos depois.
+            O operador <code>|-&gt;</code> é uma implicação temporal; <code>##[1:2]</code> representa a janela de ciclos.
+          </p>
+          <details class="expand-block" open>
+            <summary>Sequence, property, $rose, $fell e $stable</summary>
+            <div class="detail-body">
+              <p>
+                Uma <code>sequence</code> descreve uma sequência de eventos. Uma <code>property</code> transforma
+                essa sequência em regra verificável.
+              </p>
+              <pre><code class="language-systemverilog">sequence req_then_ack;
+    req ##[1:2] ack;
+endsequence
+
+property p_req_ack;
+    @(posedge clk) disable iff (!rst_n)
+        req_then_ack;
+endproperty
+
+assert property (p_req_ack)
+    else $error("ack nao chegou apos req");</code></pre>
+              <p>
+                <code>$rose</code> detecta borda de subida, <code>$fell</code> detecta borda de descida e
+                <code>$stable</code> detecta estabilidade. Em protocolos com handshake, uma regra comum é:
+              </p>
+              <pre><code class="language-systemverilog">assert property (@(posedge clk) disable iff (!rst_n)
+    valid && !ready |-> $stable(data)
+);</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="quizzes">Quizzes explicados</h2>
+          <div class="quiz-card">
+            <strong>Generator __________ the data to/from the mailbox.</strong>
+            <p class="answer">pushes.</p>
+            <p>O generator é produtor: cria transações e faz <code>put</code> na mailbox.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Driver __________ the data to/from mailbox.</strong>
+            <p class="answer">pops.</p>
+            <p>O driver é consumidor: faz <code>get</code> da mailbox e transforma o item em sinais.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>__________ is used as a distribution operator.</strong>
+            <p class="answer"><code>:=</code>.</p>
+            <p>No slide, <code>:=</code> aparece como operador de distribuição ponderada em <code>dist</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Among <code>find_last()</code> and <code>max()</code>, which requires <code>with</code>?</strong>
+            <p class="answer"><code>find_last()</code>.</p>
+            <p>Busca precisa de critério. <code>max()</code> já sabe que deve procurar o maior valor.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>There can be only relational operators <code>&gt;</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;=</code> in expressions.</strong>
+            <p class="answer">True, no contexto simplificado do quiz.</p>
+            <p>Para uso prático, lembre que constraints SystemVerilog também usam <code>inside</code>, <code>dist</code>, ranges e outros recursos.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Como isso entra no projeto</h2>
+          <p>
+            No ambiente do professor, procure sinais deste bloco nos scripts e Makefiles. Se aparecer <code>-cm</code>,
+            o fluxo está coletando coverage. Se aparecerem classes com <code>rand</code> e <code>constraint</code>,
+            o testbench provavelmente usa CRV. Se aparecerem <code>assert property</code>, o ambiente está checando
+            regras automaticamente.
+          </p>
+          <ul class="key-list compact-list">
+            <li>Coverage deve orientar novos testes, não ser apenas porcentagem decorativa.</li>
+            <li>Constraints definem o espaço legal e estratégico da randomização.</li>
+            <li>Distribuições ponderadas ajudam a atingir casos raros e fronteiras.</li>
+            <li>Assertions devem ser entendidas antes de serem desabilitadas.</li>
+            <li>Verdi ajuda a transformar coverage em ação concreta.</li>
+          </ul>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/04_SystemVerilog_for_Verification-2.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_SystemVerilog_for_Verification-2.md">texto extraído</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_SystemVerilog_for_Verification-2.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_3_systemverilog_for_verification_1.html">Anterior: Verification-1</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_5_systemverilog_reference_design_1.html">Próximo: Reference Design-1</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interfaces, modports, parâmetros e wrappers</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">06 SystemVerilog for RTL Design</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog RTL</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">06 SystemVerilog for RTL Design</a><span>/</span>Interfaces e wrappers
+    </nav>
+
+    <h1 class="page-title">Interfaces, modports, parâmetros e wrappers</h1>
+    <p class="lead">
+      Este bloco fecha o tema de `union`/arrays/casts e entra em uma ideia central para projetos maiores: usar interfaces
+      para organizar conectividade, modports para definir papéis, e wrappers para controlar a síntese e a simulação gate-level.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            A parte C do curso mostra que SystemVerilog não é apenas uma linguagem para escrever lógica interna. Ela também
+            oferece formas de organizar a comunicação entre módulos. Isso é muito útil quando o design começa a ter barramentos,
+            sinais de controle, sinais de handshake e parâmetros espalhados.
+          </p>
+          <p>
+            Mas existe uma tensão importante: a interface é bonita no RTL, enquanto a netlist sintetizada precisa virar portas
+            concretas. A ferramenta achata interfaces, renomeia sinais e pode até alterar o nome do módulo quando parâmetros
+            não default são usados. Por isso entram os wrappers: eles preservam uma casca controlada para síntese bottom-up,
+            integração e simulação gate-level.
+          </p>
+          <div class="project-bridge">
+            <strong>Conexão com nosso laboratório:</strong> quando formos adaptar o CPU para um ambiente mais próximo do
+            professor, wrappers e Makefiles vão andar juntos. O Makefile roda fluxo; o wrapper estabiliza a fronteira do bloco.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa mental do bloco</h2>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Dados</strong>
+              `union`, packed/unpacked e casts explícitos.
+            </div>
+            <div class="flow-step">
+              <strong>2. Interface</strong>
+              Agrupar sinais de comunicação em um objeto.
+            </div>
+            <div class="flow-step">
+              <strong>3. Modport</strong>
+              Definir como cada módulo enxerga a interface.
+            </div>
+            <div class="flow-step">
+              <strong>4. Síntese</strong>
+              Interface vira portas achatadas e nomes novos.
+            </div>
+            <div class="flow-step">
+              <strong>5. Wrapper</strong>
+              Controlar parâmetros, hierarquia e simulação gate-level.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="union">`union`: várias interpretações dos mesmos bits</h2>
+          <p>
+            A aula anterior abriu `union`; aqui o assunto fecha. A comparação com C é direta: uma union permite olhar para o
+            mesmo armazenamento por visões diferentes. Em hardware, isso pode significar ler os mesmos 64 bits como um vetor
+            bruto, como bytes ou como campos de cabeçalho.
+          </p>
+
+          <pre><code>typedef union packed {
+  tcp_t          tcp_h;
+  udp_t          udp_h;
+  logic [63:0]   bits;
+  logic [7:0][7:0] bytes;
+} header_u;
+
+header_u h;
+
+assign h.bits[31:16] = 16'h0005;</code></pre>
+
+          <p>
+            Se <code>h.bits</code> e <code>h.bytes</code> compartilham o mesmo armazenamento, alterar uma visão altera a outra.
+            Isso pode ser excelente para reinterpretar pacote, instrução ou palavra de controle. Mas exige disciplina: quem
+            lê o código precisa saber qual interpretação é válida em cada contexto.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Recurso</th>
+                  <th>Modelo mental</th>
+                  <th>Cuidado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>struct packed</code></td>
+                  <td>Campos lado a lado, formando um vetor contínuo.</td>
+                  <td>Cada campo tem seu próprio pedaço do vetor.</td>
+                </tr>
+                <tr>
+                  <td><code>union packed</code></td>
+                  <td>Várias visões sobre os mesmos bits.</td>
+                  <td>Todos os membros precisam ter tamanho compatível.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="warning callout">
+            <strong>Regra do slide:</strong> em uma <code>union packed</code>, os membros devem ter o mesmo tamanho. Se os
+            tamanhos não batem, a sobreposição dos bits fica ambígua para ferramenta e para humanos.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="packed-unpacked">Packed e unpacked: a regra visual</h2>
+          <p>
+            A parte C volta aos arrays porque essa é uma pegadinha recorrente. A regra visual é simples:
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Colchetes antes do nome</h3>
+              <p>Dimensão packed. O sinal se comporta como palavra de bits contínua.</p>
+              <pre><code>logic [7:0] value;
+
+value = 8'b1010_1100;</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Colchetes depois do nome</h3>
+              <p>Dimensão unpacked. O sinal é coleção de elementos.</p>
+              <pre><code>logic array [0:7];
+
+array[0] = 1'b1;</code></pre>
+            </div>
+          </div>
+
+          <p>
+            O self-check do curso mostra que isto não é a mesma coisa:
+          </p>
+
+          <pre><code>logic my_array [0:7];
+my_array = 8'b1; // ilegal como atribuição escalar simples ao array inteiro</code></pre>
+
+          <p>
+            <code>my_array</code> é uma coleção de oito elementos de 1 bit. Já <code>logic [7:0] my_value</code> é uma palavra
+            packed de 8 bits, então pode receber um valor único.
+          </p>
+
+          <pre><code>logic [7:0] my_value;
+my_value = 8'b0000_0001; // legal</code></pre>
+
+          <details class="expand-block">
+            <summary>Quando isso pega no CPU?</summary>
+            <div class="detail-body">
+              <p>
+                Em memórias e bancos de registradores. Por exemplo, <code>logic [31:0] regfile [0:31]</code> significa 32
+                elementos unpacked, cada um com 32 bits packed. Você pode atribuir um registrador inteiro:
+              </p>
+              <pre><code>regfile[rd] &lt;= write_data;</code></pre>
+              <p>
+                Mas não trate o banco inteiro como se fosse um vetor packed gigante sem conversão/estruturação explícita.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="casts">Cast explícito: dizer à ferramenta o que você quer</h2>
+          <p>
+            Quando você precisa converter entre uma coleção unpacked e uma palavra packed, o curso mostra a ideia de cast
+            explícito. A sintaxe geral é:
+          </p>
+
+          <pre><code>tipo_destino'(expressao)</code></pre>
+
+          <p>
+            O exemplo do material trabalha com um tipo packed de 8 bits e um tipo unpacked de 8 elementos:
+          </p>
+
+          <pre><code>typedef logic [7:0] value_t;
+typedef logic       array_t [8];
+
+value_t value;
+array_t array;
+
+value = value_t'(array);</code></pre>
+
+          <p>
+            O detalhe conceitual é mais importante que decorar a sintaxe: se os dados têm organizações diferentes, não conte
+            com conversão implícita mágica. Em RTL, conversão implícita obscura é convite para warning, mismatch ou código que
+            passa na simulação e complica na síntese.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> packed vector pode receber palavra de bits; unpacked array deve ser preenchido por
+            elemento, por assignment pattern ou por cast explícito quando o fluxo suporta e a intenção é clara.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="interface">Interface: encapsular comunicação</h2>
+          <p>
+            O curso apresenta interface com uma analogia boa: uma struct agrupa dados relacionados; uma interface agrupa sinais
+            de comunicação relacionados. Sem interface, um barramento simples começa a espalhar sinais por todos os módulos:
+            <code>req</code>, <code>gnt</code>, <code>addr</code>, <code>mode</code>, <code>start</code>, <code>rdy</code>,
+            dados, enables e assim por diante.
+          </p>
+
+          <pre><code>// Sem interface: muitos sinais soltos na fronteira
+module cpu_core (
+  output logic        req,
+  input  logic        gnt,
+  output logic [7:0]  addr,
+  output logic [1:0]  mode,
+  output logic        start,
+  input  logic        rdy
+);
+endmodule</code></pre>
+
+          <p>
+            Com interface, esse conjunto vira um objeto de comunicação. O módulo não recebe seis portas soltas; recebe uma
+            interface que representa o barramento.
+          </p>
+
+          <pre><code>interface simple_bus;
+  logic        req;
+  logic        gnt;
+  logic [7:0]  addr;
+  logic [1:0]  mode;
+  logic        start;
+  logic        rdy;
+endinterface
+
+module cpu_core (simple_bus bus);
+  assign bus.req   = 1'b1;
+  assign bus.addr  = 8'h20;
+endmodule</code></pre>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Menos portas soltas</h3>
+              <p>O top-level conecta uma interface em vez de repetir vários sinais manualmente.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Mais intenção</h3>
+              <p>A interface dá nome ao protocolo ou conjunto de comunicação.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Mais responsabilidade</h3>
+              <p>Na síntese, essa abstração será achatada em portas reais.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="modports">Modports: a interface vista por cada papel</h2>
+          <p>
+            Uma interface agrupa sinais, mas ainda falta definir quem dirige o quê. O <code>modport</code> resolve isso: ele
+            define a visão da interface para cada tipo de módulo. O master pode dirigir <code>req</code>, <code>addr</code> e
+            <code>start</code>; o slave pode dirigir <code>gnt</code> e <code>rdy</code>.
+          </p>
+
+          <pre><code>interface simple_bus;
+  logic        req;
+  logic        gnt;
+  logic [7:0]  addr;
+  logic [1:0]  mode;
+  logic        start;
+  logic        rdy;
+
+  modport master (
+    output req, addr, mode, start,
+    input  gnt, rdy
+  );
+
+  modport slave (
+    input  req, addr, mode, start,
+    output gnt, rdy
+  );
+endinterface
+
+module cpu_core (simple_bus.master bus);
+endmodule
+
+module memory_block (simple_bus.slave bus);
+endmodule</code></pre>
+
+          <p>
+            Essa separação é didaticamente poderosa: a mesma interface física tem os mesmos sinais, mas cada módulo tem um
+            papel. Com modport, a ferramenta também consegue checar erros de direção mais cedo.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Papel</th>
+                  <th>Dirige</th>
+                  <th>Lê</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Master/CPU</td>
+                  <td><code>req</code>, <code>addr</code>, <code>mode</code>, <code>start</code></td>
+                  <td><code>gnt</code>, <code>rdy</code></td>
+                </tr>
+                <tr>
+                  <td>Slave/memória</td>
+                  <td><code>gnt</code>, <code>rdy</code></td>
+                  <td><code>req</code>, <code>addr</code>, <code>mode</code>, <code>start</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block">
+            <summary>Cuidado com `inout` dentro de interface</summary>
+            <div class="detail-body">
+              <p>
+                Um self-check do curso chama atenção para <code>inout</code>. Dentro de módulo e interface, um
+                <code>logic</code> declarado internamente é variável por padrão. Para sinais bidirecionais reais, especialmente
+                tri-state, você precisa pensar em net, drivers e atribuição contínua. Em muitos designs internos, evite
+                bidirecionalidade e prefira sinais separados ou protocolo claro de direção.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="sintese-interface">O que a síntese faz com interfaces?</h2>
+          <p>
+            Esta é a parte mais importante para conectar o curso ao fluxo Synopsys. Interface é uma abstração de SystemVerilog.
+            A netlist final precisa ter portas concretas. Portanto, a ferramenta de síntese achata a interface: os sinais
+            internos viram portas individuais, muitas vezes com nomes derivados da instância da interface.
+          </p>
+
+          <pre><code>interface fifo_io #(parameter WIDTH = 8);
+  logic              rd_n;
+  logic              wr_n;
+  logic [WIDTH-1:0]  din;
+  logic              empty;
+
+  modport fifo (
+    input  rd_n, wr_n, din,
+    output empty
+  );
+endinterface</code></pre>
+
+          <p>
+            No RTL, o módulo pode ter uma porta de interface. Depois da síntese, a netlist pode ter portas achatadas como:
+          </p>
+
+          <pre><code>fifo_if_rd_n
+fifo_if_wr_n
+fifo_if_din
+fifo_if_empty</code></pre>
+
+          <p>
+            O nome exato depende do fluxo e das opções. A lição não é decorar o nome; é entender a consequência: o wrapper, o
+            top-level e a simulação gate-level precisam estar alinhados com a forma que a síntese gerou.
+          </p>
+
+          <div class="warning callout">
+            <strong>Resumo importante:</strong> interface melhora o RTL, mas não sobrevive como "objeto de interface" na
+            netlist tradicional. Ela vira portas.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="parametros">Parâmetros não default complicam nomes</h2>
+          <p>
+            Quando o design usa parâmetros, a ferramenta precisa sintetizar uma versão especializada daquele módulo. Se você
+            usa valores não default, como <code>WIDTH=4</code> e <code>BUF_SIZE=8</code>, a ferramenta pode gerar um design
+            com nome especializado.
+          </p>
+
+          <pre><code>elaborate fifo -parameter "WIDTH=4, BUF_SIZE=8"</code></pre>
+
+          <p>
+            O curso mostra que o nome final pode virar algo no estilo:
+          </p>
+
+          <pre><code>fifo_WIDTH4_BUF_SIZE8</code></pre>
+
+          <p>
+            Isso é lógico: uma FIFO de largura 4 e profundidade 8 não é a mesma implementação física que uma FIFO de largura
+            8 e profundidade 16. Mas para integração isso pode ser chato: o top-level ou o wrapper pode estar instanciando
+            <code>fifo</code>, enquanto a netlist gerada contém outro nome.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Para lembrar:</strong> parâmetros não default afetam mais que largura de sinal. Eles podem afetar o nome
+            do módulo elaborado, a lista de portas achatadas e o wrapper necessário para simulação.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="wrapper">Wrapper: a casca que estabiliza o fluxo</h2>
+          <p>
+            O wrapper é um módulo de casca. Ele instancia a interface, instancia o DUT parametrizado e oferece uma fronteira
+            mais controlada para a ferramenta. No fluxo bottom-up, ele ajuda a sintetizar um bloco isolado sem perder a noção
+            de como esse bloco conversa com o restante do sistema.
+          </p>
+
+          <pre><code>module wrapper_fifo #(
+  parameter WIDTH    = 8,
+  parameter BUF_SIZE = 16
+) (
+  input  logic clk,
+  input  logic rst_n
+);
+  fifo_io #(WIDTH) fifo_if();
+
+  fifo #(
+    .WIDTH(WIDTH),
+    .BUF_SIZE(BUF_SIZE)
+  ) dut (
+    .clk(clk),
+    .rst_n(rst_n),
+    .fifo_if(fifo_if.fifo)
+  );
+endmodule</code></pre>
+
+          <p>
+            O curso descreve uma sequência mental parecida com esta:
+          </p>
+
+          <ol>
+            <li>Criar um wrapper SystemVerilog para o design.</li>
+            <li>Analisar RTL, interface e wrapper.</li>
+            <li>Elaborar o wrapper com parâmetros desejados.</li>
+            <li>Definir o design corrente para o bloco alvo real, quando necessário.</li>
+            <li>Continuar o fluxo de síntese.</li>
+            <li>Gerar netlist e, se necessário, novo wrapper para simulação gate-level.</li>
+          </ol>
+
+          <pre><code>analyze -format sverilog { fifo_io.sv fifo.sv wrapper_fifo.sv }
+elaborate wrapper_fifo -parameter "WIDTH=4, BUF_SIZE=8"
+current_design [get_designs fifo*]
+compile</code></pre>
+
+          <div class="project-bridge">
+            <strong>Ligação com o professor:</strong> essa é exatamente a zona onde Makefile, scripts de síntese e organização
+            por blocos começam a fazer sentido. O Makefile chama comandos; o wrapper garante uma fronteira previsível para o
+            bloco que está sendo sintetizado/testado.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="gate-level">Por que gerar novo wrapper para gate-level?</h2>
+          <p>
+            Depois da síntese, duas coisas podem ter mudado: a interface foi achatada e o nome do módulo pode ter sido
+            especializado pelos parâmetros. Se você tentar simular a netlist usando o wrapper RTL antigo, ele pode instanciar
+            um nome que não existe ou conectar uma interface que já não existe como objeto.
+          </p>
+
+          <p>
+            Por isso a aula mostra a necessidade de gerar código de instanciação ou um novo wrapper compatível com o resultado
+            sintetizado. A simulação gate-level precisa conectar o que a síntese realmente emitiu, não o que era mais bonito
+            no RTL original.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Antes da síntese</th>
+                  <th>Depois da síntese</th>
+                  <th>Consequência</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Porta de interface</td>
+                  <td>Portas individuais achatadas</td>
+                  <td>Wrapper gate-level deve conectar sinais reais.</td>
+                </tr>
+                <tr>
+                  <td>Módulo parametrizado genérico</td>
+                  <td>Módulo especializado por parâmetros</td>
+                  <td>Nome da instância pode precisar ser atualizado.</td>
+                </tr>
+                <tr>
+                  <td>RTL abstrato e legível</td>
+                  <td>Netlist estrutural</td>
+                  <td>Simulação exige bibliotecas, delays e conexões corretas.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="aplicacao">Aplicação no nosso CPU e no ambiente</h2>
+          <p>
+            Para o nosso projeto, esta aula não significa que precisamos sair colocando interface em tudo imediatamente. A
+            leitura madura é outra: entender quando uma fronteira está ficando complexa o suficiente para merecer uma interface
+            ou um wrapper.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>CPU simples</strong>
+              Mantenha portas explícitas quando a fronteira ainda é pequena e didática.
+            </div>
+            <div class="check-item">
+              <strong>Barramento interno</strong>
+              Considere interface quando muitos sinais sempre viajam juntos.
+            </div>
+            <div class="check-item">
+              <strong>Memória ou FIFO</strong>
+              Modport ajuda a separar quem é master e quem é slave.
+            </div>
+            <div class="check-item">
+              <strong>Síntese de bloco</strong>
+              Wrapper ajuda a fixar parâmetros e isolar DUT.
+            </div>
+            <div class="check-item">
+              <strong>Gate-level</strong>
+              Espere portas achatadas e nomes possivelmente alterados.
+            </div>
+            <div class="check-item">
+              <strong>Makefile</strong>
+              Pode ter targets separados para analisar, elaborar wrapper, sintetizar e gerar netlist/wrapper final.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. Qual a diferença entre `struct` e `union`?</strong>
+            `struct` coloca campos lado a lado; `union` coloca várias visões sobre o mesmo armazenamento.
+          </div>
+
+          <div class="quiz-card">
+            <strong>2. Como reconhecer packed e unpacked pela posição dos colchetes?</strong>
+            Colchetes antes do nome são packed; colchetes depois do nome são unpacked.
+          </div>
+
+          <div class="quiz-card">
+            <strong>3. Por que um unpacked array não recebe simplesmente `8'b1`?</strong>
+            Porque ele é uma coleção de elementos, não uma palavra de bits contínua.
+          </div>
+
+          <div class="quiz-card">
+            <strong>4. O que uma interface resolve?</strong>
+            Agrupa sinais de comunicação relacionados e reduz portas soltas na fronteira dos módulos.
+          </div>
+
+          <div class="quiz-card">
+            <strong>5. Para que serve modport?</strong>
+            Para definir a direção dos sinais da interface conforme o papel do módulo, como master ou slave.
+          </div>
+
+          <div class="quiz-card">
+            <strong>6. O que a síntese faz com interface?</strong>
+            Achata a interface em portas individuais e pode renomear sinais.
+          </div>
+
+          <div class="quiz-card">
+            <strong>7. Por que wrappers são úteis?</strong>
+            Porque estabilizam a fronteira do bloco, controlam parâmetros e ajudam integração/simulação após síntese.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ponte">Ponte com o próximo bloco</h2>
+          <p>
+            O próximo bloco fecha o curso 06 com packages, estilo de codificação, QoR, DesignWare e aritmética signed. Depois
+            de entender interfaces e wrappers, o próximo passo é entender como escolhas de estilo e operadores afetam a
+            qualidade da síntese e o uso de bibliotecas otimizadas.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base: <code>01_SystemVerilog_for_RTL_Design_parte_C.md</code>. O material foi convertido em exemplos editáveis e
+          explicação própria; os prints deste bloco eram majoritariamente código/texto e não exigiram recorte de figura.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1b_fsm_x_case_arrays_structs.html">Anterior: FSM, X e estruturas</a>
+          <a href="bloco_1_1d_packages_qor_designware_signed.html">Próximo: packages, QoR e DesignWare</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#mapa">Mapa mental</a>
+        <a href="#union">Union</a>
+        <a href="#packed-unpacked">Packed/unpacked</a>
+        <a href="#casts">Casts</a>
+        <a href="#interface">Interface</a>
+        <a href="#modports">Modports</a>
+        <a href="#sintese-interface">Síntese</a>
+        <a href="#parametros">Parâmetros</a>
+        <a href="#wrapper">Wrapper</a>
+        <a href="#gate-level">Gate-level</a>
+        <a href="#aplicacao">Projeto</a>
+        <a href="#revisao">Revisão</a>
+        <a href="#ponte">Próximo bloco</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ROBOT Model</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">01 Verilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Verilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">01 Verilog Refresher</a><span>/</span>ROBOT Model
+    </nav>
+
+    <h1 class="page-title">Verilog Reference Design of ROBOT Model</h1>
+    <p class="lead">
+      Aula de fechamento do Verilog Refresher: um pequeno sistema RTL com especificação,
+      interface de sinais, máquinas de estado, testbench, README, setup e Makefile.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            O ROBOT Model é um controlador RTL para um robô que carrega um objeto e o descarrega
+            em uma estação solicitada. Ele é maior que os exemplos anteriores, mas ainda pequeno o
+            bastante para estudar o fluxo completo.
+          </p>
+          <p>O comportamento pode ser lido assim:</p>
+          <pre><code>espera request
+inicia carregamento
+executa sequência de movimentos
+inicia descarga da estação escolhida
+aguarda done
+retorna para espera</code></pre>
+          <div class="callout">
+            <strong>Por que isso importa:</strong> aqui Verilog aparece como controle de sistema,
+            não apenas como somador, mux ou contador isolado.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="especificacao">Especificação funcional</h2>
+          <p>
+            A especificação define cinco movimentos: base, shoulder, arm, wrist e claw. Também define
+            estações de descarga e uma estação de carga. O RTL precisa transformar essas regras físicas
+            em estados e sinais digitais.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/01_verilog_refresher/robot_design_spec.png" alt="Especificação do robô com graus de movimento, estações e ações codificadas">
+            <figcaption>
+              A especificação funcional é o contrato do design: movimentos, estações, sensores e ações codificadas.
+            </figcaption>
+          </figure>
+          <details class="nested-detail">
+            <summary>Detalhe: a suposição de uma requisição por vez</summary>
+            <div class="detail-body">
+              <p>
+                O slide assume que o robô atende apenas uma requisição por vez. Essa frase é pequena,
+                mas muda o design: sem ela, o controle teria que decidir prioridade ou armazenar fila
+                quando duas estações pedissem atendimento simultaneamente.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="interface">Interface do DUT</h2>
+          <p>
+            O DUT é o módulo <code>robot_model</code>. A primeira leitura deve ser a interface:
+            quais sinais entram, quais saem e qual papel cada um tem.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/01_verilog_refresher/robot_pin_interface.png" alt="Diagrama de pinos e tabela de sinais do Robot Model">
+            <figcaption>
+              Antes de ler a FSM, leia a tabela de sinais. Ela separa comandos, requests e status.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Sinal</th><th>Leitura didática</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>s*_req</code></td><td>A estação pediu atendimento.</td></tr>
+                <tr><td><code>load_start</code></td><td>O DUT manda iniciar carregamento.</td></tr>
+                <tr><td><code>s*_unloadstart</code></td><td>O DUT manda iniciar descarga em uma estação.</td></tr>
+                <tr><td><code>load_done</code>, <code>s*_done</code></td><td>O ambiente informa que a operação terminou.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fsm-principal">FSM principal</h2>
+          <p>
+            O controle principal fica em espera até receber uma requisição. Depois ele escolhe o ramo da
+            estação, passa por carga, descarga e volta para espera quando recebe <code>done</code>.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/01_verilog_refresher/robot_main_fsm.png" alt="Máquina de estados principal do ROBOT Model">
+            <figcaption>
+              A FSM principal organiza o atendimento por estação: start, load, unload e retorno ao estado de espera.
+            </figcaption>
+          </figure>
+          <pre><code>Wait_req
+  -> S0_start -> S0_load -> S0_unload -> Wait_req
+  -> S1_start -> S1_load -> S1_unload -> Wait_req
+  -> S2_start -> S2_load -> S2_unload -> Wait_req
+  -> S3_start -> S3_load -> S3_unload -> Wait_req</code></pre>
+          <details class="nested-detail">
+            <summary>Aprofundamento: prioridade implícita</summary>
+            <div class="detail-body">
+              <p>
+                Se o RTL escolher requests com uma cadeia de <code>if/else</code>, existe prioridade na ordem
+                dos testes. Como o slide assume uma requisição por vez, essa prioridade não deve aparecer
+                em operação normal. Em projeto real, essa suposição precisa ficar documentada.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="carga-descarga">Carga e descarga</h2>
+          <p>
+            A operação de carga é uma submáquina curta: colocar o punho na horizontal, carregar o item,
+            fechar a garra e voltar o punho para vertical. Depois disso, o robô entra na descarga da
+            estação correspondente.
+          </p>
+          <pre><code>S*_load
+  -> load_start
+  -> Wrist Horizontal
+  -> Load item and close claw
+  -> Wrist Vertical
+  -> S*_unload</code></pre>
+          <p>
+            Na descarga, algumas estações seguem o caminho direto; outras exigem movimento adicional da
+            junta C. O ponto didático é este:
+          </p>
+          <pre><code>condição física diferente -> sequência de estados diferente</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="testbench">Testbench</h2>
+          <p>
+            O testbench <code>robot_model_tb</code> modela o mundo ao redor do DUT. Ele gera clock, reset,
+            requests, sinais de done e arquivo de ondas para debug.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/01_verilog_refresher/robot_testbench_blocks.png" alt="Blocos do testbench do Robot Model conectados ao DUT">
+            <figcaption>
+              O testbench não é o robô. Ele é o ambiente que estimula o robô e observa sua resposta.
+            </figcaption>
+          </figure>
+          <pre><code>initial begin
+    clock = 1'b0;
+    forever #10 clock = ~clock;
+end</code></pre>
+          <p>
+            Esse clock com <code>#10</code> é correto em testbench, mas não é RTL sintetizável. O mesmo vale
+            para <code>$fsdbDumpfile</code>, <code>$fsdbDumpvars</code> e <code>$finish</code>.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="makefile">README, setup e Makefile</h2>
+          <p>O README mostra que o exemplo é operado como um pequeno projeto:</p>
+          <pre><code>gtar -zxvf robot.tar.gz
+cd robot
+source robot.setup
+cd sim
+make</code></pre>
+          <p>Os alvos principais são:</p>
+          <ul class="key-list compact-list">
+            <li><code>make SOC_Verification</code>: roda a simulação básica.</li>
+            <li><code>make SOC_Interactive_Debug</code>: compila/simula com capacidade de debug interativo.</li>
+            <li><code>make SOC_PP_Debug</code>: abre debug pós-processado.</li>
+            <li><code>make SOC_Coverage</code>: roda com opções de coverage.</li>
+          </ul>
+          <div class="callout">
+            <strong>Ligação com o professor:</strong> este exemplo mostra exatamente por que makefile importa.
+            Ele transforma o fluxo VCS/Verdi em comandos padronizados.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="rtl-vs-testbench">RTL versus testbench</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Parte</th><th>Papel</th><th>Entra em síntese?</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>robot_model</code></td><td>DUT RTL</td><td>Sim, em princípio.</td></tr>
+                <tr><td><code>robot_model_tb</code></td><td>Ambiente de simulação</td><td>Não.</td></tr>
+                <tr><td><code>forever #10</code></td><td>Clock de simulação</td><td>Não.</td></tr>
+                <tr><td><code>$fsdbDumpvars</code></td><td>Waveform/debug</td><td>Não.</td></tr>
+                <tr><td><code>Makefile</code></td><td>Automação</td><td>Não é hardware.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ligacao-com-rtl-lab2">Ligação com o RTL_LAB2</h2>
+          <p>O ROBOT dá um roteiro para investigar o seu projeto:</p>
+          <ul class="key-list compact-list">
+            <li>Qual é o DUT principal?</li>
+            <li>Quais sinais são interface externa?</li>
+            <li>Quem gera clock e reset?</li>
+            <li>Quais sinais indicam fim de execução?</li>
+            <li>Existe checker automático ou só waveform?</li>
+            <li>Quais arquivos entram em simulação?</li>
+            <li>Quais arquivos entram em síntese?</li>
+            <li>Quais alvos do makefile rodam cada etapa?</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="audio">Audio: precisa?</h2>
+          <p>
+            Não parece necessário ouvir o áudio inteiro para esta aula. Os slides já trazem especificação,
+            interface, FSMs, testbench e comandos. O áudio seria útil apenas para demonstração de Verdi,
+            detalhes da movimentação física ou convenções específicas do professor.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/05_Verilog_Reference_Design_of_ROBOT_Model.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/05_Verilog_Reference_Design_of_ROBOT_Model.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1d_verilog_reference_designs.html">Anterior: Reference Designs</a>
+          <a href="../02_vhdl_refresher/bloco_2_1_introducao_e_sintese.html">Próxima: VHDL Introdução e Síntese</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

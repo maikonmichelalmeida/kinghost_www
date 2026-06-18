@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Introduction to Verification</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">05 Design Verification</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Design Verification</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">05 Design Verification</a><span>/</span>Introduction
+    </nav>
+
+    <h1 class="page-title">Introduction to Verification</h1>
+    <p class="lead">
+      Verificação é o processo de ganhar confiança, com evidências, de que um design implementa a especificação pretendida.
+      Ela não é apenas “rodar uma simulação”; é planejar estímulos, observar respostas, detectar erros automaticamente e
+      medir o que foi coberto.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            O curso começa com uma mudança mental importante: em RTL, compilar e simular sem erro não significa que o bloco
+            está correto. A simulação só mostra que, para aqueles estímulos, o modelo produziu aquelas respostas. Se o
+            testbench não checa o resultado, se os estímulos não exploram os casos importantes, ou se a especificação foi
+            interpretada errado, o bug passa quieto.
+          </p>
+          <p>
+            Para o nosso projeto, essa aula é a base para sair de um script que “roda o testbench” e ir em direção a um
+            ambiente de verificação: estímulos controlados, monitoramento, checagem, cobertura e debug com VCS/Verdi.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="necessidade">Por que verificação é necessária?</h2>
+          <p>
+            Em VLSI, corrigir um erro depois da fabricação é extremamente caro. Mesmo em FPGA ou laboratório acadêmico, um
+            bug descoberto tarde contamina síntese, reports, debug e entrega. Por isso o objetivo é achar inconsistências
+            cedo, antes que o design avance para etapas mais caras do fluxo.
+          </p>
+          <p>
+            A verificação tenta responder uma pergunta específica: <strong>o comportamento observado bate com a intenção
+            descrita pela especificação?</strong> Essa pergunta é mais forte do que “o simulador terminou”. O simulador é
+            apenas o motor. A verificação é o método.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Erro de especificação</h3>
+              <p>
+                A intenção está incompleta, ambígua ou errada. O RTL pode implementar fielmente algo que não resolve o
+                problema real.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3>Erro de implementação</h3>
+              <p>
+                A especificação está correta, mas o RTL não implementa a função, temporização ou estado esperado.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Erro de verificação</h3>
+              <p>
+                O testbench não observa o bug, não checa a resposta, ou passa por falta de cobertura dos casos relevantes.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="causas">Causas comuns de bugs de design</h2>
+          <p>
+            Os slides destacam que bugs não vêm de uma única fonte. Eles podem aparecer por requisitos mal definidos,
+            comunicação ruim entre equipes, interpretação errada de protocolo, corner cases esquecidos, problemas de clock,
+            reset incompleto, estado inválido, erro de interface ou até erro no próprio testbench.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Causa</th>
+                  <th>Exemplo em RTL</th>
+                  <th>Como a verificação ajuda</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Especificação ambígua</td>
+                  <td>Não está claro o que acontece se duas instruções disputam o mesmo recurso.</td>
+                  <td>Transforma a dúvida em caso de teste e pergunta explícita.</td>
+                </tr>
+                <tr>
+                  <td>Corner case omitido</td>
+                  <td>Overflow, underflow, reset no meio da operação, instrução inválida.</td>
+                  <td>Cria testes direcionados e cobertura funcional.</td>
+                </tr>
+                <tr>
+                  <td>Erro de temporização funcional</td>
+                  <td>Sinal válido um ciclo antes/depois do esperado.</td>
+                  <td>Monitores e assertions detectam protocolo de ciclos.</td>
+                </tr>
+                <tr>
+                  <td>Erro de integração</td>
+                  <td>Módulo isolado funciona, mas falha conectado ao top.</td>
+                  <td>Ambientes hierárquicos e testes de sistema revelam incompatibilidades.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="definicao">O que é verificação?</h2>
+          <p>
+            Verificação é comparar o design contra uma referência de comportamento. Essa referência pode ser uma
+            especificação humana, um modelo de alto nível, um scoreboard, uma função de referência em C/SystemVerilog, uma
+            assertion ou uma propriedade formal. O ponto é: a resposta do DUT precisa ser julgada por algo externo ao DUT.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Estímulo</strong>
+              Aplica entradas, transações ou cenários ao DUT.
+            </div>
+            <div class="flow-step">
+              <strong>2. Observação</strong>
+              Monitora sinais, protocolos, saídas e eventos relevantes.
+            </div>
+            <div class="flow-step">
+              <strong>3. Checagem</strong>
+              Compara comportamento observado com o esperado.
+            </div>
+          </div>
+
+          <p>
+            Esse trio é a semente do ambiente reutilizável que você comentou antes: driver para aplicar estímulos, monitor
+            para observar, scoreboard para comparar e coverage para medir se os cenários importantes foram exercitados.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="simulacao-nao-basta">Verificação é diferente de simulação</h2>
+          <p>
+            Simulação é uma técnica. Verificação é uma atividade de engenharia. Você pode simular muito e verificar pouco,
+            se os testes não têm intenção clara ou se ninguém checa as respostas. Também pode simular pouco e verificar bem
+            um caso específico, se o teste for dirigido e tiver checker robusto.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Simulação</h3>
+              <p>
+                Executa o modelo RTL ao longo do tempo, resolve eventos, calcula sinais e gera logs/waveforms. Ela mostra o
+                que aconteceu.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>Verificação</h3>
+              <p>
+                Decide se o que aconteceu está correto, com base em especificação, checadores, assertions, scoreboard e
+                cobertura.
+              </p>
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Frase para memorizar:</strong> waveform ajuda a investigar bug; não deve ser o principal mecanismo de
+            dizer que o design está correto. O ideal é que o testbench acuse erro automaticamente.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="testing">Verification versus testing</h2>
+          <p>
+            No vocabulário do curso, verificação é feita antes da fabricação ou implantação final, normalmente no modelo RTL,
+            gate-level ou formal. Testing, no sentido de teste de manufatura, acontece no hardware físico para detectar
+            defeitos de fabricação. São atividades relacionadas, mas não iguais.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Termo</th>
+                  <th>Quando acontece</th>
+                  <th>O que procura</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Verification</td>
+                  <td>Durante o projeto, antes da fabricação.</td>
+                  <td>Erros de design, especificação, RTL, integração e comportamento.</td>
+                </tr>
+                <tr>
+                  <td>Testing</td>
+                  <td>Depois que o chip/dispositivo físico existe.</td>
+                  <td>Defeitos de manufatura, falhas físicas e problemas de produção.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="simuladores">Simuladores são modelos, não realidade</h2>
+          <p>
+            O simulador executa uma descrição do design. Isso tem duas consequências. Primeiro, ele só conhece o que está no
+            modelo: se o RTL ou testbench não descreve uma condição, o simulador não inventa intenção. Segundo, ele trabalha
+            com abstrações, não com o hardware real completo. Mesmo gate-level simulation com SDF ainda é uma aproximação.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Event-based</h3>
+              <p>
+                Simula mudanças de sinais e eventos no tempo. É detalhado e flexível, mas pode ser lento em designs grandes.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3>Cycle-based</h3>
+              <p>
+                Foca em bordas/ciclos relevantes. Pode ser mais rápido, mas menos adequado para detalhes finos de eventos.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Co-simulation</h3>
+              <p>
+                Integra modelos em linguagens/domínios diferentes, como HDL com C/C++ ou partes digitais com analógicas.
+              </p>
+            </article>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que o simulador não sabe sua intenção?</summary>
+            <div class="detail-body">
+              <p>
+                Se um protocolo diz que <code>valid</code> precisa permanecer alto até <code>ready</code>, o simulador não
+                acusa erro sozinho quando isso é violado. Para ele, são só sinais mudando. Quem transforma isso em erro é o
+                testbench, uma assertion ou um monitor que conhece a regra do protocolo.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="exaustiva">Por que verificação exaustiva é impossível?</h2>
+          <p>
+            Os slides usam exemplos como unidade de divisão floating-point de 64 bits e memória de 256 bits para mostrar a
+            explosão combinatória. Mesmo que cada simulação fosse rápida, testar todas as combinações de entradas, estados e
+            sequências seria impraticável. Além disso, muitos bugs dependem da ordem temporal dos eventos, não apenas de uma
+            combinação estática de bits.
+          </p>
+
+          <div class="equation">
+            espaço de estados = entradas × estados internos × sequências temporais × interações de ambiente
+          </div>
+
+          <p>
+            Por isso, verificação real usa estratégia: testes dirigidos para casos conhecidos, randomização controlada para
+            explorar o espaço, coverage para medir progresso, assertions para protocolos e regressão para repetir cenários
+            importantes.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="coverage">Coverage Driven Verification</h2>
+          <p>
+            Coverage-driven verification é uma forma de não depender apenas de sensação. Você define o que precisa ser
+            exercitado, roda testes, mede cobertura, encontra buracos e cria novos testes para fechar esses buracos. O ciclo
+            continua até o plano estar suficientemente coberto e os checkers não acusarem erro.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Plano</strong>
+              Lista funções, cenários, protocolos, corner cases e métricas.
+            </div>
+            <div class="flow-step">
+              <strong>Execução</strong>
+              Roda testes dirigidos, randomizados e regressões.
+            </div>
+            <div class="flow-step">
+              <strong>Medição</strong>
+              Analisa code coverage e functional coverage para decidir próximos testes.
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo de cobertura</th>
+                  <th>O que mede</th>
+                  <th>Armadilha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Code coverage</td>
+                  <td>Linhas, branches, expressões, toggles ou FSMs exercitados.</td>
+                  <td>Pode chegar a 100% sem provar que o comportamento esperado foi checado.</td>
+                </tr>
+                <tr>
+                  <td>Functional coverage</td>
+                  <td>Cenários funcionais definidos no plano de verificação.</td>
+                  <td>Depende da qualidade do plano; se o plano esquece algo, a cobertura também esquece.</td>
+                </tr>
+                <tr>
+                  <td>Cross coverage</td>
+                  <td>Combinações entre variáveis importantes.</td>
+                  <td>Pode explodir em número de bins se for mal planejada.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="falso-positivo">Falso positivo e falso negativo</h2>
+          <p>
+            Dois conceitos aparecem como perigo prático. Um falso positivo acontece quando o testbench diz que passou, mas o
+            design ainda tem bug. Um falso negativo acontece quando o testbench acusa erro, mas o problema está no testbench,
+            na expectativa ou na especificação usada como referência.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Falso positivo</h3>
+              <p>
+                Mais perigoso para entrega: você acredita que o design está correto. Normalmente nasce de checker fraco,
+                pouca cobertura ou teste que só olha waveform manualmente.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>Falso negativo</h3>
+              <p>
+                Gasta tempo de debug: o RTL pode estar correto, mas a referência está errada. Normalmente revela bug no
+                testbench, scoreboard ou interpretação da especificação.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="ambiente">Como isso vira ambiente de verificação?</h2>
+          <p>
+            A ponte para os próximos blocos é natural. Uma verificação manual simples pode começar com testbench dirigido.
+            Depois você separa responsabilidades para reaproveitar:
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Driver</h3>
+              <p>Transforma transações ou comandos em sinais no DUT.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Monitor</h3>
+              <p>Observa sinais do DUT e reconstrói eventos/transações.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Scoreboard</h3>
+              <p>Compara resultado observado com modelo esperado.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Coverage</h3>
+              <p>Mede quais cenários foram exercitados e quais ainda faltam.</p>
+            </article>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Para o laboratório do professor:</strong> o Makefile deve rodar simulação, mas o valor real vem do
+            testbench acusar erro automaticamente e gerar artefatos de debug, como logs e FSDB. A próxima evolução é ter
+            testes nomeados, regressão e cobertura, não só um comando que abre waveform.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro">Roteiro prático para nosso CPU</h2>
+          <ol>
+            <li>Escrever quais comportamentos do CPU precisam ser verificados: reset, instruções, flags, memória, desvios e casos inválidos.</li>
+            <li>Separar testes dirigidos por funcionalidade, em vez de um testbench único que faz tudo sem nome.</li>
+            <li>Adicionar checagem automática: cada teste deve terminar com PASS/FAIL confiável.</li>
+            <li>Gerar waveform só quando necessário para debug, não como critério principal de aprovação.</li>
+            <li>Depois, adicionar coverage funcional para saber se todos os cenários importantes foram exercitados.</li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. Simulação e verificação são a mesma coisa?</strong>
+            Não. Simulação executa o modelo; verificação decide se o comportamento observado está correto.
+          </div>
+          <div class="quiz-card">
+            <strong>2. Code coverage 100% prova ausência de bugs?</strong>
+            Não. Ela mostra que o código foi exercitado, não que todas as intenções funcionais foram checadas.
+          </div>
+          <div class="quiz-card">
+            <strong>3. Por que functional coverage depende do plano?</strong>
+            Porque ela só mede os cenários que alguém decidiu modelar. Plano incompleto gera cobertura incompleta.
+          </div>
+          <div class="quiz-card">
+            <strong>4. O que é falso positivo em verificação?</strong>
+            É quando o teste passa, mas o design ainda contém bug relevante.
+          </div>
+          <div class="quiz-card">
+            <strong>5. Por que waveform não deve ser o verificador principal?</strong>
+            Porque análise visual é manual, incompleta e difícil de repetir em regressão.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>01_Introduction_to_Verification.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1b_verification_methodology.html">Próxima: Methodology</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#necessidade">Necessidade</a>
+        <a href="#causas">Causas de bugs</a>
+        <a href="#definicao">Definição</a>
+        <a href="#simulacao-nao-basta">Simulação não basta</a>
+        <a href="#testing">Verification vs testing</a>
+        <a href="#simuladores">Simuladores</a>
+        <a href="#exaustiva">Exaustividade</a>
+        <a href="#coverage">Coverage</a>
+        <a href="#falso-positivo">Falsos resultados</a>
+        <a href="#ambiente">Ambiente</a>
+        <a href="#roteiro">Roteiro CPU</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

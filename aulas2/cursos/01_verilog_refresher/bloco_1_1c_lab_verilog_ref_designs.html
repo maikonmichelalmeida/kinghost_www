@@ -1,0 +1,186 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lab: VerilogRefDesigns</title><link rel="stylesheet" href="../../assets/css/style.css"></head><body><header class="site-header"><div class="header-inner"><div class="brand"><a class="brand-title" href="../../index.html">Conhecimento RTL</a><span class="brand-subtitle">01 Verilog Refresher</span></div><nav class="top-nav" aria-label="Navegação principal"><a href="../../index.html">Cursos</a><a href="index.html">Verilog Refresher</a></nav></div></header><main class="page"><nav class="breadcrumbs" aria-label="Você está aqui"><a href="../../index.html">Raiz</a><span>/</span><a href="index.html">01 Verilog Refresher</a><span>/</span>Lab VerilogRefDesigns</nav><h1 class="page-title">Lab: VerilogRefDesigns</h1><p class="lead">Aula pratica para entender o pacote de laboratorio, rodar exemplos com VCS/Verdi e conectar o padrao ao RTL_LAB2.</p><div class="layout"><article data-content><section class="section"><h2 id="introducao">Introducao</h2>
+</section>
+<section class="section"><h2 id="como-estudar-este-lab">Como estudar este lab</h2><p>Este lab nao e uma aula teorica. Ele e um pacote pratico para enxergar o fluxo Verilog em miniatura:</p>
+<pre><code>design RTL -&gt; testbench -&gt; VCS -&gt; simv -&gt; waveform/log -&gt; Verdi</code></pre>
+<p>O objetivo nao e decorar todos os dez designs, mas entender o padrao que se repete.</p>
+</section>
+<section class="section"><h2 id="o-que-o-lab-contem">O que o lab contem</h2><p>A pasta principal possui:</p>
+<ul class="key-list compact-list">
+<li><code>README</code>;</li>
+<li><code>.testscript</code>;</li>
+<li><code>setup.csh</code>;</li>
+<li><code>lab/</code>;</li>
+<li><code>LabGuide/</code>;</li>
+<li><code>.Test/</code>.</li>
+</ul>
+<p>A pasta mais importante para estudo e <code>lab/</code>, onde ficam os pares:</p>
+<pre><code>design.v + design_tb.v</code></pre>
+<p>Esse par e o coracao da pratica.</p>
+</section>
+<section class="section"><h2 id="primeiro-passo-validar-instalacao">Primeiro passo: validar instalacao</h2><p>O script <code>.testscript</code> verifica:</p>
+<ul class="key-list compact-list">
+<li>se os arquivos existem;</li>
+<li>se o conteudo bate com o checksum esperado;</li>
+<li>se o <code>vcs</code> esta acessivel;</li>
+<li>se a versao esperada aparece no log.</li>
+</ul>
+<p>Comando:</p>
+<pre><code>./.testscript</code></pre>
+<p>O resultado salvo no pacote indica que passou:</p>
+<pre><code>Test 1a PASSED: All files are installed
+Test 1b PASSED: Files are consistent
+Test 2a PASSED: vcs is /global/apps/vcs_2023.03-1/bin/vcs
+Installation Test PASSED</code></pre>
+<details class="nested-detail"><summary>Detalhe: o que isso prova e o que nao prova</summary><div class="detail-body"><p>Isso prova que o pacote esta integro e que o VCS estava acessivel no ambiente onde o teste foi rodado.</p>
+<p>Isso nao prova que voce entendeu os designs nem que todos foram verificados funcionalmente por voce. Para aprender, ainda precisa compilar e rodar exemplos individuais.</p></div></details>
+</section>
+<section class="section"><h2 id="como-rodar-um-exemplo-individual">Como rodar um exemplo individual</h2><p>Escolha um design e seu testbench.</p>
+<p>Exemplo com o somador:</p>
+<pre><code>vcs -full64 -verilog -debug_access+all lab/adder32_tb.v lab/adder32.v -top adder_tb -l adder32_compile.log
+./simv -l adder32_run.log</code></pre>
+<p>O <code>-top</code> deve apontar para o testbench, porque ele instancia o DUT.</p>
+</section>
+<section class="section"><h2 id="como-ler-um-par-design-testbench">Como ler um par design/testbench</h2><p>Para cada par, responda:</p>
+<ul class="key-list compact-list">
+<li>qual modulo e o DUT?</li>
+<li>qual modulo e o testbench?</li>
+<li>o testbench tem portas externas?</li>
+<li>quem gera clock?</li>
+<li>quem aplica reset?</li>
+<li>existe <code>$finish</code>?</li>
+<li>existe dump de onda?</li>
+<li>existe checagem automatica ou so estimulo?</li>
+<li>o design poderia entrar em <code>filelist_rtl.f</code>?</li>
+<li>o testbench deve ficar fora da sintese?</li>
+</ul>
+<p>Essa lista e mais importante do que simplesmente rodar todos os arquivos.</p>
+</section>
+<section class="section"><h2 id="os-dez-exemplos-do-lab">Os dez exemplos do lab</h2><table class="comparison"><thead><tr>
+<th>Design</th>
+<th>O que ensina</th>
+</tr></thead><tbody>
+<tr>
+<td><code>decoder2x4</code></td>
+<td>decodificacao combinacional</td>
+</tr>
+<tr>
+<td><code>encoder4x2</code></td>
+<td>codificacao e prioridade</td>
+</tr>
+<tr>
+<td><code>mux8x1</code></td>
+<td>selecao por mux</td>
+</tr>
+<tr>
+<td><code>demux1x8</code></td>
+<td>roteamento de entrada para saida</td>
+</tr>
+<tr>
+<td><code>counter_overflow</code></td>
+<td>contador sequencial</td>
+</tr>
+<tr>
+<td><code>updowncounter</code></td>
+<td>estado com direcao de contagem</td>
+</tr>
+<tr>
+<td><code>adder</code></td>
+<td>soma registrada e carry</td>
+</tr>
+<tr>
+<td><code>multiplier</code></td>
+<td>produto com largura maior</td>
+</tr>
+<tr>
+<td><code>matrix2x2_mult</code></td>
+<td>combinacao de multiplicacoes e somas</td>
+</tr>
+<tr>
+<td><code>arbiter</code></td>
+<td>FSM, prioridade e grants</td>
+</tr>
+</tbody></table>
+</section>
+<section class="section"><h2 id="exemplo-didatico-adder32">Exemplo didatico: adder32</h2><p>O <code>adder32.v</code> usa um registrador de 33 bits:</p>
+<pre><code>reg [32:0] adder_reg;
+assign adder_out = adder_reg[31:0];
+assign carry_out = adder_reg[32];</code></pre>
+<p>Quando <code>en</code> esta ativo, ele faz:</p>
+<pre><code>adder_reg &lt;= op_a + op_b;</code></pre>
+<p>Isso ensina duas coisas:</p>
+<p>1. a operacao aritmetica vira hardware;</p>
+<p>2. a largura do resultado precisa considerar carry.</p>
+<p>O testbench aplica valores, gera clock, chama <code>$fsdbDumpvars</code> e encerra com <code>$finish</code>.</p>
+</section>
+<section class="section"><h2 id="exemplo-didatico-arbiter">Exemplo didatico: arbiter</h2><p>O <code>arbiter</code> e o exemplo mais rico porque tem:</p>
+<ul class="key-list compact-list">
+<li>requisicoes de dois clientes;</li>
+<li>selecao de prioridade;</li>
+<li>estado atual;</li>
+<li>proximo estado;</li>
+<li>saidas <code>grant</code>;</li>
+<li>armazenamento de requisicoes pendentes.</li>
+</ul>
+<p>Ele e uma pequena maquina de estados. Por isso conecta diretamente com as regras da aula de sintese: separar logica combinacional de proximo estado e registradores atualizados por clock.</p>
+</section>
+<section class="section"><h2 id="verdi-e-arquivo-de-onda">Verdi e arquivo de onda</h2><p>O lab mostra o papel do arquivo FSDB:</p>
+<pre><code>verdi -nologo -ssf file_name.fsdb &amp;</code></pre>
+<p>FSDB/VCD serve para debug. Nao e prova automatica de corretude.</p>
+<p>Se o testbench apenas gera onda, voce ainda precisa olhar. Se ele compara esperado e observado, ele consegue reportar passou/falhou.</p>
+<details class="nested-detail"><summary>Detalhe: por que waveform nao basta</summary><div class="detail-body"><p>Waveform e muito boa para investigar o erro depois que voce sabe que existe um erro. Ela nao e boa como criterio principal de aprovacao, porque depende de inspecao humana.</p>
+<p>Um testbench didatico pode comecar apenas com waveform. Um testbench mais profissional deve produzir uma conclusao clara no log:</p>
+<pre><code>PASSED
+FAILED</code></pre></div></details>
+</section>
+<section class="section"><h2 id="ligacao-com-makefile">Ligacao com Makefile</h2><p>O lab mostra comandos manuais. O ambiente do professor automatiza comandos parecidos com Makefile.</p>
+<p>Manual:</p>
+<pre><code>vcs ...
+./simv
+verdi ...</code></pre>
+<p>Automatizado:</p>
+<pre><code>make sim
+make verdi
+make clean</code></pre>
+<p>Por isso o professor fala tanto de Makefile: ele quer fluxo reproduzivel.</p>
+<details class="nested-detail"><summary>Aprofundamento: o que o <code>make sim</code> provavelmente esconde</summary><div class="detail-body"><p>Quando voce roda <code>make sim</code>, o Makefile pode estar fazendo varias coisas:</p>
+<ul class="key-list compact-list">
+<li>limpando arquivos antigos;</li>
+<li>montando o comando do VCS;</li>
+<li>passando filelists;</li>
+<li>definindo o top de testbench;</li>
+<li>ligando flags de debug;</li>
+<li>salvando logs;</li>
+<li>preparando abertura no Verdi.</li>
+</ul>
+<p>Entender o comando manual do lab ajuda a nao tratar o Makefile como caixa preta.</p></div></details>
+</section>
+<section class="section"><h2 id="ligacao-com-rtl-lab2">Ligacao com RTL_LAB2</h2><p>Para adaptar seu projeto, pense no mesmo padrao:</p>
+<pre><code>top_cpu.sv  -&gt; design RTL
+top_tb.sv   -&gt; testbench
+make sim    -&gt; compila e roda simulacao
+make synth  -&gt; sintetiza apenas RTL</code></pre>
+<p>O ponto critico:</p>
+<pre><code>filelist.f     = RTL + testbench para simulacao
+filelist_rtl.f = somente RTL para sintese</code></pre>
+</section>
+<section class="section"><h2 id="plano-de-estudo-pratico">Plano de estudo pratico</h2><p>1. Leia o <code>README</code>.</p>
+<p>2. Rode ou entenda o <code>.testscript</code>.</p>
+<p>3. Escolha um exemplo simples, como <code>adder32</code>.</p>
+<p>4. Identifique DUT e testbench.</p>
+<p>5. Compile com VCS.</p>
+<p>6. Rode <code>simv</code>.</p>
+<p>7. Veja log e waveform.</p>
+<p>8. Repita com <code>arbiter</code>, porque ele tem FSM.</p>
+<p>9. Compare o padrao com o seu <code>RTL_LAB2</code>.</p>
+</section>
+<section class="section"><h2 id="detalhes-que-podem-ficar-para-depois">Detalhes que podem ficar para depois</h2><p>Voce nao precisa dominar todos os exemplos com profundidade agora. O mais importante e entender o fluxo.</p>
+<p>Depois, se o professor pedir, vale voltar em:</p>
+<ul class="key-list compact-list">
+<li><code>matrixmult</code>, por causa de largura e aritmetica;</li>
+<li><code>arbiter</code>, por causa de FSM e prioridade;</li>
+<li><code>counter</code>, por causa de reset/enable/overflow;</li>
+<li><code>encoder</code>, por causa de prioridade e <code>case</code>.</li>
+</ul>
+</section><p class="source-note">Base Markdown: <a data-md-source href="../../assets/md_normalizado/04_Verilog_Reference_Designs.md">aula didatica</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_Verilog_Reference_Designs.md">guia passo a passo</a>.</p><nav class="pager" aria-label="Navegação entre aulas"><a href="bloco_1_1b_verificacao_verilog.html">Anterior: Verificacao</a><a href="bloco_1_1d_verilog_reference_designs.html">Proxima: Reference Designs</a></nav></article><aside class="toc" data-toc><h2>Nesta aula</h2></aside></div></main><footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer><script src="../../assets/js/app.js"></script></body></html>
+

@@ -1,0 +1,2640 @@
+{
+  "source_root": "C:\\Users\\maiko\\ci_expert\\mdsGPT",
+  "normalized_root": "C:\\Users\\maiko\\ci_expert\\md_normalizado",
+  "file_count": 105,
+  "changed_count": 1,
+  "unchanged_count": 104,
+  "duplicates_by_sha256": {
+    "202020765da0aa4b32414a5525e3f5183152372304526647e70ef596ff921f12": [
+      "09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B (1).md",
+      "09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B.md"
+    ]
+  },
+  "records": [
+    {
+      "file": "01_Introduction_DC_NXT.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_Introduction_DC_NXT.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_Introduction_DC_NXT.md",
+      "source_sha256": "ceace4f8003f3ce72d0fcea7fa64110da3eea5eaaa515d7ec16667c7d6b8b1de",
+      "normalized_sha256": "ceace4f8003f3ce72d0fcea7fa64110da3eea5eaaa515d7ec16667c7d6b8b1de",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 23083,
+        "lines": 608,
+        "headings": 52,
+        "code_fence_markers": 72,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 23083,
+        "lines": 608,
+        "headings": 52,
+        "code_fence_markers": 72,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_Introduction_to_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_Introduction_to_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_Introduction_to_Synthesis.md",
+      "source_sha256": "16fab89044f09bdfadff122ba7d2f19703cf213084c88a1e821e733796b7a491",
+      "normalized_sha256": "16fab89044f09bdfadff122ba7d2f19703cf213084c88a1e821e733796b7a491",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 50697,
+        "lines": 2418,
+        "headings": 130,
+        "code_fence_markers": 286,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 50697,
+        "lines": 2418,
+        "headings": 130,
+        "code_fence_markers": 286,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_Introduction_to_Verification.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_Introduction_to_Verification.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_Introduction_to_Verification.md",
+      "source_sha256": "a6a9d822d70022f093f5c47533c370cc88bca31778faf1a1db3e305c5cc64c73",
+      "normalized_sha256": "a6a9d822d70022f093f5c47533c370cc88bca31778faf1a1db3e305c5cc64c73",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 51244,
+        "lines": 2050,
+        "headings": 108,
+        "code_fence_markers": 268,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 51244,
+        "lines": 2050,
+        "headings": 108,
+        "code_fence_markers": 268,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_SystemVerilog_for_RTL_Design_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_SystemVerilog_for_RTL_Design_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_SystemVerilog_for_RTL_Design_parte_A.md",
+      "source_sha256": "43a3e542f04d9e305c730e74ad90d380473fcbdcbb0a0b578e40f87bb6d4e420",
+      "normalized_sha256": "43a3e542f04d9e305c730e74ad90d380473fcbdcbb0a0b578e40f87bb6d4e420",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 37494,
+        "lines": 1818,
+        "headings": 80,
+        "code_fence_markers": 306,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 37494,
+        "lines": 1818,
+        "headings": 80,
+        "code_fence_markers": 306,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_SystemVerilog_for_RTL_Design_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_SystemVerilog_for_RTL_Design_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_SystemVerilog_for_RTL_Design_parte_B.md",
+      "source_sha256": "99fdaf10516a13a8e8a0c736766e05e60e1c5ff4cb0f15b591964e23bd1168d3",
+      "normalized_sha256": "99fdaf10516a13a8e8a0c736766e05e60e1c5ff4cb0f15b591964e23bd1168d3",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 48735,
+        "lines": 2582,
+        "headings": 137,
+        "code_fence_markers": 452,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 48735,
+        "lines": 2582,
+        "headings": 137,
+        "code_fence_markers": 452,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_SystemVerilog_for_RTL_Design_parte_C.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_SystemVerilog_for_RTL_Design_parte_C.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_SystemVerilog_for_RTL_Design_parte_C.md",
+      "source_sha256": "2d85db65143a60cd40152705fc209e9569d950aeb51b5c26c49c35c4992b86ac",
+      "normalized_sha256": "2d85db65143a60cd40152705fc209e9569d950aeb51b5c26c49c35c4992b86ac",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 48531,
+        "lines": 2281,
+        "headings": 105,
+        "code_fence_markers": 390,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 48531,
+        "lines": 2281,
+        "headings": 105,
+        "code_fence_markers": 390,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_SystemVerilog_for_RTL_Design_parte_D.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_SystemVerilog_for_RTL_Design_parte_D.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_SystemVerilog_for_RTL_Design_parte_D.md",
+      "source_sha256": "d7bded7c98a00aa5b4516edf9e07f8398405b660f970078652dd1a20fc3d7c63",
+      "normalized_sha256": "d7bded7c98a00aa5b4516edf9e07f8398405b660f970078652dd1a20fc3d7c63",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 45032,
+        "lines": 2228,
+        "headings": 120,
+        "code_fence_markers": 386,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 45032,
+        "lines": 2228,
+        "headings": 120,
+        "code_fence_markers": 386,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_SystemVerilog_Introduction.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_SystemVerilog_Introduction.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_SystemVerilog_Introduction.md",
+      "source_sha256": "95cfa6661ee6dcc6aaf5711bdb047952c8fa4ce8cbd8de1d0a1e995e78194ffb",
+      "normalized_sha256": "95cfa6661ee6dcc6aaf5711bdb047952c8fa4ce8cbd8de1d0a1e995e78194ffb",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41877,
+        "lines": 1933,
+        "headings": 95,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41877,
+        "lines": 1933,
+        "headings": 95,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_Verilog_Introduction.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_Verilog_Introduction.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_Verilog_Introduction.md",
+      "source_sha256": "1f43128b8ab5d6dfb60ff6e1795fd26ae2b27f75634b1571ce87aa132464a711",
+      "normalized_sha256": "1f43128b8ab5d6dfb60ff6e1795fd26ae2b27f75634b1571ce87aa132464a711",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39689,
+        "lines": 1740,
+        "headings": 109,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39689,
+        "lines": 1740,
+        "headings": 109,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "01_VHDL_Introduction.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\01_VHDL_Introduction.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\01_VHDL_Introduction.md",
+      "source_sha256": "fb390e0aea71a99a2485a9f07634ae7fe690afd7b9a1100e85fef1fdaf649efb",
+      "normalized_sha256": "fb390e0aea71a99a2485a9f07634ae7fe690afd7b9a1100e85fef1fdaf649efb",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 37971,
+        "lines": 1960,
+        "headings": 95,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 37971,
+        "lines": 1960,
+        "headings": 95,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Design_and_Constraint_Files_for_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Design_and_Constraint_Files_for_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Design_and_Constraint_Files_for_Synthesis.md",
+      "source_sha256": "41450126b1376186cf93fcda9ba6ddde19462f1baeb0c30dcb583eab3b8bdc6e",
+      "normalized_sha256": "41450126b1376186cf93fcda9ba6ddde19462f1baeb0c30dcb583eab3b8bdc6e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 48460,
+        "lines": 2184,
+        "headings": 102,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 48460,
+        "lines": 2184,
+        "headings": 102,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Design_Setup_for_Physical_Synthesis_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Design_Setup_for_Physical_Synthesis_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Design_Setup_for_Physical_Synthesis_parte_A.md",
+      "source_sha256": "4550cc63f926c01d181a1df37d53ef0cc741172344b701565a98fb71981373f4",
+      "normalized_sha256": "4550cc63f926c01d181a1df37d53ef0cc741172344b701565a98fb71981373f4",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 55981,
+        "lines": 2046,
+        "headings": 76,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 55981,
+        "lines": 2046,
+        "headings": 76,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Design_Setup_for_Physical_Synthesis_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Design_Setup_for_Physical_Synthesis_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Design_Setup_for_Physical_Synthesis_parte_B.md",
+      "source_sha256": "ef49b9235dc988c227646c1930c908def18c7d0c81465cf3ebfd32fba4e5cacf",
+      "normalized_sha256": "ef49b9235dc988c227646c1930c908def18c7d0c81465cf3ebfd32fba4e5cacf",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 55862,
+        "lines": 1603,
+        "headings": 78,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 55862,
+        "lines": 1603,
+        "headings": 78,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Design_Setup_for_Physical_Synthesis_parte_C.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Design_Setup_for_Physical_Synthesis_parte_C.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Design_Setup_for_Physical_Synthesis_parte_C.md",
+      "source_sha256": "182597d57b5856898ce7ce7c2307e39e959ecbda8e00f142ab24590f5b2d9558",
+      "normalized_sha256": "182597d57b5856898ce7ce7c2307e39e959ecbda8e00f142ab24590f5b2d9558",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 21652,
+        "lines": 644,
+        "headings": 35,
+        "code_fence_markers": 106,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 21652,
+        "lines": 644,
+        "headings": 35,
+        "code_fence_markers": 106,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_SystemVerilog_for_Design.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_SystemVerilog_for_Design.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_SystemVerilog_for_Design.md",
+      "source_sha256": "aa3500dd991b55680bf623136b5d47587860a1f6ae27fbb6e08ecd8af7517151",
+      "normalized_sha256": "aa3500dd991b55680bf623136b5d47587860a1f6ae27fbb6e08ecd8af7517151",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 47064,
+        "lines": 2242,
+        "headings": 119,
+        "code_fence_markers": 260,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 47064,
+        "lines": 2242,
+        "headings": 119,
+        "code_fence_markers": 260,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Verification_Methodology.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Verification_Methodology.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Verification_Methodology.md",
+      "source_sha256": "e23a552bd8653d206a26e77cf2b9a67bef6e281ea83fe075e11f47c305a50002",
+      "normalized_sha256": "e23a552bd8653d206a26e77cf2b9a67bef6e281ea83fe075e11f47c305a50002",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 42127,
+        "lines": 1685,
+        "headings": 87,
+        "code_fence_markers": 226,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 42127,
+        "lines": 1685,
+        "headings": 87,
+        "code_fence_markers": 226,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_Verilog_for_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_Verilog_for_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_Verilog_for_Synthesis.md",
+      "source_sha256": "137d43c3eca87332e7f1c3a1c577d7ab12fe41957592ac2e7b4fd29c539b9cfd",
+      "normalized_sha256": "137d43c3eca87332e7f1c3a1c577d7ab12fe41957592ac2e7b4fd29c539b9cfd",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 44028,
+        "lines": 1736,
+        "headings": 103,
+        "code_fence_markers": 168,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 44028,
+        "lines": 1736,
+        "headings": 103,
+        "code_fence_markers": 168,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "02_VHDL_for_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\02_VHDL_for_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\02_VHDL_for_Synthesis.md",
+      "source_sha256": "2c581d2708ac67cb24a26edfc34d60f37b545946aa26b4abb37971089dddde12",
+      "normalized_sha256": "2c581d2708ac67cb24a26edfc34d60f37b545946aa26b4abb37971089dddde12",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38671,
+        "lines": 1760,
+        "headings": 84,
+        "code_fence_markers": 172,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38671,
+        "lines": 1760,
+        "headings": 84,
+        "code_fence_markers": 172,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_Accessing_Design_and_Library_Objects.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_Accessing_Design_and_Library_Objects.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_Accessing_Design_and_Library_Objects.md",
+      "source_sha256": "cab87dc6bede5b6d224b668f6b905f0e1a3c5ab0ca443cd79dfeda29598ee2c2",
+      "normalized_sha256": "cab87dc6bede5b6d224b668f6b905f0e1a3c5ab0ca443cd79dfeda29598ee2c2",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 36677,
+        "lines": 1815,
+        "headings": 61,
+        "code_fence_markers": 344,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 36677,
+        "lines": 1815,
+        "headings": 61,
+        "code_fence_markers": 344,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_Hardware_Verification_Languages.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_Hardware_Verification_Languages.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_Hardware_Verification_Languages.md",
+      "source_sha256": "f2a44e1a45688ef219705f0ef565ab2a2648de09999dc7a176acf6ee6c52715d",
+      "normalized_sha256": "f2a44e1a45688ef219705f0ef565ab2a2648de09999dc7a176acf6ee6c52715d",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 58603,
+        "lines": 2435,
+        "headings": 122,
+        "code_fence_markers": 274,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 58603,
+        "lines": 2435,
+        "headings": 122,
+        "code_fence_markers": 274,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_High-Level_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_High-Level_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_High-Level_Synthesis.md",
+      "source_sha256": "783a56808784f7cd9e36ba00bfdfde109c943a3c0b245f433be73d27f31b4e09",
+      "normalized_sha256": "783a56808784f7cd9e36ba00bfdfde109c943a3c0b245f433be73d27f31b4e09",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 51055,
+        "lines": 2543,
+        "headings": 125,
+        "code_fence_markers": 416,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 51055,
+        "lines": 2543,
+        "headings": 125,
+        "code_fence_markers": 416,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_SystemVerilog_for_Verification-1.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_SystemVerilog_for_Verification-1.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_SystemVerilog_for_Verification-1.md",
+      "source_sha256": "9770fa00ca015399814150dc42cc235b9c84f82f3f72b418f63980c5ea7ef602",
+      "normalized_sha256": "9770fa00ca015399814150dc42cc235b9c84f82f3f72b418f63980c5ea7ef602",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 50917,
+        "lines": 2365,
+        "headings": 110,
+        "code_fence_markers": 196,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 50917,
+        "lines": 2365,
+        "headings": 110,
+        "code_fence_markers": 196,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_Verilog_for_Verification.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_Verilog_for_Verification.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_Verilog_for_Verification.md",
+      "source_sha256": "ba30132e9556fe544f2853230a353a985d646ad3f57c30cd0b2b32947a8a664a",
+      "normalized_sha256": "ba30132e9556fe544f2853230a353a985d646ad3f57c30cd0b2b32947a8a664a",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 50512,
+        "lines": 2240,
+        "headings": 113,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 50512,
+        "lines": 2240,
+        "headings": 113,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "03_VHDL_for_Verification.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\03_VHDL_for_Verification.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\03_VHDL_for_Verification.md",
+      "source_sha256": "57e380f1f40dd83d43880c384fedf147f14271879264db87853aa6581510d5e4",
+      "normalized_sha256": "57e380f1f40dd83d43880c384fedf147f14271879264db87853aa6581510d5e4",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 48705,
+        "lines": 2204,
+        "headings": 105,
+        "code_fence_markers": 224,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 48705,
+        "lines": 2204,
+        "headings": 105,
+        "code_fence_markers": 224,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_Constraints_Reg_to_Reg_and_IO_Timing_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_Constraints_Reg_to_Reg_and_IO_Timing_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_Constraints_Reg_to_Reg_and_IO_Timing_parte_A.md",
+      "source_sha256": "5ed807d256ae84b4912568d0be6ea60fbe771f0f07a6a1e32e0da7cdee94a6e1",
+      "normalized_sha256": "5ed807d256ae84b4912568d0be6ea60fbe771f0f07a6a1e32e0da7cdee94a6e1",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 31695,
+        "lines": 991,
+        "headings": 60,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 31695,
+        "lines": 991,
+        "headings": 60,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_Constraints_Reg_to_Reg_and_IO_Timing_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_Constraints_Reg_to_Reg_and_IO_Timing_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_Constraints_Reg_to_Reg_and_IO_Timing_parte_B.md",
+      "source_sha256": "3ef84ad1c2eab97a1b8a7059d9df6fc8a76f1b5099ef00d23a90d4ab9e5bc2d2",
+      "normalized_sha256": "3ef84ad1c2eab97a1b8a7059d9df6fc8a76f1b5099ef00d23a90d4ab9e5bc2d2",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38773,
+        "lines": 1525,
+        "headings": 77,
+        "code_fence_markers": 190,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38773,
+        "lines": 1525,
+        "headings": 77,
+        "code_fence_markers": 190,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_High-Level_Synthesis_HLS_for_Power_Optimization.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_High-Level_Synthesis_HLS_for_Power_Optimization.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_High-Level_Synthesis_HLS_for_Power_Optimization.md",
+      "source_sha256": "25b51e04f3bd35f464e35a34521585c8688757226e83a5ccb37ad9be674b7fe8",
+      "normalized_sha256": "25b51e04f3bd35f464e35a34521585c8688757226e83a5ccb37ad9be674b7fe8",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 44640,
+        "lines": 1620,
+        "headings": 82,
+        "code_fence_markers": 202,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 44640,
+        "lines": 1620,
+        "headings": 82,
+        "code_fence_markers": 202,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_SystemVerilog_for_Verification-2.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_SystemVerilog_for_Verification-2.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_SystemVerilog_for_Verification-2.md",
+      "source_sha256": "f6f6ac616ef4eaffc38f9dda69722c39e4b5081e30633e0a2212e33eeb205fcb",
+      "normalized_sha256": "f6f6ac616ef4eaffc38f9dda69722c39e4b5081e30633e0a2212e33eeb205fcb",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 40089,
+        "lines": 1808,
+        "headings": 103,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 40089,
+        "lines": 1808,
+        "headings": 103,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_VCS_and_Verdi_Debug_Environment.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_VCS_and_Verdi_Debug_Environment.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_VCS_and_Verdi_Debug_Environment.md",
+      "source_sha256": "9a1c995c5ea25da5ce5faa6dcf237c800280b2b49971f8463431cbd91a00dddc",
+      "normalized_sha256": "9a1c995c5ea25da5ce5faa6dcf237c800280b2b49971f8463431cbd91a00dddc",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41127,
+        "lines": 1865,
+        "headings": 101,
+        "code_fence_markers": 238,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41127,
+        "lines": 1865,
+        "headings": 101,
+        "code_fence_markers": 238,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_Verilog_Reference_Designs.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_Verilog_Reference_Designs.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_Verilog_Reference_Designs.md",
+      "source_sha256": "2b2ac7c2a56eae1438ca0321e700bbb5326c1f53b54b60894068b8e87a94a403",
+      "normalized_sha256": "2b2ac7c2a56eae1438ca0321e700bbb5326c1f53b54b60894068b8e87a94a403",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38338,
+        "lines": 1729,
+        "headings": 83,
+        "code_fence_markers": 192,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38338,
+        "lines": 1729,
+        "headings": 83,
+        "code_fence_markers": 192,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "04_VHDL_Reference_Designs.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\04_VHDL_Reference_Designs.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\04_VHDL_Reference_Designs.md",
+      "source_sha256": "80457cd19b34cc7e52320a6f81885451d82b13df0bca954d04e1e3c45e3ddb10",
+      "normalized_sha256": "80457cd19b34cc7e52320a6f81885451d82b13df0bca954d04e1e3c45e3ddb10",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30473,
+        "lines": 1418,
+        "headings": 74,
+        "code_fence_markers": 152,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30473,
+        "lines": 1418,
+        "headings": 74,
+        "code_fence_markers": 152,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "05_Constraints_Input_Transition_and_Output_Loading.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\05_Constraints_Input_Transition_and_Output_Loading.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\05_Constraints_Input_Transition_and_Output_Loading.md",
+      "source_sha256": "36e1d11811ec59ed14dadf6af66389efbeadad12679d0ce3beff896328e4104a",
+      "normalized_sha256": "36e1d11811ec59ed14dadf6af66389efbeadad12679d0ce3beff896328e4104a",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 26806,
+        "lines": 933,
+        "headings": 85,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 26806,
+        "lines": 933,
+        "headings": 85,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "05_Synthesis_with_Time_or_Area_Optimization.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\05_Synthesis_with_Time_or_Area_Optimization.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\05_Synthesis_with_Time_or_Area_Optimization.md",
+      "source_sha256": "e74dc325ebd6d25ade16e6ced3a50b7c8c58f062ebe0b49aa281e6d454fd3640",
+      "normalized_sha256": "e74dc325ebd6d25ade16e6ced3a50b7c8c58f062ebe0b49aa281e6d454fd3640",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41709,
+        "lines": 1817,
+        "headings": 94,
+        "code_fence_markers": 260,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41709,
+        "lines": 1817,
+        "headings": 94,
+        "code_fence_markers": 260,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "05_SystemVerilog_Reference_Design-1.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\05_SystemVerilog_Reference_Design-1.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\05_SystemVerilog_Reference_Design-1.md",
+      "source_sha256": "f7514d65072dc0b1e8fd2cc3ab9afe8d6fd2d39264ec41c48db7aca20374cc14",
+      "normalized_sha256": "f7514d65072dc0b1e8fd2cc3ab9afe8d6fd2d39264ec41c48db7aca20374cc14",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41662,
+        "lines": 1866,
+        "headings": 88,
+        "code_fence_markers": 192,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41662,
+        "lines": 1866,
+        "headings": 88,
+        "code_fence_markers": 192,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "05_Verilog_Reference_Design_of_ROBOT_Model.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\05_Verilog_Reference_Design_of_ROBOT_Model.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\05_Verilog_Reference_Design_of_ROBOT_Model.md",
+      "source_sha256": "acbdfc1d12acf8062852897225bb79b629d3b8340b066ef11d4dda223408013e",
+      "normalized_sha256": "acbdfc1d12acf8062852897225bb79b629d3b8340b066ef11d4dda223408013e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41170,
+        "lines": 1775,
+        "headings": 72,
+        "code_fence_markers": 158,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41170,
+        "lines": 1775,
+        "headings": 72,
+        "code_fence_markers": 158,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_A.md",
+      "source_sha256": "997777f4db0542c7e56fa88f57a8650b172b73176edcb72b058d7569463e7806",
+      "normalized_sha256": "997777f4db0542c7e56fa88f57a8650b172b73176edcb72b058d7569463e7806",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 36358,
+        "lines": 1263,
+        "headings": 70,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 36358,
+        "lines": 1263,
+        "headings": 70,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_B.md",
+      "source_sha256": "26ece9846370a28e3c942e5baf9ad70f87830a2c8b29c511b302f86e48a24950",
+      "normalized_sha256": "26ece9846370a28e3c942e5baf9ad70f87830a2c8b29c511b302f86e48a24950",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 35984,
+        "lines": 1254,
+        "headings": 74,
+        "code_fence_markers": 164,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 35984,
+        "lines": 1254,
+        "headings": 74,
+        "code_fence_markers": 164,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_C.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_C.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_C.md",
+      "source_sha256": "d60217360929a76dd0138d730321802b66eb05274dd406147a803e5716443fde",
+      "normalized_sha256": "d60217360929a76dd0138d730321802b66eb05274dd406147a803e5716443fde",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 33271,
+        "lines": 1399,
+        "headings": 80,
+        "code_fence_markers": 188,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 33271,
+        "lines": 1399,
+        "headings": 80,
+        "code_fence_markers": 188,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_D.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_D.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_D.md",
+      "source_sha256": "946ead23072875bf314a6741b1d68e01b165d1b1d08544ce44972e4c2c5cd624",
+      "normalized_sha256": "946ead23072875bf314a6741b1d68e01b165d1b1d08544ce44972e4c2c5cd624",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 12092,
+        "lines": 553,
+        "headings": 25,
+        "code_fence_markers": 60,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 12092,
+        "lines": 553,
+        "headings": 25,
+        "code_fence_markers": 60,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "06_SystemVerilog_Reference_Design-2.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\06_SystemVerilog_Reference_Design-2.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\06_SystemVerilog_Reference_Design-2.md",
+      "source_sha256": "ec4f05fd188a58e910dd3596c9f5ba44dfdc47e2725b30b2235c63d59fb63372",
+      "normalized_sha256": "ec4f05fd188a58e910dd3596c9f5ba44dfdc47e2725b30b2235c63d59fb63372",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 42167,
+        "lines": 1847,
+        "headings": 91,
+        "code_fence_markers": 188,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 42167,
+        "lines": 1847,
+        "headings": 91,
+        "code_fence_markers": 188,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "07_SystemVerilog_for_UVM_1.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\07_SystemVerilog_for_UVM_1.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\07_SystemVerilog_for_UVM_1.md",
+      "source_sha256": "74e31b35c5b09f25008342514bf8c1487afb8c0aa343a57a46d4c167230c27f8",
+      "normalized_sha256": "74e31b35c5b09f25008342514bf8c1487afb8c0aa343a57a46d4c167230c27f8",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 49720,
+        "lines": 1978,
+        "headings": 97,
+        "code_fence_markers": 208,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 49720,
+        "lines": 1978,
+        "headings": 97,
+        "code_fence_markers": 208,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "07_Timing_Analysis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\07_Timing_Analysis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\07_Timing_Analysis.md",
+      "source_sha256": "c4e5252844f29d927e4e25692707b962c0ac530d413b842bfc25c08b4d6a6350",
+      "normalized_sha256": "c4e5252844f29d927e4e25692707b962c0ac530d413b842bfc25c08b4d6a6350",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 29023,
+        "lines": 1438,
+        "headings": 81,
+        "code_fence_markers": 250,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 29023,
+        "lines": 1438,
+        "headings": 81,
+        "code_fence_markers": 250,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Constraints_Multiple_Clocks_and_Exceptions_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Constraints_Multiple_Clocks_and_Exceptions_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Constraints_Multiple_Clocks_and_Exceptions_parte_A.md",
+      "source_sha256": "5c9c871c5623b9d7d4883c2f5fbb51e7e659ac997f41535c08688c5f67f6745e",
+      "normalized_sha256": "5c9c871c5623b9d7d4883c2f5fbb51e7e659ac997f41535c08688c5f67f6745e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 47723,
+        "lines": 2011,
+        "headings": 96,
+        "code_fence_markers": 340,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 47723,
+        "lines": 2011,
+        "headings": 96,
+        "code_fence_markers": 340,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Constraints_Multiple_Clocks_and_Exceptions_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Constraints_Multiple_Clocks_and_Exceptions_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Constraints_Multiple_Clocks_and_Exceptions_parte_B.md",
+      "source_sha256": "1a702b1efb01e0935dfa5602f894a8bdf83e89bd1fa4789fba424267ad4778f5",
+      "normalized_sha256": "1a702b1efb01e0935dfa5602f894a8bdf83e89bd1fa4789fba424267ad4778f5",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 32796,
+        "lines": 1305,
+        "headings": 63,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 32796,
+        "lines": 1305,
+        "headings": 63,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_01_Overview.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_01_Overview.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_01_Overview.md",
+      "source_sha256": "ff30792c15719be0a3d2c1bfdfc3a781760341097815689ac265ed3fc86775d3",
+      "normalized_sha256": "ff30792c15719be0a3d2c1bfdfc3a781760341097815689ac265ed3fc86775d3",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 46671,
+        "lines": 1133,
+        "headings": 81,
+        "code_fence_markers": 72,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 46671,
+        "lines": 1133,
+        "headings": 81,
+        "code_fence_markers": 72,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_02_SVF_Guidance.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_02_SVF_Guidance.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_02_SVF_Guidance.md",
+      "source_sha256": "9e229590565d3174b926fcf0cfb8cb826ff8662590a197c51373d0ae66f78304",
+      "normalized_sha256": "9e229590565d3174b926fcf0cfb8cb826ff8662590a197c51373d0ae66f78304",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 34601,
+        "lines": 1105,
+        "headings": 57,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 34601,
+        "lines": 1105,
+        "headings": 57,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_03_Design_Read.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_03_Design_Read.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_03_Design_Read.md",
+      "source_sha256": "599a4771254261f3863fda1c0c02b96af4b68790e3d6eae88e41770e98f180a4",
+      "normalized_sha256": "599a4771254261f3863fda1c0c02b96af4b68790e3d6eae88e41770e98f180a4",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 37898,
+        "lines": 1364,
+        "headings": 51,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 37898,
+        "lines": 1364,
+        "headings": 51,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_04_Setup_for_Verification.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_04_Setup_for_Verification.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_04_Setup_for_Verification.md",
+      "source_sha256": "085eb35860f2206f3752b142a2e7af145e466edcad2141ee0bd1882932fa90bd",
+      "normalized_sha256": "085eb35860f2206f3752b142a2e7af145e466edcad2141ee0bd1882932fa90bd",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 36893,
+        "lines": 774,
+        "headings": 50,
+        "code_fence_markers": 74,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 36893,
+        "lines": 774,
+        "headings": 50,
+        "code_fence_markers": 74,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_05_Match_and_Verify.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_05_Match_and_Verify.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_05_Match_and_Verify.md",
+      "source_sha256": "10f1367739aede061d494ffb7a30f7fb04cf1a93e310de5efee7026c5a547585",
+      "normalized_sha256": "10f1367739aede061d494ffb7a30f7fb04cf1a93e310de5efee7026c5a547585",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 40233,
+        "lines": 1400,
+        "headings": 84,
+        "code_fence_markers": 182,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 40233,
+        "lines": 1400,
+        "headings": 84,
+        "code_fence_markers": 182,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_06_Debugging_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_06_Debugging_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_06_Debugging_parte_A.md",
+      "source_sha256": "9cda394cdcf228122cb2be928d30a3f7b596396936c196b5bef8f4a9f174791a",
+      "normalized_sha256": "9cda394cdcf228122cb2be928d30a3f7b596396936c196b5bef8f4a9f174791a",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 40545,
+        "lines": 1316,
+        "headings": 54,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 40545,
+        "lines": 1316,
+        "headings": 54,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_Formality_Jumpstart_06_Debugging_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_Formality_Jumpstart_06_Debugging_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_Formality_Jumpstart_06_Debugging_parte_B.md",
+      "source_sha256": "013a6c5194d6f7da0e79a48824051838a3cd7c75ef45c8ff96c55e2b3dd733b3",
+      "normalized_sha256": "013a6c5194d6f7da0e79a48824051838a3cd7c75ef45c8ff96c55e2b3dd733b3",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 45008,
+        "lines": 1565,
+        "headings": 75,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 45008,
+        "lines": 1565,
+        "headings": 75,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "08_SystemVerilog_for_UVM_2.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\08_SystemVerilog_for_UVM_2.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\08_SystemVerilog_for_UVM_2.md",
+      "source_sha256": "7cdb6df8bb520a7eae177d0ac6b63777f0f4275a3503bc12f33e73c861caf6f3",
+      "normalized_sha256": "7cdb6df8bb520a7eae177d0ac6b63777f0f4275a3503bc12f33e73c861caf6f3",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 56631,
+        "lines": 2288,
+        "headings": 105,
+        "code_fence_markers": 244,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 56631,
+        "lines": 2288,
+        "headings": 105,
+        "code_fence_markers": 244,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_01_Introduction_to_Equivalency_Checking.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_01_Introduction_to_Equivalency_Checking.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_01_Introduction_to_Equivalency_Checking.md",
+      "source_sha256": "3e0ce486f4559fea06875841640f18c30cb0da8701d1327112590e0842e36bf8",
+      "normalized_sha256": "3e0ce486f4559fea06875841640f18c30cb0da8701d1327112590e0842e36bf8",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 32172,
+        "lines": 883,
+        "headings": 64,
+        "code_fence_markers": 32,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 32172,
+        "lines": 883,
+        "headings": 64,
+        "code_fence_markers": 32,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_02_Concepts_and_Steps_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_02_Concepts_and_Steps_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_02_Concepts_and_Steps_parte_A.md",
+      "source_sha256": "2f75a511533c455ec389ae07a6724fcffc3126167bea3341f990c68dfee380af",
+      "normalized_sha256": "2f75a511533c455ec389ae07a6724fcffc3126167bea3341f990c68dfee380af",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 34770,
+        "lines": 734,
+        "headings": 64,
+        "code_fence_markers": 36,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 34770,
+        "lines": 734,
+        "headings": 64,
+        "code_fence_markers": 36,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_02_Concepts_and_Steps_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_02_Concepts_and_Steps_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_02_Concepts_and_Steps_parte_B.md",
+      "source_sha256": "b21f3af467c4619079922c7a24fa42cac7586c5e02ed3422fadf8563698fb172",
+      "normalized_sha256": "b21f3af467c4619079922c7a24fa42cac7586c5e02ed3422fadf8563698fb172",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 33264,
+        "lines": 845,
+        "headings": 62,
+        "code_fence_markers": 84,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 33264,
+        "lines": 845,
+        "headings": 62,
+        "code_fence_markers": 84,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_A.md",
+      "source_sha256": "c2955c100d370b7f43199991ed38077af78fc8116e180a9169bfa99b1712e7c9",
+      "normalized_sha256": "c2955c100d370b7f43199991ed38077af78fc8116e180a9169bfa99b1712e7c9",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30038,
+        "lines": 1137,
+        "headings": 44,
+        "code_fence_markers": 124,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30038,
+        "lines": 1137,
+        "headings": 44,
+        "code_fence_markers": 124,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B (1).md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B (1).md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B (1).md",
+      "source_sha256": "202020765da0aa4b32414a5525e3f5183152372304526647e70ef596ff921f12",
+      "normalized_sha256": "202020765da0aa4b32414a5525e3f5183152372304526647e70ef596ff921f12",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 26580,
+        "lines": 1106,
+        "headings": 44,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 26580,
+        "lines": 1106,
+        "headings": 44,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_03_Simple_Logic_Cones_and_Failing_Points_parte_B.md",
+      "source_sha256": "202020765da0aa4b32414a5525e3f5183152372304526647e70ef596ff921f12",
+      "normalized_sha256": "202020765da0aa4b32414a5525e3f5183152372304526647e70ef596ff921f12",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 26580,
+        "lines": 1106,
+        "headings": 44,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 26580,
+        "lines": 1106,
+        "headings": 44,
+        "code_fence_markers": 138,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_04_Multi-Stage_Verifications_and_SVF.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_04_Multi-Stage_Verifications_and_SVF.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_04_Multi-Stage_Verifications_and_SVF.md",
+      "source_sha256": "1a00600f4c020931b292cc293d0cd628305f2162cb32a984b4291eabf150b34e",
+      "normalized_sha256": "1a00600f4c020931b292cc293d0cd628305f2162cb32a984b4291eabf150b34e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39537,
+        "lines": 1483,
+        "headings": 79,
+        "code_fence_markers": 136,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39537,
+        "lines": 1483,
+        "headings": 79,
+        "code_fence_markers": 136,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_A.md",
+      "source_sha256": "4378cd194040e43b78213368d6df623cee7268f0922a125d90dadc790748fe0e",
+      "normalized_sha256": "4378cd194040e43b78213368d6df623cee7268f0922a125d90dadc790748fe0e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 35400,
+        "lines": 1238,
+        "headings": 58,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 35400,
+        "lines": 1238,
+        "headings": 58,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_05_Multi-Voltage_Designs_and_UPF_parte_B.md",
+      "source_sha256": "ae963a29ca42bb86774ccc5d5225ea0ea6009e4dad9ac825ec5b5c395bf63e2a",
+      "normalized_sha256": "ae963a29ca42bb86774ccc5d5225ea0ea6009e4dad9ac825ec5b5c395bf63e2a",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 21074,
+        "lines": 772,
+        "headings": 37,
+        "code_fence_markers": 84,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 21074,
+        "lines": 772,
+        "headings": 37,
+        "code_fence_markers": 84,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_06_Hard_Verifications_and_SVP.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_06_Hard_Verifications_and_SVP.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_06_Hard_Verifications_and_SVP.md",
+      "source_sha256": "48abbf7dc91ebe3398bb73477f1752bc50eba32d5d69a4888a8837169af6ea90",
+      "normalized_sha256": "48abbf7dc91ebe3398bb73477f1752bc50eba32d5d69a4888a8837169af6ea90",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 29164,
+        "lines": 1098,
+        "headings": 56,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 29164,
+        "lines": 1098,
+        "headings": 56,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_A.md",
+      "source_sha256": "685ad09ad4ecefcb4b3a414d9150e8d234f013b79a93d0146ebfcaa87a01d4ff",
+      "normalized_sha256": "685ad09ad4ecefcb4b3a414d9150e8d234f013b79a93d0146ebfcaa87a01d4ff",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30700,
+        "lines": 1254,
+        "headings": 60,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30700,
+        "lines": 1254,
+        "headings": 60,
+        "code_fence_markers": 134,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_07_Efficient_Debugging_in_Formality_parte_B.md",
+      "source_sha256": "4736cfe97fc2f4f99552ff2acccc1b0140c14219f9645bfc7ba0f5d0594caa82",
+      "normalized_sha256": "4736cfe97fc2f4f99552ff2acccc1b0140c14219f9645bfc7ba0f5d0594caa82",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 34533,
+        "lines": 1353,
+        "headings": 68,
+        "code_fence_markers": 156,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 34533,
+        "lines": 1353,
+        "headings": 68,
+        "code_fence_markers": 156,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_A.md",
+      "source_sha256": "6e459ec3bcc5156234ed2e1373832829b217b62b0c8ad0f95256f0e1aeeb301e",
+      "normalized_sha256": "6e459ec3bcc5156234ed2e1373832829b217b62b0c8ad0f95256f0e1aeeb301e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39272,
+        "lines": 1600,
+        "headings": 77,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39272,
+        "lines": 1600,
+        "headings": 77,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_08_RTL_and_Netlist_Interpretation_parte_B.md",
+      "source_sha256": "64cc8e4aacfc9190069f069e592dfd97f6bf4ad933c797c11da0e45755416608",
+      "normalized_sha256": "64cc8e4aacfc9190069f069e592dfd97f6bf4ad933c797c11da0e45755416608",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 35548,
+        "lines": 1582,
+        "headings": 73,
+        "code_fence_markers": 228,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 35548,
+        "lines": 1582,
+        "headings": 73,
+        "code_fence_markers": 228,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_A.md",
+      "source_sha256": "7584ff44da2d8522c26917c88659dd6773f746b8cf112267f4de5e67946490ff",
+      "normalized_sha256": "7584ff44da2d8522c26917c88659dd6773f746b8cf112267f4de5e67946490ff",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 35767,
+        "lines": 1472,
+        "headings": 80,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 35767,
+        "lines": 1472,
+        "headings": 80,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_09_Sequential_Design_Transforms_and_SVF_parte_B.md",
+      "source_sha256": "b35562f1b4c04058e0c14a35b5785a82bcbf59bade4c8ff2a767d0430ed09494",
+      "normalized_sha256": "b35562f1b4c04058e0c14a35b5785a82bcbf59bade4c8ff2a767d0430ed09494",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39015,
+        "lines": 1638,
+        "headings": 89,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39015,
+        "lines": 1638,
+        "headings": 89,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_A.md",
+      "source_sha256": "b8f3f428c950818fc2423863b312672c4b6bc6d5e18077e93655a397b5720b39",
+      "normalized_sha256": "b8f3f428c950818fc2423863b312672c4b6bc6d5e18077e93655a397b5720b39",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 34633,
+        "lines": 1450,
+        "headings": 80,
+        "code_fence_markers": 208,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 34633,
+        "lines": 1450,
+        "headings": 80,
+        "code_fence_markers": 208,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_10_Other_Design_Transforms_and_SVF_parte_B.md",
+      "source_sha256": "60fd5c603ecc4ab08a5fa349c60d4b8c4bf262bce1bf24eadce9645aa8901393",
+      "normalized_sha256": "60fd5c603ecc4ab08a5fa349c60d4b8c4bf262bce1bf24eadce9645aa8901393",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 34511,
+        "lines": 1372,
+        "headings": 88,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 34511,
+        "lines": 1372,
+        "headings": 88,
+        "code_fence_markers": 218,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_Formality_Foundation_11_Conclusion.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_Formality_Foundation_11_Conclusion.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_Formality_Foundation_11_Conclusion.md",
+      "source_sha256": "ae72ae08964ab884a537610769547729915229e42a256ee186c1d1d598268853",
+      "normalized_sha256": "ae72ae08964ab884a537610769547729915229e42a256ee186c1d1d598268853",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 21244,
+        "lines": 937,
+        "headings": 54,
+        "code_fence_markers": 124,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 21244,
+        "lines": 937,
+        "headings": 54,
+        "code_fence_markers": 124,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "09_SPG_Flow_Congestion_Layout_GUI.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\09_SPG_Flow_Congestion_Layout_GUI.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\09_SPG_Flow_Congestion_Layout_GUI.md",
+      "source_sha256": "0f92701254f4c4e6625580c247dca5c94e8e845426342bf5ce6c99e7f360d59a",
+      "normalized_sha256": "0f92701254f4c4e6625580c247dca5c94e8e845426342bf5ce6c99e7f360d59a",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39062,
+        "lines": 1590,
+        "headings": 102,
+        "code_fence_markers": 210,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39062,
+        "lines": 1590,
+        "headings": 102,
+        "code_fence_markers": 210,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "10_Constraints_Complex_Design_Considerations_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\10_Constraints_Complex_Design_Considerations_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\10_Constraints_Complex_Design_Considerations_parte_A.md",
+      "source_sha256": "5e700100b00b998bbf1497dfba44800bbd5d9d336151a77e833cca5f1334937f",
+      "normalized_sha256": "5e700100b00b998bbf1497dfba44800bbd5d9d336151a77e833cca5f1334937f",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 28438,
+        "lines": 1330,
+        "headings": 56,
+        "code_fence_markers": 254,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 28438,
+        "lines": 1330,
+        "headings": 56,
+        "code_fence_markers": 254,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "10_Constraints_Complex_Design_Considerations_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\10_Constraints_Complex_Design_Considerations_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\10_Constraints_Complex_Design_Considerations_parte_B.md",
+      "source_sha256": "89b3e46e618490cac14370c573bf4bb1177e8c59921f890c55c03f90f80d25d6",
+      "normalized_sha256": "89b3e46e618490cac14370c573bf4bb1177e8c59921f890c55c03f90f80d25d6",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38104,
+        "lines": 1544,
+        "headings": 69,
+        "code_fence_markers": 286,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38104,
+        "lines": 1544,
+        "headings": 69,
+        "code_fence_markers": 286,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_A.md",
+      "source_sha256": "12f060f1cd8ab4ef35220fda7bbd3ca185cc6f5d0007482f491a99f62dfd67b0",
+      "normalized_sha256": "12f060f1cd8ab4ef35220fda7bbd3ca185cc6f5d0007482f491a99f62dfd67b0",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39082,
+        "lines": 1824,
+        "headings": 102,
+        "code_fence_markers": 288,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39082,
+        "lines": 1824,
+        "headings": 102,
+        "code_fence_markers": 288,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\10_Fusion_Compiler_01_Synthesis_and_Design_Implementation_Jumpstart_parte_B.md",
+      "source_sha256": "0109ff88e1bf7dd9aca136eaa7b02945a20618b70a4dcc8cfc463c97daf58075",
+      "normalized_sha256": "0109ff88e1bf7dd9aca136eaa7b02945a20618b70a4dcc8cfc463c97daf58075",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41086,
+        "lines": 1911,
+        "headings": 108,
+        "code_fence_markers": 278,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41086,
+        "lines": 1911,
+        "headings": 108,
+        "code_fence_markers": 278,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_01_Module_01_Introduction_to_UPF.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_01_Module_01_Introduction_to_UPF.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_01_Module_01_Introduction_to_UPF.md",
+      "source_sha256": "48074d7ac2e56e66246c05afd3244c535b6a31c4ea935544ec19a0682bbc1b4f",
+      "normalized_sha256": "48074d7ac2e56e66246c05afd3244c535b6a31c4ea935544ec19a0682bbc1b4f",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 44279,
+        "lines": 2166,
+        "headings": 158,
+        "code_fence_markers": 338,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 44279,
+        "lines": 2166,
+        "headings": 158,
+        "code_fence_markers": 338,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_02_Module_02_Power_Domains.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_02_Module_02_Power_Domains.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_02_Module_02_Power_Domains.md",
+      "source_sha256": "7492bf2b780551ce706c28085d33110acf8453f9fcf1d929c72467a1cf39f783",
+      "normalized_sha256": "7492bf2b780551ce706c28085d33110acf8453f9fcf1d929c72467a1cf39f783",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 51188,
+        "lines": 2580,
+        "headings": 182,
+        "code_fence_markers": 476,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 51188,
+        "lines": 2580,
+        "headings": 182,
+        "code_fence_markers": 476,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_A.md",
+      "source_sha256": "c53d63688fadcae3f67388ac9e16d57d9895f0cf2c146091ecb5a0eeeee7ee18",
+      "normalized_sha256": "c53d63688fadcae3f67388ac9e16d57d9895f0cf2c146091ecb5a0eeeee7ee18",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 61188,
+        "lines": 2864,
+        "headings": 210,
+        "code_fence_markers": 504,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 61188,
+        "lines": 2864,
+        "headings": 210,
+        "code_fence_markers": 504,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_B.md",
+      "source_sha256": "22503ad5135e7f7d9049840d8cee99ebef80db89dffde2f32a86d327677f6dd1",
+      "normalized_sha256": "22503ad5135e7f7d9049840d8cee99ebef80db89dffde2f32a86d327677f6dd1",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 62394,
+        "lines": 2834,
+        "headings": 223,
+        "code_fence_markers": 454,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 62394,
+        "lines": 2834,
+        "headings": 223,
+        "code_fence_markers": 454,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_C.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_C.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_03_Module_03_Power_Strategies_parte_C.md",
+      "source_sha256": "ff116d1119ed3f6db2e317ef42bde41a5d5ece000505d9b84bca1c6627fc71de",
+      "normalized_sha256": "ff116d1119ed3f6db2e317ef42bde41a5d5ece000505d9b84bca1c6627fc71de",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38666,
+        "lines": 1436,
+        "headings": 123,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38666,
+        "lines": 1436,
+        "headings": 123,
+        "code_fence_markers": 198,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_A.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_A.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_A.md",
+      "source_sha256": "15a62cd033eff688e9cfa6aaceb9e20e53bd519854753503f576a3d9f6f0fa0c",
+      "normalized_sha256": "15a62cd033eff688e9cfa6aaceb9e20e53bd519854753503f576a3d9f6f0fa0c",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 55452,
+        "lines": 2614,
+        "headings": 197,
+        "code_fence_markers": 504,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 55452,
+        "lines": 2614,
+        "headings": 197,
+        "code_fence_markers": 504,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_B.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_B.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_B.md",
+      "source_sha256": "fa40ce25ccf830a4fcded9d0dc32c196e8e58339bb79f7b8780c11976d198f5e",
+      "normalized_sha256": "fa40ce25ccf830a4fcded9d0dc32c196e8e58339bb79f7b8780c11976d198f5e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 61452,
+        "lines": 2898,
+        "headings": 220,
+        "code_fence_markers": 534,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 61452,
+        "lines": 2898,
+        "headings": 220,
+        "code_fence_markers": 534,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_C.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_C.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_04_Module_04_Supply_Network_parte_C.md",
+      "source_sha256": "87ddf673850e4c3848c81892d985ccfa374fc5d68d3317b710c6d9cc516573b5",
+      "normalized_sha256": "87ddf673850e4c3848c81892d985ccfa374fc5d68d3317b710c6d9cc516573b5",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 41415,
+        "lines": 1786,
+        "headings": 135,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 41415,
+        "lines": 1786,
+        "headings": 135,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_05_Module_05_Power_States.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_05_Module_05_Power_States.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_05_Module_05_Power_States.md",
+      "source_sha256": "5a5edb9173c4a578886ba14918cb9905f2b4f06e99ff71bd1f1632de687c0bd1",
+      "normalized_sha256": "5a5edb9173c4a578886ba14918cb9905f2b4f06e99ff71bd1f1632de687c0bd1",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 46828,
+        "lines": 2331,
+        "headings": 171,
+        "code_fence_markers": 428,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 46828,
+        "lines": 2331,
+        "headings": 171,
+        "code_fence_markers": 428,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_06_Module_06_Fusion_Compiler_and_UPF.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_06_Module_06_Fusion_Compiler_and_UPF.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_06_Module_06_Fusion_Compiler_and_UPF.md",
+      "source_sha256": "61268e81f01f7a01118c5edb967ca838a2ca953cd2e29416568a871156571341",
+      "normalized_sha256": "61268e81f01f7a01118c5edb967ca838a2ca953cd2e29416568a871156571341",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 51429,
+        "lines": 2381,
+        "headings": 185,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 51429,
+        "lines": 2381,
+        "headings": 185,
+        "code_fence_markers": 328,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_07_Module_07_Fusion_Compiler_Reporting.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_07_Module_07_Fusion_Compiler_Reporting.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_07_Module_07_Fusion_Compiler_Reporting.md",
+      "source_sha256": "16dab9a9dd4814d3ce02bb587fec7740f2b59a5f39fb7cc7f3577a447b9ac6ac",
+      "normalized_sha256": "16dab9a9dd4814d3ce02bb587fec7740f2b59a5f39fb7cc7f3577a447b9ac6ac",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 65178,
+        "lines": 2944,
+        "headings": 232,
+        "code_fence_markers": 508,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 65178,
+        "lines": 2944,
+        "headings": 232,
+        "code_fence_markers": 508,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_08_FC_UPF_Fundamentals_2022_12_Lab_Guide.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_08_FC_UPF_Fundamentals_2022_12_Lab_Guide.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_08_FC_UPF_Fundamentals_2022_12_Lab_Guide.md",
+      "source_sha256": "effa7f2e2bc713ee741ccd6b78dbd06bdcf1fdb8c4006ab65670fd62189c86f9",
+      "normalized_sha256": "4a91c8bb5a16693543dea89f255cbf92688a8074f61331ccfc76a23956d04d8e",
+      "changed": true,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 40005,
+        "lines": 2005,
+        "headings": 152,
+        "code_fence_markers": 366,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 40004,
+        "lines": 2004,
+        "headings": 152,
+        "code_fence_markers": 366,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Fusion_Compiler_UPF_Fundamentals_09_Conhecimentos_Obtidos_da_Prova.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Fusion_Compiler_UPF_Fundamentals_09_Conhecimentos_Obtidos_da_Prova.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Fusion_Compiler_UPF_Fundamentals_09_Conhecimentos_Obtidos_da_Prova.md",
+      "source_sha256": "03b53ce07485aca139d0dbb5a2a6ae9930fec0bf6a07d7daaccdb9cdae774c61",
+      "normalized_sha256": "03b53ce07485aca139d0dbb5a2a6ae9930fec0bf6a07d7daaccdb9cdae774c61",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 17840,
+        "lines": 565,
+        "headings": 47,
+        "code_fence_markers": 78,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 17840,
+        "lines": 565,
+        "headings": 47,
+        "code_fence_markers": 78,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "11_Post_Synthesis_Output_Data.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\11_Post_Synthesis_Output_Data.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\11_Post_Synthesis_Output_Data.md",
+      "source_sha256": "288f640b96ed0b0160bdc6523d59dbdad63ec8d2d53b92a22adb623009a7c090",
+      "normalized_sha256": "288f640b96ed0b0160bdc6523d59dbdad63ec8d2d53b92a22adb623009a7c090",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 25218,
+        "lines": 1170,
+        "headings": 60,
+        "code_fence_markers": 214,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 25218,
+        "lines": 1170,
+        "headings": 60,
+        "code_fence_markers": 214,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "12_Design_Compiler_NXT_RTL_Synthesis_2021_06_Lab_Guide.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\12_Design_Compiler_NXT_RTL_Synthesis_2021_06_Lab_Guide.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\12_Design_Compiler_NXT_RTL_Synthesis_2021_06_Lab_Guide.md",
+      "source_sha256": "e15a4904efae368ad23ee6ded5b7e59ef92ca9ae21a93e4da54472ff01c7731b",
+      "normalized_sha256": "e15a4904efae368ad23ee6ded5b7e59ef92ca9ae21a93e4da54472ff01c7731b",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38957,
+        "lines": 2181,
+        "headings": 106,
+        "code_fence_markers": 452,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38957,
+        "lines": 2181,
+        "headings": 106,
+        "code_fence_markers": 452,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md",
+      "source_sha256": "1da16ee8759075976bf61c7200637d3605ac2db352877855531a7a91e3da72dd",
+      "normalized_sha256": "1da16ee8759075976bf61c7200637d3605ac2db352877855531a7a91e3da72dd",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 42041,
+        "lines": 2334,
+        "headings": 121,
+        "code_fence_markers": 440,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 42041,
+        "lines": 2334,
+        "headings": 121,
+        "code_fence_markers": 440,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_089_01_introduction_low_power.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_089_01_introduction_low_power.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_089_01_introduction_low_power.md",
+      "source_sha256": "6651f5913cfc38efaf44643ee8ab92954c39063d7f3774b44947a66538401dfa",
+      "normalized_sha256": "6651f5913cfc38efaf44643ee8ab92954c39063d7f3774b44947a66538401dfa",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39049,
+        "lines": 1398,
+        "headings": 79,
+        "code_fence_markers": 164,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39049,
+        "lines": 1398,
+        "headings": 79,
+        "code_fence_markers": 164,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_090_02_power_analysis_setup.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_090_02_power_analysis_setup.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_090_02_power_analysis_setup.md",
+      "source_sha256": "3b02dde3d9c5f1ab29cfcf4f7044d4a9bed1e6095442d6a98d38272e299455c0",
+      "normalized_sha256": "3b02dde3d9c5f1ab29cfcf4f7044d4a9bed1e6095442d6a98d38272e299455c0",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 60614,
+        "lines": 2164,
+        "headings": 161,
+        "code_fence_markers": 244,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 60614,
+        "lines": 2164,
+        "headings": 161,
+        "code_fence_markers": 244,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_091_03_power_optimization.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_091_03_power_optimization.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_091_03_power_optimization.md",
+      "source_sha256": "1530a232450f7fc90ae36677f424a4e0d62de1691f9d8d9fac870b4f4265a532",
+      "normalized_sha256": "1530a232450f7fc90ae36677f424a4e0d62de1691f9d8d9fac870b4f4265a532",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30105,
+        "lines": 965,
+        "headings": 74,
+        "code_fence_markers": 100,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30105,
+        "lines": 965,
+        "headings": 74,
+        "code_fence_markers": 100,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_092_04_clock_gating.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_092_04_clock_gating.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_092_04_clock_gating.md",
+      "source_sha256": "144f94a3bd80561d389d7f38970ace86581a8d8a2327c73a4de2810a12d5a43d",
+      "normalized_sha256": "144f94a3bd80561d389d7f38970ace86581a8d8a2327c73a4de2810a12d5a43d",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 45416,
+        "lines": 1727,
+        "headings": 124,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 45416,
+        "lines": 1727,
+        "headings": 124,
+        "code_fence_markers": 234,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_093_05_advanced_clock_gating_techniques.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_093_05_advanced_clock_gating_techniques.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_093_05_advanced_clock_gating_techniques.md",
+      "source_sha256": "24393d48022b81303e0e9f8b52f2092b5aecfdcdc7e7d77d3fadef01874f4bf3",
+      "normalized_sha256": "24393d48022b81303e0e9f8b52f2092b5aecfdcdc7e7d77d3fadef01874f4bf3",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 38316,
+        "lines": 1254,
+        "headings": 80,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 38316,
+        "lines": 1254,
+        "headings": 80,
+        "code_fence_markers": 178,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_094_06_self_gating.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_094_06_self_gating.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_094_06_self_gating.md",
+      "source_sha256": "a20843916a2af583c8db10c8fadc21d43281243a72800d8fd3fe7c07e02d875b",
+      "normalized_sha256": "a20843916a2af583c8db10c8fadc21d43281243a72800d8fd3fe7c07e02d875b",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30645,
+        "lines": 1035,
+        "headings": 73,
+        "code_fence_markers": 116,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30645,
+        "lines": 1035,
+        "headings": 73,
+        "code_fence_markers": 116,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_095_07_multibit.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_095_07_multibit.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_095_07_multibit.md",
+      "source_sha256": "5e61946065299f9b1018d2040cd97adb03afb581f443c0f56194267b1ad755f5",
+      "normalized_sha256": "5e61946065299f9b1018d2040cd97adb03afb581f443c0f56194267b1ad755f5",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 35992,
+        "lines": 1215,
+        "headings": 88,
+        "code_fence_markers": 158,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 35992,
+        "lines": 1215,
+        "headings": 88,
+        "code_fence_markers": 158,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_096_08_icc2_link_designware_minpower.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_096_08_icc2_link_designware_minpower.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_096_08_icc2_link_designware_minpower.md",
+      "source_sha256": "e06a34cc3d4e3517e154ade0cbef963f6eddb66b9ccf8fc58bb9eb9f912683d6",
+      "normalized_sha256": "e06a34cc3d4e3517e154ade0cbef963f6eddb66b9ccf8fc58bb9eb9f912683d6",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 30047,
+        "lines": 1053,
+        "headings": 61,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 30047,
+        "lines": 1053,
+        "headings": 61,
+        "code_fence_markers": 130,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_097_09_reporting.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_097_09_reporting.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_097_09_reporting.md",
+      "source_sha256": "fc6aa434049e3c6b674adeb901b952e9957ca99e9e969a03d0699f7fe14a6f0d",
+      "normalized_sha256": "fc6aa434049e3c6b674adeb901b952e9957ca99e9e969a03d0699f7fe14a6f0d",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 26378,
+        "lines": 754,
+        "headings": 86,
+        "code_fence_markers": 52,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 26378,
+        "lines": 754,
+        "headings": 86,
+        "code_fence_markers": 52,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "bloco_098_10_dc_nxt_low_power_lab_guide.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\bloco_098_10_dc_nxt_low_power_lab_guide.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\bloco_098_10_dc_nxt_low_power_lab_guide.md",
+      "source_sha256": "8c63c9ac162517a168540a19638b249a157b220ebbd127a19f8188f2c9c3d1e2",
+      "normalized_sha256": "8c63c9ac162517a168540a19638b249a157b220ebbd127a19f8188f2c9c3d1e2",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 39741,
+        "lines": 1703,
+        "headings": 174,
+        "code_fence_markers": 272,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 39741,
+        "lines": 1703,
+        "headings": 174,
+        "code_fence_markers": 272,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "Conhecimentos_obtidos_da_prova_DC_NXT_RTL_Synthesis.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\Conhecimentos_obtidos_da_prova_DC_NXT_RTL_Synthesis.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\Conhecimentos_obtidos_da_prova_DC_NXT_RTL_Synthesis.md",
+      "source_sha256": "96a9f40aae7318a72a022fee8529af2c57cf73d5d9489b057a5dc1e2722f0891",
+      "normalized_sha256": "96a9f40aae7318a72a022fee8529af2c57cf73d5d9489b057a5dc1e2722f0891",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 19298,
+        "lines": 1090,
+        "headings": 71,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 19298,
+        "lines": 1090,
+        "headings": 71,
+        "code_fence_markers": 232,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "Conhecimentos_Obtidos_da_Prova_Synopsys_EDA.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\Conhecimentos_Obtidos_da_Prova_Synopsys_EDA.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\Conhecimentos_Obtidos_da_Prova_Synopsys_EDA.md",
+      "source_sha256": "7da852c50772579a6ec0ee9f939651c810e3482b97ce32ef9964c5fecf6a735e",
+      "normalized_sha256": "7da852c50772579a6ec0ee9f939651c810e3482b97ce32ef9964c5fecf6a735e",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 28277,
+        "lines": 963,
+        "headings": 71,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 28277,
+        "lines": 963,
+        "headings": 71,
+        "code_fence_markers": 132,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    },
+    {
+      "file": "conhecimentos_prova_design_compiler_nxt_low_power.md",
+      "source": "C:\\Users\\maiko\\ci_expert\\mdsGPT\\conhecimentos_prova_design_compiler_nxt_low_power.md",
+      "normalized": "C:\\Users\\maiko\\ci_expert\\md_normalizado\\conhecimentos_prova_design_compiler_nxt_low_power.md",
+      "source_sha256": "b0eab17a5f7c4021cf00ee9ae9bc494d2218ef5bf29e65b5bf35ce139f672336",
+      "normalized_sha256": "b0eab17a5f7c4021cf00ee9ae9bc494d2218ef5bf29e65b5bf35ce139f672336",
+      "changed": false,
+      "replacement_counts": {},
+      "source_metrics": {
+        "chars": 29880,
+        "lines": 1331,
+        "headings": 82,
+        "code_fence_markers": 214,
+        "image_refs": 0,
+        "link_refs": 0
+      },
+      "normalized_metrics": {
+        "chars": 29880,
+        "lines": 1331,
+        "headings": 82,
+        "code_fence_markers": 214,
+        "image_refs": 0,
+        "link_refs": 0
+      }
+    }
+  ]
+}

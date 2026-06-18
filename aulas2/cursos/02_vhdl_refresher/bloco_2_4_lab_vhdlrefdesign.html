@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab VHDLRefDesign</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">02 VHDL Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">VHDL Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">02 VHDL Refresher</a><span>/</span>Lab VHDLRefDesign
+    </nav>
+
+    <h1 class="page-title">Lab VHDLRefDesign</h1>
+    <p class="lead">
+      Guia didático para ler e usar o laboratório VHDL de referência: entender a pasta,
+      escolher DUT/testbench, rodar o fluxo Synopsys e transformar simulação visual em verificação.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Este laboratório não é só uma coleção de circuitos pequenos. Ele é um treino de fluxo.
+            Você aprende a pegar um par <code>DUT + testbench</code>, dizer ao simulador quais arquivos
+            entram, elaborar o topo correto, executar a simulação e interpretar o resultado.
+          </p>
+          <pre><code>escolher exemplo -> ajustar filelist -> analisar VHDL -> elaborar testbench -> simular -> checar -> depurar</code></pre>
+          <div class="callout">
+            <strong>O ponto mais importante:</strong> o top da simulação quase sempre é o testbench,
+            não o DUT. O DUT é o bloco testado; o testbench é o ambiente que cria estímulos.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa da pasta</h2>
+          <p>
+            A raiz do lab tem poucos arquivos, mas cada um representa uma função comum em ambientes
+            maiores. Entender isso agora ajuda muito quando aparecerem makefiles no ambiente do professor.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Arquivo/pasta</th><th>Função prática</th><th>Como pensar</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>README</code></td><td>Explica requisitos e comandos básicos.</td><td>É o roteiro humano do lab.</td></tr>
+                <tr><td><code>setup.csh</code></td><td>Prepara variáveis e paths das ferramentas.</td><td>É a porta de entrada para VCS/Verdi no servidor.</td></tr>
+                <tr><td><code>.testscript</code></td><td>Confere integridade e versão das ferramentas.</td><td>É um teste de sanidade do pacote.</td></tr>
+                <tr><td><code>src.f</code></td><td>Lista os arquivos VHDL que entram na simulação.</td><td>É a filelist do exemplo ativo.</td></tr>
+                <tr><td><code>run.sim</code></td><td>Comandos enviados ao simulador durante a execução.</td><td>É o roteiro automático do <code>simv</code>.</td></tr>
+                <tr><td><code>synopsys_sim.setup</code></td><td>Configuração de bibliotecas do simulador.</td><td>Ajuda o VCS a encontrar/usar bibliotecas VHDL.</td></tr>
+                <tr><td><code>lab/</code></td><td>Contém os DUTs e seus testbenches.</td><td>É onde está o conteúdo técnico do laboratório.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details class="nested-detail">
+            <summary>Cuidado com o <code>setup.csh</code></summary>
+            <div class="detail-body">
+              <p>
+                O arquivo do pacote mostra paths de exemplo para versões Synopsys. Na UFRGS, esses caminhos
+                podem ser diferentes. Então use o arquivo como modelo conceitual, não como verdade absoluta:
+                ele ensina que você precisa colocar <code>vcs</code>, <code>vhdlan</code> e <code>verdi</code>
+                no ambiente antes de rodar o lab.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="filelist">O papel do <code>src.f</code></h2>
+          <p>
+            O <code>src.f</code> atual aponta para o exemplo do multiplexador:
+          </p>
+          <pre><code>mux8x1_tb.vhd
+mux8x1.vhd</code></pre>
+          <p>
+            Isso parece simples, mas é uma ideia central de fluxo RTL: em vez de digitar uma lista enorme
+            de arquivos no terminal, você guarda a lista em um arquivo versionável. Em projetos reais, a
+            filelist vira parte da infraestrutura do projeto.
+          </p>
+          <p>
+            A ordem também importa. Em VHDL, o simulador precisa conhecer declarações antes de elaborar
+            hierarquias que dependem delas. Para exemplos pequenos, a ordem pode passar despercebida; em
+            projetos maiores, uma filelist mal organizada vira erro de compilação.
+          </p>
+          <details class="expand-block">
+            <summary>Como trocar para outro exemplo</summary>
+            <div class="detail-body">
+              <p>
+                Para estudar o somador, você trocaria a filelist para algo como:
+              </p>
+              <pre><code>adder_32_tb.vhd
+adder_32.vhd</code></pre>
+              <p>
+                Depois, na etapa de elaboração, o top precisa ser a entity do testbench. No caso do somador,
+                o arquivo indica <code>adder_32bit_tb</code>. Essa é uma regra de sobrevivência:
+                sempre abra o <code>*_tb.vhd</code> e confirme o nome real da entity.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="fluxo">Fluxo Synopsys do lab</h2>
+          <p>
+            O README mostra o fluxo em três comandos. A forma exata pode variar, mas o modelo mental é este:
+          </p>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. Analisar</strong>
+              <code>vhdlan</code> lê VHDL, compila unidades e encontra erros de linguagem.
+            </div>
+            <div class="flow-step">
+              <strong>2. Elaborar</strong>
+              <code>vcs</code> monta a hierarquia a partir do top de simulação.
+            </div>
+            <div class="flow-step">
+              <strong>3. Executar</strong>
+              <code>simv</code> roda a simulação e produz log/dump/wave.
+            </div>
+          </div>
+          <pre><code>vhdlan adder.vhd adder_tb.vhd -kdb
+vcs adder_tb -kdb -debug_access
+./simv -ucli -i run.sim</code></pre>
+          <p>
+            <code>vhdlan</code> responde: "os arquivos VHDL fazem sentido para o compilador?".
+            <code>vcs</code> responde: "existe uma hierarquia executável a partir desse testbench?".
+            <code>simv</code> responde: "o comportamento ao longo do tempo é o esperado?".
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_testbench_three_step_flow.png" alt="Diagrama com testbench, DUT e fluxo em três passos">
+            <figcaption>
+              Figura útil porque mostra a relação entre ambiente de teste e fluxo de execução: o testbench envolve o DUT,
+              e a ferramenta passa por análise, elaboração e simulação.
+            </figcaption>
+          </figure>
+          <details class="nested-detail">
+            <summary>O que o <code>run.sim</code> faz?</summary>
+            <div class="detail-body">
+              <pre><code>dump -add /
+run 500ns
+q</code></pre>
+              <p>
+                Esses comandos pedem para adicionar sinais ao dump, rodar 500 ns e sair. Isso automatiza
+                uma sessão que você poderia fazer manualmente. Em um makefile, esse arquivo seria chamado
+                por uma regra de simulação.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="mux">Exemplo guiado: <code>mux8x1</code></h2>
+          <p>
+            O exemplo padrão do lab é um mux 8:1. A interface é pequena e por isso é ótima para treinar
+            leitura RTL sem se perder:
+          </p>
+          <pre><code>i : in  STD_LOGIC_VECTOR (7 downto 0);
+s : in  STD_LOGIC_VECTOR (2 downto 0);
+f : out STD_LOGIC;</code></pre>
+          <p>
+            Em hardware, isso significa: oito possíveis entradas de 1 bit, um seletor de 3 bits e uma saída.
+            O seletor escolhe qual bit de <code>i</code> aparece em <code>f</code>.
+          </p>
+          <pre><code>when "000" => f <= i(0);
+when "001" => f <= i(1);
+when "010" => f <= i(2);
+...
+when others => f <= i(7);</code></pre>
+          <p>
+            Didaticamente, este é um bom mux porque o mapeamento fica explícito. A cláusula
+            <code>others</code> também fecha a atribuição de saída e evita deixar o sinal sem definição.
+          </p>
+          <details class="expand-block" open>
+            <summary>O testbench do mux</summary>
+            <div class="detail-body">
+              <p>
+                O testbench fixa a entrada com um padrão conhecido e varre todos os seletores:
+              </p>
+              <pre><code>i <= "10101010";
+
+s <= "000"; wait for 10 ns;
+s <= "001"; wait for 10 ns;
+...
+s <= "111"; wait for 10 ns;</code></pre>
+              <p>
+                Isso é bom para ver waveform: a cada 10 ns, <code>f</code> deve acompanhar o bit de
+                <code>i</code> escolhido por <code>s</code>. Mas ainda é fraco como regressão, porque não
+                acusa erro automaticamente.
+              </p>
+            </div>
+          </details>
+          <details class="expand-block">
+            <summary>Como transformar em teste self-checking</summary>
+            <div class="detail-body">
+              <p>
+                O teste ideal não dependeria de olhar a waveform. Depois de cada seletor, ele compararia
+                <code>f</code> com o bit esperado:
+              </p>
+              <pre><code>assert f = i(to_integer(unsigned(s)))
+    report "mux output mismatch"
+    severity error;</code></pre>
+              <p>
+                A mensagem exata pode variar conforme a versão de VHDL e os packages usados, mas a ideia é
+                essa: converter o seletor em índice e checar a saída contra o valor esperado.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="adder">Exemplo guiado: <code>adder_32</code></h2>
+          <p>
+            O somador de 32 bits ensina uma regra que aparece o tempo todo em RTL: largura de sinal é
+            parte do projeto. Se você soma dois operandos de 32 bits e ainda considera carry-in, o resultado
+            completo precisa de 33 bits.
+          </p>
+          <pre><code>signal ca_sum : std_logic_vector(32 downto 0);</code></pre>
+          <p>
+            O design calcula em uma largura interna maior e depois separa saída e carry:
+          </p>
+          <pre><code>adder_out <= ca_sum(31 downto 0);
+carry_out <= ca_sum(32);</code></pre>
+          <p>
+            Essa escolha evita perder informação. Um erro comum em RTL iniciante é fazer a soma diretamente
+            na largura da saída e só depois tentar descobrir se houve carry. Quando a largura já truncou,
+            a informação pode ter sumido.
+          </p>
+          <details class="nested-detail">
+            <summary>Como estudar esse exemplo na waveform</summary>
+            <div class="detail-body">
+              <p>
+                Procure casos em que a soma ultrapassa <code>0xffffffff</code>. Nesses momentos,
+                <code>adder_out</code> mostra os 32 bits baixos e <code>carry_out</code> deve indicar o bit
+                extra. Não olhe apenas o valor da saída; olhe também a combinação saída + carry.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arbiter">Exemplo guiado: <code>arbiter</code></h2>
+          <p>
+            O arbiter é o exemplo mais parecido com controle real. Enquanto mux e adder são combinacionais,
+            o arbiter envolve estado, pedidos e concessões. Ele treina leitura de FSM.
+          </p>
+          <pre><code>type state_type is (init_state, client1, client2);
+signal nxt_state, pre_state : state_type;</code></pre>
+          <p>
+            Ao ler uma FSM, procure três coisas: o processo sequencial que registra o estado, a lógica
+            combinacional que decide o próximo estado e a lógica de saída que gera os grants.
+          </p>
+          <div class="callout">
+            <strong>Leitura crítica:</strong> em uma inspeção rápida, o código do arbiter parece ter um trecho
+            suspeito ao escolher entre requests dos clientes. Isso é ótimo para estudo: o lab não deve ser lido
+            como texto sagrado, e sim como RTL que precisa ser questionado e verificado.
+          </div>
+          <details class="expand-block">
+            <summary>Perguntas que o testbench deveria responder</summary>
+            <div class="detail-body">
+              <ul class="key-list compact-list">
+                <li>O reset leva a FSM para o estado inicial?</li>
+                <li>Cliente 1 tem prioridade quando ambos pedem?</li>
+                <li>Cliente 2 recebe grant quando cliente 1 não pede?</li>
+                <li>O grant muda no ciclo correto ou combinacionalmente?</li>
+                <li>Existe algum cenário em que os dois grants ficam ativos indevidamente?</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro-designs">Roteiro dos designs</h2>
+          <p>
+            O lab tem dez pares principais. Em vez de estudar tudo como lista seca, use a tabela como uma
+            trilha de dificuldade:
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Exemplo</th><th>Conceito que treina</th><th>Melhor pergunta de estudo</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>mux8x1</code></td><td>Mux combinacional</td><td>A saída cobre todos os seletores?</td></tr>
+                <tr><td><code>demux1x8</code></td><td>Distribuição combinacional</td><td>Somente uma saída ativa por seleção?</td></tr>
+                <tr><td><code>encoder4x2</code></td><td>Codificação</td><td>O que acontece se duas entradas estão ativas?</td></tr>
+                <tr><td><code>decoder2x4</code></td><td>Decodificação/one-hot</td><td>O one-hot é completo?</td></tr>
+                <tr><td><code>adder_32</code></td><td>Aritmética e carry</td><td>A largura interna preserva overflow?</td></tr>
+                <tr><td><code>multiplier</code></td><td>Produto e largura</td><td>O resultado tem largura suficiente?</td></tr>
+                <tr><td><code>counter</code></td><td>Sequencial, clock, overflow</td><td>Quando a flag muda?</td></tr>
+                <tr><td><code>updowncounter</code></td><td>Controle de direção</td><td>A troca subir/descer é bem definida?</td></tr>
+                <tr><td><code>arbiter</code></td><td>FSM e prioridade</td><td>Requests simultâneos são resolvidos corretamente?</td></tr>
+                <tr><td><code>matrixmult</code></td><td>Aritmética composta</td><td>Há risco de largura insuficiente nos produtos?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="limites">Limite dos testbenches do lab</h2>
+          <p>
+            A leitura dos arquivos mostra que muitos testbenches são bons para demonstração, mas ainda
+            simples: eles aplicam estímulos com <code>wait</code> e ajudam a observar a resposta, porém nem
+            sempre usam <code>assert</code> para declarar sucesso ou falha.
+          </p>
+          <pre><code>testbench demonstrativo:
+  aplica estímulos
+  deixa você observar a waveform
+
+testbench self-checking:
+  aplica estímulos
+  calcula o esperado
+  compara automaticamente
+  imprime falha quando há divergência</code></pre>
+          <p>
+            Para prova e projeto, essa diferença é muito importante. Simular não é o mesmo que verificar.
+            Uma simulação que roda até o fim sem erro de ferramenta ainda pode estar testando pouco.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="makefile">Ligação com makefile</h2>
+          <p>
+            O professor insiste em makefile porque ele automatiza exatamente o que este lab faz manualmente.
+            Um makefile bem feito vira um painel de comandos reproduzíveis:
+          </p>
+          <pre><code>make sim    -> compila/elabora/executa simulação
+make waves  -> abre Verdi com dump correto
+make clean  -> remove arquivos gerados
+make test   -> roda uma regressão pequena</code></pre>
+          <p>
+            O conteúdo técnico continua sendo RTL e testbench, mas o makefile evita que cada execução dependa
+            de memória ou digitação manual. Esse é o elo entre o lab Synopsys e o ambiente novo do professor.
+          </p>
+          <details class="expand-block">
+            <summary>Como pensar quando algo falha</summary>
+            <div class="detail-body">
+              <ul class="key-list compact-list">
+                <li>Falhou no <code>vhdlan</code>? Procure arquivo ausente, ordem da filelist, sintaxe ou package.</li>
+                <li>Falhou no <code>vcs</code>? Procure top errado, entity inexistente ou biblioteca não mapeada.</li>
+                <li>Falhou no <code>simv</code>? Procure erro de runtime, assert, tempo insuficiente ou comando de run.</li>
+                <li>O log passou mas o resultado parece errado? Abra waveform e transforme a suspeita em checker.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro-estudo">Roteiro de estudo recomendado</h2>
+          <ol>
+            <li>Leia o <code>README</code> e identifique a versão de VCS/Verdi esperada.</li>
+            <li>Abra o <code>src.f</code> e confirme qual exemplo está ativo.</li>
+            <li>Abra o <code>*_tb.vhd</code> e confirme a entity top do testbench.</li>
+            <li>Rode o exemplo padrão do mux no servidor, se o ambiente estiver configurado.</li>
+            <li>Abra a waveform e confira seletor, entrada e saída.</li>
+            <li>Troque para <code>adder_32</code> e observe saída + carry.</li>
+            <li>Troque para <code>arbiter</code> e desenhe a FSM em papel.</li>
+            <li>Escolha um exemplo e adicione um <code>assert</code> simples.</li>
+            <li>Depois disso, volte ao ambiente do professor e procure onde esse fluxo foi automatizado.</li>
+          </ol>
+        </section>
+
+        <section class="section">
+          <h2 id="perguntas">Perguntas para fixar</h2>
+          <div class="quiz-card">
+            <strong>Qual arquivo escolhe o exemplo compilado por padrão?</strong>
+            <p class="answer"><code>src.f</code>, porque ele lista os arquivos VHDL que entram no fluxo.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Por que o top de elaboração deve ser o testbench?</strong>
+            <p class="answer">Porque o testbench instancia o DUT e gera estímulos. O DUT sozinho não cria cenário de simulação.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Qual é a diferença entre rodar simulação e verificar?</strong>
+            <p class="answer">Rodar é executar o tempo. Verificar é comparar comportamento observado com comportamento esperado.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Por que o adder usa 33 bits internamente?</strong>
+            <p class="answer">Para preservar o carry-out da soma de operandos de 32 bits com carry-in.</p>
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/04_VHDL_Reference_Designs.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_VHDL_Reference_Designs.md">guia passo a passo</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_VHDL_Reference_Designs.md">mapa dos arquivos</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_2_3_vhdl_reference_designs.html">Anterior: VHDL Reference Designs</a>
+          <a href="../03_systemverilog_refresher/index.html">Próximo curso: SystemVerilog</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

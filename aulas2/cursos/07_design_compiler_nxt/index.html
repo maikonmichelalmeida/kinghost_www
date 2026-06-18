@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>07 Design Compiler NXT</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">07 Design Compiler NXT</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="../04_rtl_design_synthesis/index.html">Síntese RTL</a>
+        <a href="index.html">DC NXT</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span>07 Design Compiler NXT
+    </nav>
+
+    <h1 class="page-title">07 Design Compiler NXT</h1>
+    <p class="lead">
+      Curso focado no fluxo moderno de síntese física: topographical mode, bibliotecas lógicas e físicas,
+      floorplan, constraints, análise de resultados e exportação para o fluxo físico Synopsys.
+    </p>
+
+    <section class="study-hero">
+      <h2>Por que este curso entra agora?</h2>
+      <p>
+        O curso 04 já explicou SDC, reports e técnicas de síntese. Este curso 07 entra mais perto da ferramenta real:
+        como abrir o Design Compiler NXT, como preparar o ambiente, por que a síntese passa a considerar informação física
+        e como transformar um script em uma execução reproduzível no servidor.
+      </p>
+      <p>
+        Para o laboratório do professor, esta é a ponte entre "meu RTL simula" e "meu bloco entra em um fluxo automatizado
+        com Makefile, Tcl, SDC, bibliotecas, reports e artefatos de saída".
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Aulas Processadas</h2>
+      <div class="lesson-grid">
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Introdução ao DC NXT e Physical Synthesis</h3>
+          <p>
+            Topographical mode, coarse placement, virtual routing, floorplan, fluxo pre/post-floorplan,
+            interfaces do <code>dcnxt_shell</code> e relação com Makefile/Tcl.
+          </p>
+          <a class="button-link" href="bloco_7_1_introducao_physical_synthesis.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Design Setup for Physical Synthesis</h3>
+          <p>
+            Página única das partes A, B e C: bibliotecas <code>.db</code>, leitura do RTL,
+            <code>check_design</code>, NDM, technology file, TLUPlus, design library, floorplan e quizzes.
+          </p>
+          <a class="button-link" href="bloco_7_2_design_setup_physical_synthesis.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Accessing Design and Library Objects</h3>
+          <p>
+            Objetos do banco Synopsys: designs, cells, ports, pins, nets, clocks, libraries,
+            collections, filtros e comandos <code>get_*</code>.
+          </p>
+          <a class="button-link" href="bloco_7_3_accessing_design_and_library_objects.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status todo">Próximo</span>
+          <h3>Constraints - Reg-to-Reg and I/O Timing</h3>
+          <p>
+            Página única das partes A e B: clocks, caminhos reg-to-reg, input/output delay,
+            incerteza, latência, loads e constraints de interface.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Mapa do Curso</h2>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <strong>1. Abrir a ferramenta</strong>
+          Entender <code>dcnxt_shell</code>, GUI e execução batch.
+        </div>
+        <div class="flow-step">
+          <strong>2. Preparar setup</strong>
+          Informar bibliotecas, caminhos, RTL, floorplan e constraints.
+        </div>
+        <div class="flow-step">
+          <strong>3. Sintetizar e analisar</strong>
+          Rodar <code>compile_ultra</code>, ler reports e escrever dados para ICC II.
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Relação com o projeto</h2>
+      <p>
+        A aplicação prática é construir um alvo de síntese para o nosso bloco/CPU que seja auditável:
+        filelists separadas, SDC mínimo, script Tcl versionado, log preservado, reports guardados e saída organizada.
+        Isso conversa diretamente com o pedido do professor de trabalhar com Makefiles e com o ambiente clonado.
+      </p>
+    </section>
+
+    <nav class="pager" aria-label="Navegação entre páginas">
+      <a href="../../index.html">Voltar para cursos</a>
+      <a href="bloco_7_3_accessing_design_and_library_objects.html">Última aula processada</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base em Markdown de aulas2.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

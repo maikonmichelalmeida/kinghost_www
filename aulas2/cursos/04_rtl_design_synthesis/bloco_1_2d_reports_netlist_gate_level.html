@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reports, Netlist e Gate-Level Simulation</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Reports, Netlist e GL
+    </nav>
+
+    <h1 class="page-title">Reports, Netlist e Gate-Level Simulation</h1>
+    <p class="lead">
+      Síntese não termina quando o DC_NXT imprime "concluído". O trabalho real começa na leitura dos reports e na
+      conferência dos artefatos: netlist mapeada, SDC final, SDF, SVF e filelists que permitem simular o circuito já
+      convertido para células de biblioteca.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Esta aula ensina o que olhar depois de <code>compile_ultra</code>. O ponto não é decorar uma lista de
+            comandos, mas entender o papel de cada arquivo e de cada report. Um estudante de RTL costuma pensar no
+            design como módulos Verilog/SystemVerilog; depois da síntese, o mesmo design passa a existir como uma rede
+            de células reais, constraints exportadas e atrasos anotáveis.
+          </p>
+          <p>
+            Para o nosso projeto, este bloco é o elo entre <code>make synth</code> e <code>make sim GL=1</code>. Primeiro
+            o DC_NXT gera <code>top_cpu_mapped.v</code>, <code>top_cpu_final.sdc</code> e <code>top_cpu_delays.sdf</code>.
+            Depois o VCS precisa compilar a netlist, a biblioteca de standard cells, um testbench compatível e, se
+            quisermos simulação temporizada, aplicar o SDF na instância correta do DUT.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="mapa">Mapa mental do pós-síntese</h2>
+          <p>
+            A síntese pega uma descrição RTL e tenta produzir uma implementação equivalente em células da biblioteca.
+            O que sai não é um único arquivo mágico. Sai um pacote de evidências: alguns arquivos são para outras
+            ferramentas consumirem, outros são para você auditar o resultado.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>1. Reports</strong><p>Mostram timing, área, potência, QoR, violações e pistas de debug.</p></div>
+            <div class="flow-step"><strong>2. Netlist</strong><p>Verilog gate-level com células reais, por exemplo <code>top_cpu_mapped.v</code>.</p></div>
+            <div class="flow-step"><strong>3. SDC final</strong><p>Constraints exportadas para o próximo estágio do fluxo.</p></div>
+            <div class="flow-step"><strong>4. SDF</strong><p>Atrasos usados para simulação pós-síntese temporizada.</p></div>
+            <div class="flow-step"><strong>5. SVF</strong><p>Histórico de transformações para Formality, quando essa etapa entrar.</p></div>
+            <div class="flow-step"><strong>6. GL sim</strong><p>VCS executa testbench contra a netlist mapeada.</p></div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Ideia central:</strong> report responde "o resultado é bom?". Netlist, SDC, SDF e SVF respondem
+            "como levo esse resultado para o próximo passo?".
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="reports-primeiro">Por que ler reports antes de comemorar</h2>
+          <p>
+            A ferramenta pode gerar netlist mesmo com problemas. Por isso, uma rodada de síntese só é saudável quando
+            você consegue responder quatro perguntas:
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>O timing fecha?</h3>
+              <p>Olhe <code>report_constraint</code>, <code>report_timing</code> e <code>report_qor</code>. WNS negativo significa violação.</p>
+            </article>
+            <article class="concept-card">
+              <h3>O design está mapeado?</h3>
+              <p>A netlist precisa usar células da biblioteca alvo, não estruturas genéricas ou referências sem resolver.</p>
+            </article>
+            <article class="concept-card">
+              <h3>O custo é aceitável?</h3>
+              <p><code>report_area</code> e <code>report_power</code> mostram se a solução ficou grande ou cara demais.</p>
+            </article>
+            <article class="concept-card">
+              <h3>A saída é consumível?</h3>
+              <p>Nomes, assigns, SDC, SDF e filelists precisam estar limpos para VCS, backend e Formality.</p>
+            </article>
+          </div>
+
+          <pre><code>report_constraint -all_violators &gt; ../rpt/top_cpu_constraints.rpt
+report_timing -max_paths 20      &gt; ../rpt/top_cpu_timing.rpt
+report_area -hierarchy           &gt; ../rpt/top_cpu_area.rpt
+report_power                     &gt; ../rpt/top_cpu_power.rpt
+report_qor                       &gt; ../rpt/top_cpu_qor.rpt</code></pre>
+
+          <p>
+            No ambiente do professor, o script atual já escreve <code>area</code>, <code>timing</code>, <code>power</code>
+            e <code>qor</code>. Para uma auditoria mais forte, vale acrescentar também <code>report_constraint
+            -all_violators</code>, porque ele lista violações de modo mais direto.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="timing-report">Como ler um timing report sem se perder</h2>
+          <p>
+            Um <code>report_timing</code> é uma narrativa de um caminho. Ele diz de onde o dado saiu, por onde passou,
+            quando chegou, quando precisava chegar e qual foi o slack. O segredo é não ler como texto corrido; leia como
+            uma conta.
+          </p>
+
+          <div class="timing-map">
+            <div class="timing-node internal">Launch flop</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Lógica combinacional</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node">Roteamento estimado</div>
+            <div class="timing-arrow">-&gt;</div>
+            <div class="timing-node internal">Capture flop</div>
+          </div>
+
+          <div class="equation">
+            slack = data required time - data arrival time
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Parte do report</th><th>O que significa</th><th>Como interpretar</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Path information</td>
+                  <td>Mostra startpoint, endpoint, clock, tipo do path e grupo.</td>
+                  <td>Confirme se o caminho é o que você esperava: reg-to-reg, input-to-reg, reg-to-output etc.</td>
+                </tr>
+                <tr>
+                  <td>Path delay</td>
+                  <td>Mostra incrementos de atraso em células e nets.</td>
+                  <td>Veja onde o tempo é gasto: porta lenta, fanout alto, transição ruim, net longa.</td>
+                </tr>
+                <tr>
+                  <td>Path required</td>
+                  <td>Mostra o prazo imposto pelo clock e pelas margens.</td>
+                  <td>Se a constraint estiver irreal, o report fica severo ou frouxo demais.</td>
+                </tr>
+                <tr>
+                  <td>Summary</td>
+                  <td>Mostra arrival, required e slack.</td>
+                  <td>Slack positivo passa. Slack negativo falha. Slack zero fica no limite.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block">
+            <summary>Diferença entre <code>report_constraint</code> e <code>report_timing</code></summary>
+            <div class="detail-body">
+              <p>
+                <code>report_constraint</code> é bom para triagem. Ele responde rapidamente quais regras foram violadas:
+                setup, hold, max transition, max capacitance, max fanout e outras. Já <code>report_timing</code> é bom
+                para investigação. Ele mostra o caminho detalhado que explica por que uma violação aconteceu.
+              </p>
+              <p>
+                Em uma rotina saudável, você roda primeiro <code>report_constraint -all_violators</code> para ver o
+                quadro geral. Depois escolhe as violações importantes e usa <code>report_timing</code> com filtros para
+                entender cada caminho.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="qor">QoR: o placar geral da rodada</h2>
+          <p>
+            <code>report_qor</code> é um placar. Ele não substitui reports detalhados, mas dá uma visão rápida do estado
+            do design. Para estudo e laboratório, os três termos mais importantes são:
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>WNS</h3>
+              <p>Worst Negative Slack. É o pior slack do design. Se está negativo, existe pelo menos um caminho falhando.</p>
+            </article>
+            <article class="concept-card">
+              <h3>TNS</h3>
+              <p>Total Negative Slack. Soma das violações negativas. Ajuda a saber se o problema é pontual ou espalhado.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Violating paths</h3>
+              <p>Quantidade de caminhos com violação. Muitos caminhos falhando sugerem constraint ruim ou arquitetura inadequada.</p>
+            </article>
+          </div>
+
+          <p>
+            Um único caminho com WNS pequeno pode ser tratado com otimização incremental, ajuste de path group ou pequena
+            mudança RTL. Vários caminhos com TNS grande geralmente indicam problema de SDC, clock agressivo, fanout,
+            reset/enable mal modelado ou arquitetura que precisa ser repensada.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="artefatos">Artefatos que saem do DC_NXT</h2>
+          <p>
+            O curso chama esta etapa de <strong>post-synthesis output data</strong>. Em linguagem prática: são os arquivos
+            que permitem levar a síntese para simulação, layout, análise de potência e equivalência formal.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Artefato</th><th>Exemplo no ambiente</th><th>Para que serve</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Netlist gate-level</td>
+                  <td><code>tools/dc_nxt/outputs/top_cpu_mapped.v</code></td>
+                  <td>Implementação em células da biblioteca. É o "design sintetizado" em Verilog estrutural.</td>
+                </tr>
+                <tr>
+                  <td>SDC final</td>
+                  <td><code>tools/dc_nxt/outputs/top_cpu_final.sdc</code></td>
+                  <td>Constraints exportadas para próximas ferramentas ou para reabrir a visão sintetizada.</td>
+                </tr>
+                <tr>
+                  <td>SDF</td>
+                  <td><code>tools/dc_nxt/outputs/top_cpu_delays.sdf</code></td>
+                  <td>Atrasos de células e caminhos para simulação gate-level temporizada.</td>
+                </tr>
+                <tr>
+                  <td>SVF</td>
+                  <td><code>tools/dc_nxt/outputs/top_cpu.svf</code></td>
+                  <td>Guia para Formality entender transformações feitas pela síntese.</td>
+                </tr>
+                <tr>
+                  <td>Reports</td>
+                  <td><code>tools/dc_nxt/rpt/top_cpu_*.rpt</code></td>
+                  <td>Auditoria humana: timing, área, potência e qualidade geral.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>change_names -rules verilog -hierarchy
+
+write -format verilog -hierarchy \
+  -output ../outputs/top_cpu_mapped.v
+
+write_sdc -nosplit ../outputs/top_cpu_final.sdc
+
+write_sdf ../outputs/top_cpu_delays.sdf
+
+set_svf -off</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="netlist">O que é a netlist gate-level</h2>
+          <p>
+            A netlist gate-level é um Verilog estrutural. Em vez de descrever comportamento como "some A e B", ela
+            instancia células da biblioteca: buffers, inversores, portas, multiplexadores, flip-flops, somadores
+            otimizados e células de datapath. O nome "gate-level" não significa apenas portas primitivas; significa
+            "nível de células da tecnologia".
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>RTL</h3>
+              <pre><code>always_ff @(posedge clk) begin
+  acc &lt;= a + b;
+end</code></pre>
+              <p>Expressa intenção funcional.</p>
+            </div>
+            <div class="note-box">
+              <h3>Gate-level</h3>
+              <pre><code>DFFX1_LVT U_reg (.D(n42), .CK(clk), .Q(acc));
+ADDFX2_LVT U_add (.A(a), .B(b), .S(n42));</code></pre>
+              <p>Expressa implementação mapeada para biblioteca.</p>
+            </div>
+          </div>
+
+          <p>
+            Essa netlist pode ser mais difícil de ler do que o RTL. Isso é normal. A função dela não é ser bonita para
+            humanos; é ser consumida por simulador, ferramenta física e ferramentas de verificação.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="limpeza-netlist">Por que a netlist precisa ser limpa</h2>
+          <p>
+            Os slides dão bastante atenção a detalhes que parecem pequenos: <code>assign</code> na netlist, nets
+            com múltiplas portas, <code>tri</code>, nomes com caracteres especiais e portas quebradas bit a bit. Esses
+            detalhes são importantes porque ferramentas físicas e de verificação podem ser mais rígidas que o simulador.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>Multiple port nets e feed-through</h3>
+              <div class="command-body">
+                <p>
+                  Quando duas portas hierárquicas ficam ligadas diretamente ao mesmo sinal, a netlist pode gerar algo
+                  como <code>assign SUM_2 = SUM_1;</code>. Em um feed-through, uma entrada atravessa o bloco diretamente
+                  para uma saída, como <code>assign OUT_1 = IN_1;</code>.
+                </p>
+                <pre><code>set_fix_multiple_port_nets -all -buffer_constants</code></pre>
+                <p>
+                  A intenção é separar conexões problemáticas durante o compile, normalmente inserindo buffers ou
+                  reestruturando a conexão para uma forma mais aceitável.
+                </p>
+              </div>
+            </div>
+
+            <div class="command-block">
+              <h3><code>tri</code> versus <code>wire</code></h3>
+              <div class="command-body">
+                <p>
+                  O material do curso destaca que o DC_NXT pode escrever <code>assign</code> para sinais <code>tri</code>.
+                  Se o objetivo é exportar uma netlist mais compatível, converta para <code>wire</code> na saída.
+                </p>
+                <pre><code>set_app_var verilogout_no_tri true</code></pre>
+              </div>
+            </div>
+
+            <div class="command-block">
+              <h3>Nomes Verilog seguros</h3>
+              <div class="command-body">
+                <p>
+                  Nomes como <code>\bus[7]</code> podem ser aceitos por Verilog, mas atrapalhar outras ferramentas.
+                  Antes de escrever netlist, sanitize a nomenclatura.
+                </p>
+                <pre><code>change_names -rules verilog -hierarchy</code></pre>
+              </div>
+            </div>
+
+            <div class="command-block">
+              <h3>Portas estruturadas e bit-blasting</h3>
+              <div class="command-body">
+                <p>
+                  Em designs SystemVerilog com structs/interfaces, uma porta pode ser quebrada em muitos sinais escalares.
+                  Às vezes isso é esperado; às vezes destrói legibilidade e dificulta integração.
+                </p>
+                <pre><code>define_name_rules verilog -preserve_struct_ports
+change_names -hierarchy -rules verilog</code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="sdc-final">SDC final: por que exportar outro SDC</h2>
+          <p>
+            O SDC que você escreve antes da síntese é a intenção de timing. O SDC exportado depois da síntese é a versão
+            que a ferramenta entrega para o próximo estágio. Ele pode expandir collections, remover diretivas internas e
+            deixar o arquivo mais apropriado para outras ferramentas.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Cuidado conceitual:</strong> comandos como <code>group_path</code>, <code>set_ungroup</code> e
+            ajustes de custo ajudam o DC_NXT a otimizar, mas não são necessariamente constraints universais para layout.
+            Por isso o curso diferencia scripts de síntese de SDC exportado.
+          </div>
+
+          <pre><code>write_sdc -nosplit ../outputs/top_cpu_final.sdc</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="sdf">SDF: atrasos para simulação gate-level</h2>
+          <p>
+            SDF significa Standard Delay Format. Ele carrega atrasos que o simulador pode anotar na netlist. Sem SDF,
+            uma simulação gate-level ainda pode verificar conectividade e funcionalidade estrutural, mas não representa
+            tão bem o comportamento temporizado pós-síntese.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>Netlist</strong><p>Quais células existem e como estão conectadas.</p></div>
+            <div class="flow-step"><strong>Biblioteca Verilog</strong><p>Modelos das células, por exemplo <code>saed32nm_lvt.v</code>.</p></div>
+            <div class="flow-step"><strong>SDF</strong><p>Atrasos anotados na instância do DUT.</p></div>
+          </div>
+
+          <pre><code>vcs ... -f ../../../verif/filelist_gl.f \
+  -top top_tb_gl \
+  -sdf max:top_tb_gl.uut:../../dc_nxt/outputs/top_cpu_delays.sdf</code></pre>
+
+          <p>
+            A string depois de <code>-sdf</code> tem três ideias: tipo de atraso (<code>max</code>, <code>min</code> ou
+            <code>typ</code>), caminho hierárquico da instância do DUT no testbench e arquivo SDF. Se o caminho
+            hierárquico estiver errado, o simulador pode compilar, mas não anotar os atrasos como você esperava.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="gl-sim">Gate-Level Simulation no ambiente do professor</h2>
+          <p>
+            No clone do professor, a simulação RTL e a simulação gate-level compartilham o mesmo Makefile de VCS, mas
+            mudam de filelist e testbench quando <code>GL=1</code>.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Modo</th><th>Filelist</th><th>Top de testbench</th><th>Design simulado</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RTL</td>
+                  <td><code>verif/filelist.f</code></td>
+                  <td><code>top_tb</code></td>
+                  <td>Arquivos de <code>rtl/</code></td>
+                </tr>
+                <tr>
+                  <td>Gate-level</td>
+                  <td><code>verif/filelist_gl.f</code></td>
+                  <td><code>top_tb_gl</code></td>
+                  <td><code>saed32nm_lvt.v</code> + <code>top_cpu_mapped.v</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>cd PROJECT_ENVIROMENT/module_CPU_pdk_SAED/blocks/CPU
+make sim
+make synth
+make sim GL=1</code></pre>
+
+          <p>
+            A ordem acima é importante. Se você roda <code>make sim GL=1</code> antes de <code>make synth</code>, a
+            netlist e o SDF podem ainda não existir. Nesse caso, o VCS não tem o design mapeado para compilar ou não tem
+            os atrasos para anotar.
+          </p>
+
+          <details class="expand-block" open>
+            <summary>Para abrir waveform com Verdi</summary>
+            <div class="detail-body">
+              <p>
+                O Makefile de VCS usa a variável <code>GUI</code>. Portanto, a forma natural de tentar abrir simulação
+                com interface é:
+              </p>
+              <pre><code>make sim GUI=1
+make sim GL=1 GUI=1</code></pre>
+              <p>
+                Se a licença do Verdi não estiver disponível, a simulação pode rodar sem abrir a interface, ou a abertura
+                do Verdi pode falhar mesmo com os arquivos corretos. Isso é diferente de erro de RTL ou erro de síntese.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="filelist-gl">Por que existe uma filelist gate-level separada</h2>
+          <p>
+            O testbench RTL normalmente instancia o mesmo top do design, mas compila os fontes RTL. Na simulação
+            gate-level, o design não vem de <code>rtl/top_cpu.sv</code>; ele vem de <code>outputs/top_cpu_mapped.v</code>.
+            Além disso, o simulador precisa conhecer a biblioteca de células.
+          </p>
+
+          <pre><code>// verif/filelist_gl.f
++incdir+../../../rtl
++incdir+../../../verif
+
+../../../verif/top_tb_gl.sv
+../../../../../ref/verilog/saed32nm_lvt.v
+../../dc_nxt/outputs/top_cpu_mapped.v</code></pre>
+
+          <p>
+            A biblioteca <code>saed32nm_lvt.v</code> contém modelos Verilog das células que aparecem na netlist. Sem ela,
+            o VCS vê instâncias como <code>DFFX1_LVT</code> ou <code>NBUFFX2_LVT</code> e não sabe o que elas são.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="testbench-gl">Por que pode existir um testbench GL</h2>
+          <p>
+            Em teoria, o mesmo testbench funcional poderia dirigir RTL e gate-level. Na prática, muitas equipes mantêm
+            um <code>top_tb_gl.sv</code> separado porque a simulação gate-level tem detalhes extras:
+          </p>
+
+          <ul class="key-list compact-list">
+            <li>O reset precisa ser suficientemente longo para a netlist inicializar de modo estável.</li>
+            <li>A hierarquia do DUT precisa bater com a anotação SDF, por exemplo <code>top_tb_gl.uut</code>.</li>
+            <li>Algumas checagens muito abstratas do RTL podem não fazer sentido no nível gate.</li>
+            <li>Dumps FSDB podem exigir nomes diferentes ou hierarquia diferente.</li>
+            <li>Se houver scan ou DFT, podem existir portas adicionais que precisam de valor estático.</li>
+          </ul>
+
+          <p>
+            No projeto do professor, o testbench GL instancia <code>top_cpu</code> como <code>uut</code>. Isso combina
+            com uma anotação SDF do tipo <code>-sdf max:top_tb_gl.uut:arquivo.sdf</code>.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="armadilha-makefile">Armadilha real: Makefile e variáveis de GL</h2>
+          <p>
+            Como este curso está sendo usado para entender o ambiente do professor, vale registrar uma armadilha que você
+            deve saber auditar: em Makefiles, a ordem das atribuições importa. Se um bloco <code>ifeq ($(GL),1)</code>
+            acrescenta opções em <code>COMP_ARGS</code>, mas depois o Makefile faz <code>COMP_ARGS :=</code>, as opções
+            anteriores podem ser apagadas.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Padrão perigoso</h3>
+              <pre><code>ifeq ($(GL),1)
+  COMP_ARGS += -sdf max:top_tb_gl.uut:file.sdf
+endif
+
+COMP_ARGS :=</code></pre>
+              <p>A segunda atribuição limpa o que foi adicionado antes.</p>
+            </div>
+            <div class="note-box">
+              <h3>Padrão mais seguro</h3>
+              <pre><code>COMP_ARGS :=
+
+ifeq ($(GL),1)
+  COMP_ARGS += -sdf max:top_tb_gl.uut:file.sdf
+endif</code></pre>
+              <p>Primeiro inicializa, depois acrescenta as opções condicionais.</p>
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Como usar isso sem mexer no ambiente agora:</strong> quando a GL simulation parecer funcionar, confira
+            no log do VCS se a linha de compilação realmente contém <code>-sdf</code>. Se não contém, você pode estar
+            rodando gate-level sem anotação temporal.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="svf-formality">SVF: preparando o terreno para Formality</h2>
+          <p>
+            O professor disse para deixar Formality para depois. Mesmo assim, o SVF já aparece agora porque a síntese
+            precisa registrar suas transformações. O SVF ajuda a ferramenta formal a entender decisões como ungrouping,
+            otimizações de datapath, inversões, renomeações e mudanças estruturais feitas pelo DC_NXT.
+          </p>
+
+          <pre><code>set_svf ../outputs/top_cpu.svf
+
+# leitura, constraints, compile...
+
+set_svf -off</code></pre>
+
+          <p>
+            Pense nele como um diário da síntese para a etapa de equivalência. Não é a prova em si, mas facilita muito
+            a prova quando Formality entrar no fluxo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="icc2">write_icc2_files e fluxo físico</h2>
+          <p>
+            Os slides também mostram <code>write_icc2_files</code>. Esse comando empacota arquivos para IC Compiler II:
+            netlist, SDC, floorplan DEF/Tcl, SCAN-DEF e outros dados necessários. No nosso momento atual, o professor
+            está pedindo foco em SDC e Design Compiler, mas é útil entender para onde o fluxo iria.
+          </p>
+
+          <pre><code>write_icc2_files -output TOP_icc2</code></pre>
+
+          <p>
+            Se o fluxo usa uma ferramenta de layout de terceiros, em vez de um pacote integrado, é comum escrever
+            arquivos individualmente:
+          </p>
+
+          <pre><code>write_file -format verilog -hierarchy -output mapped/TOP.v
+write_sdc TOP.sdc
+write_scan_def -out TOP_scan.def</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="rotina">Rotina recomendada para o nosso laboratório</h2>
+          <p>
+            Para não misturar tudo, use uma rotina curta e repetível. Ela serve tanto para o projeto antigo adaptado
+            quanto para o ambiente do professor.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item"><strong>1. Simule RTL</strong>Garanta que o comportamento funcional passa antes de sintetizar.</div>
+            <div class="check-item"><strong>2. Rode síntese</strong>Use <code>make synth</code> e confira se outputs e reports foram gerados.</div>
+            <div class="check-item"><strong>3. Leia QoR</strong>Veja WNS, TNS, área, potência e violações.</div>
+            <div class="check-item"><strong>4. Confira netlist</strong>Garanta que <code>top_cpu_mapped.v</code> usa células da biblioteca.</div>
+            <div class="check-item"><strong>5. Rode GL sim</strong>Use <code>make sim GL=1</code> depois da síntese.</div>
+            <div class="check-item"><strong>6. Abra waveform</strong>Compare sinais-chave do RTL e GL quando houver divergência.</div>
+          </div>
+
+          <pre><code># Na UFRGS, dentro do bloco CPU do ambiente do professor:
+make clean
+make sim
+make synth
+make sim GL=1
+
+# Se quiser tentar waveform:
+make sim GL=1 GUI=1</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="debug">Se algo falhar, onde olhar primeiro</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Sintoma</th><th>Causa provável</th><th>Primeiro lugar para olhar</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>top_cpu_mapped.v</code> não existe</td>
+                  <td>Síntese não rodou, falhou ou escreveu em outro caminho.</td>
+                  <td><code>tools/dc_nxt/run/dc_synth.log</code> e <code>tools/dc_nxt/scripts/synth.tcl</code>.</td>
+                </tr>
+                <tr>
+                  <td>VCS não conhece células</td>
+                  <td>Biblioteca Verilog de standard cells ausente da filelist GL.</td>
+                  <td><code>verif/filelist_gl.f</code>.</td>
+                </tr>
+                <tr>
+                  <td>SDF não anota atrasos</td>
+                  <td>Caminho hierárquico do DUT errado ou <code>-sdf</code> não chegou ao VCS.</td>
+                  <td>Linha de comando do VCS no log de compilação.</td>
+                </tr>
+                <tr>
+                  <td>GL sim diverge do RTL</td>
+                  <td>Reset curto, X propagation, problema de constraint, latch, múltiplos drivers ou bug de síntese/RTL.</td>
+                  <td>Waveform comparando entrada, reset, clock, sinais de estado e saídas.</td>
+                </tr>
+                <tr>
+                  <td>WNS muito negativo</td>
+                  <td>Clock agressivo, path crítico real, carga/transição ruins ou SDC incorreto.</td>
+                  <td><code>report_timing</code> e <code>report_constraint -all_violators</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="aula-prova">O que pode cair em prova ou virar pergunta de laboratório</h2>
+          <div class="quiz-card">
+            <strong>1. Qual a diferença entre netlist gate-level e RTL?</strong>
+            <p class="answer">RTL descreve intenção funcional sintetizável. Netlist gate-level descreve a implementação em células da biblioteca.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>2. Para que serve SDF?</strong>
+            <p class="answer">Para anotar atrasos na simulação gate-level, permitindo uma simulação pós-síntese temporizada.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>3. Por que <code>change_names</code> aparece antes de escrever a netlist?</strong>
+            <p class="answer">Para sanitizar nomes e evitar que caracteres especiais atrapalhem simuladores, layout tools ou equivalência formal.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>4. Por que <code>set_fix_multiple_port_nets</code> pode ser necessário?</strong>
+            <p class="answer">Para evitar <code>assign</code> problemático na netlist final, especialmente em conexões diretas entre múltiplas portas ou feed-throughs.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>5. O que o SVF ajuda a fazer depois?</strong>
+            <p class="answer">Ajuda Formality a entender as transformações realizadas pela síntese ao provar equivalência entre RTL e netlist.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>6. Por que gate-level simulation precisa de biblioteca de células?</strong>
+            <p class="answer">Porque a netlist instancia células da tecnologia, e o simulador precisa dos modelos Verilog dessas células.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo bloco do site</h2>
+          <p>
+            A sequência natural agora é fechar o curso de síntese com um bloco de <strong>timing analysis e ajuste de
+            constraints</strong>: como usar <code>report_timing</code>, path groups, exceptions e múltiplos clocks para
+            melhorar o SDC do bloco sem mascarar problemas reais.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/07_Timing_Analysis.md">Timing Analysis</a>,
+          <a data-md-source href="../../assets/md_normalizado/11_Post_Synthesis_Output_Data.md">Post-Synthesis Output Data</a>,
+          <a data-md-source href="../../assets/md_normalizado/12_Design_Compiler_NXT_RTL_Synthesis_2021_06_Lab_Guide.md">Lab Guide DC_NXT</a>,
+          <a data-md-source href="../../assets/md_normalizado/13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md">Job Aid DC_NXT</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2c_compile_ultra_tecnicas_dc_nxt.html">Anterior: compile_ultra</a>
+          <a href="bloco_1_2e_timing_analysis_ajuste_sdc.html">Próxima: Timing Analysis</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

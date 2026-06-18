@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Introdução à Síntese e Constraints</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>Síntese e Constraints
+    </nav>
+
+    <h1 class="page-title">Introdução à Síntese e Constraints</h1>
+    <p class="lead">
+      A síntese transforma RTL em netlist estrutural sob metas de timing, área e power.
+      Esta aula explica as entradas, saídas e constraints que fazem esse fluxo funcionar.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="mudanca-de-pergunta">Mudança de pergunta</h2>
+          <p>Até aqui, a pergunta principal era:</p>
+          <pre><code>Meu RTL simula corretamente?</code></pre>
+          <p>Agora a pergunta vira:</p>
+          <pre><code>Meu RTL pode virar hardware que atende timing, área e power?</code></pre>
+          <p>
+            Essa mudança explica por que o ambiente do professor separa <code>make sim</code> e
+            <code>make synth</code>. Simulação verifica comportamento; síntese tenta construir hardware.
+          </p>
+          <div class="callout">
+            <strong>Frase para guardar:</strong> RTL sem constraints não é um projeto completo para síntese.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fluxo-ic">Fluxo de projeto digital</h2>
+          <p>
+            O curso mostra o caminho completo: RTL, simulação, síntese, verificação formal,
+            análise de timing, place and route e checks pós-layout.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/04_rtl_design_synthesis/digital_ic_flow.png" alt="Fluxo de projeto digital IC com VCS, Design Compiler, Formality, PrimeTime e IC Compiler">
+            <figcaption>
+              O fluxo conecta ferramentas diferentes. VCS simula, Design Compiler sintetiza,
+              Formality compara equivalência e PrimeTime analisa timing.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Etapa</th><th>Papel</th><th>Ferramenta citada</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Simulação RTL</td><td>Verificar comportamento</td><td>VCS</td></tr>
+                <tr><td>Síntese lógica</td><td>Gerar netlist gate-level</td><td>Design Compiler</td></tr>
+                <tr><td>Equivalência</td><td>Comparar RTL e netlist</td><td>Formality</td></tr>
+                <tr><td>STA</td><td>Analisar timing</td><td>PrimeTime</td></tr>
+                <tr><td>Place and route</td><td>Implementar fisicamente</td><td>IC Compiler</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="sintese-logica">Síntese lógica</h2>
+          <p>
+            Síntese lógica transforma descrição HDL em uma implementação estrutural com células de biblioteca.
+            Ela infere registradores, minimiza lógica, sintetiza FSMs, escolhe codificações e otimiza caminhos.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/04_rtl_design_synthesis/logic_synthesis_scope.png" alt="Escopo da síntese lógica no fluxo standard cell">
+            <figcaption>
+              A ferramenta recebe HDL, constraints e bibliotecas, otimiza timing/área/power e gera netlist.
+            </figcaption>
+          </figure>
+          <details class="nested-detail">
+            <summary>Aprofundamento: o que significa inferir registradores</summary>
+            <div class="detail-body">
+              <p>
+                Quando você escreve um bloco sensível a <code>posedge clk</code>, a ferramenta reconhece o
+                padrão e escolhe uma célula real de flip-flop na biblioteca. Você descreve a intenção RTL;
+                a ferramenta escolhe a implementação disponível.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="entradas-saidas">Entradas e saídas da síntese</h2>
+          <figure class="figure-block">
+            <img src="../../assets/img/04_rtl_design_synthesis/synthesis_io_files.png" alt="Entradas e saídas de uma ferramenta de síntese">
+            <figcaption>
+              Síntese precisa de HDL, scripts, constraints e biblioteca. A saída principal é netlist mais reports.
+            </figcaption>
+          </figure>
+          <pre><code>RTL + constraints + bibliotecas + scripts -> netlist + reports</code></pre>
+          <p>No ambiente do professor isso deve aparecer como algo parecido com:</p>
+          <pre><code>filelist_rtl.f
+constraints.sdc
+synth.tcl
+Makefile
+libs/</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="constraints">Constraints</h2>
+          <p>
+            Constraints são comandos para ferramentas EDA. Elas dizem quais restrições e metas a ferramenta
+            deve obedecer durante síntese, place and route e análise de timing.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/04_rtl_design_synthesis/synthesis_constraints.png" alt="Slide explicando synthesis design constraints">
+            <figcaption>
+              Constraints não são comentário. Elas são parte do projeto que guia timing, área, power e regras da biblioteca.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Tipo</th><th>Exemplo</th><th>Papel</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Design rule constraints</td><td>max transition, max fanout, max capacitance</td><td>Limites físicos/eléctricos obrigatórios.</td></tr>
+                <tr><td>Optimization constraints</td><td>clock period, area target, power target</td><td>Metas definidas pelo designer.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="regras">Três regras de biblioteca</h2>
+          <p>
+            Os slides destacam três design rule constraints que aparecem muito em síntese.
+          </p>
+          <ul class="key-list compact-list">
+            <li><strong>Max transition:</strong> limita o tempo de subida/descida de um sinal.</li>
+            <li><strong>Max fanout:</strong> limita quantas entradas uma saída consegue dirigir.</li>
+            <li><strong>Max capacitance:</strong> limita a carga capacitiva que uma saída pode dirigir.</li>
+          </ul>
+          <details class="nested-detail" open>
+            <summary>Por que a ferramenta insere buffers?</summary>
+            <div class="detail-body">
+              <p>
+                Se uma rede está lenta, carregada demais ou dirigindo muitas entradas, a ferramenta pode
+                inserir buffers ou trocar células. Isso pode melhorar timing e transição, mas aumenta área
+                e pode aumentar power. É o tradeoff PPA aparecendo na prática.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="ppa">Tradeoff PPA</h2>
+          <p>
+            PPA significa performance, power e area. O curso reforça que otimizar uma dimensão pode piorar outra.
+          </p>
+          <ul class="key-list compact-list">
+            <li>Timing agressivo pode exigir células maiores e mais buffers.</li>
+            <li>Área menor pode alongar caminhos e piorar timing.</li>
+            <li>Power menor pode exigir estratégias como clock gating ou células mais lentas.</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="make-synth">Ligação com <code>make synth</code></h2>
+          <p>Um alvo de síntese costuma esconder esta sequência:</p>
+          <pre><code>ler ambiente
+ler bibliotecas
+ler RTL
+aplicar constraints
+elaborar o top
+otimizar
+gerar netlist
+gerar reports</code></pre>
+          <p>
+            Se falhar, não olhe só o final do log. A causa pode ser arquivo RTL faltando, top errado,
+            testbench na filelist de síntese, biblioteca ausente, clock não definido ou constraint incorreta.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="checklist">Checklist para o RTL_LAB2</h2>
+          <ul class="key-list compact-list">
+            <li>Identificar o módulo top sintetizável.</li>
+            <li>Separar testbench do RTL.</li>
+            <li>Criar ou revisar <code>filelist_rtl.f</code>.</li>
+            <li>Garantir que não há <code>#delay</code>, <code>$display</code>, <code>$finish</code> ou dump no RTL.</li>
+            <li>Definir constraints mínimas de clock.</li>
+            <li>Conferir bibliotecas esperadas pelo ambiente.</li>
+            <li>Ler warnings e reports, não apenas procurar "completed".</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="audio">Audio: precisa?</h2>
+          <p>
+            Não parece necessário ouvir o áudio completo. O áudio seria útil se o professor der exemplos
+            práticos de <code>create_clock</code>, delays de entrada/saída ou leitura de reports no servidor.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/01_Introduction_to_Synthesis.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_Design_and_Constraint_Files_for_Synthesis.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="../01_verilog_refresher/bloco_1_1e_robot_model.html">Anterior: ROBOT Model</a>
+          <a href="bloco_1_2b_sdc_timing_io.html">Próxima: SDC e Timing</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

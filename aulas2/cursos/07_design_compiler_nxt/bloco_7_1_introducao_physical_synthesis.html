@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Introdução ao DC NXT e Physical Synthesis</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">07 Design Compiler NXT</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">DC NXT</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">07 Design Compiler NXT</a><span>/</span>Physical Synthesis
+    </nav>
+
+    <h1 class="page-title">Introdução ao DC NXT e Physical Synthesis</h1>
+    <p class="lead">
+      Esta aula abre o curso de Design Compiler NXT explicando a mudança principal: síntese moderna não é apenas
+      transformar RTL em portas; ela também tenta antecipar parte da realidade física que aparecerá no layout.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo da aula</h2>
+          <p>
+            O ponto mais importante é entender por que o Design Compiler NXT trabalha em <strong>topographical mode</strong>.
+            Nesse modo, a ferramenta usa bibliotecas, constraints e informação física para gerar uma netlist otimizada
+            com uma colocação aproximada. Isso é chamado no material de <strong>physical synthesis</strong>.
+          </p>
+          <p>
+            Para o nosso laboratório, a leitura prática é direta: quando o professor fala em Makefile, scripts e "brincar"
+            com o ambiente, ele provavelmente quer que a gente consiga rodar um fluxo repetível, entender cada artefato
+            gerado e começar a levar o RTL para um caminho de síntese mais profissional.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="mudanca">A mudança de mentalidade</h2>
+          <p>
+            Na síntese lógica mais básica, a pergunta costuma ser:
+          </p>
+          <pre><code>Meu RTL pode ser convertido em uma netlist de portas que respeita timing?</code></pre>
+          <p>
+            No Design Compiler NXT com síntese física, a pergunta fica mais exigente:
+          </p>
+          <pre><code>Meu RTL pode virar uma netlist que já faz sentido para o layout físico?</code></pre>
+          <p>
+            Essa diferença importa porque, em ASIC moderno, o atraso não vem apenas das portas. Os fios têm resistência,
+            capacitância, comprimento, congestionamento e dependem de onde as células acabam posicionadas. Duas células
+            podem estar próximas na lógica e distantes no chip. Se a síntese ignora isso, pode gerar uma netlist bonita no
+            relatório lógico e problemática no backend.
+          </p>
+
+          <div class="comparison table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Síntese lógica tradicional</th>
+                  <th>Síntese física no DC NXT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Otimiza principalmente pela visão lógica da netlist.</td>
+                  <td>Otimiza considerando estimativas físicas de placement e routing.</td>
+                </tr>
+                <tr>
+                  <td>Estimativas de net podem ser mais abstratas, como fanout.</td>
+                  <td>Usa estimativas de comprimento de fios e RC via virtual routing.</td>
+                </tr>
+                <tr>
+                  <td>A saída é uma netlist mapeada para a biblioteca.</td>
+                  <td>A saída pode incluir netlist otimizada e coarse placement.</td>
+                </tr>
+                <tr>
+                  <td>O backend descobre tarde alguns problemas físicos.</td>
+                  <td>Parte desses problemas é antecipada durante a síntese.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="physical">O que é physical synthesis?</h2>
+          <p>
+            Physical synthesis é a síntese que combina a transformação lógica do RTL com estimativas físicas. O slide diz
+            que ela converte RTL em uma <strong>optimized and coarse-placed netlist</strong>. Essa frase tem duas metades:
+          </p>
+
+          <div class="concept-grid">
+            <div class="concept-card">
+              <span class="mini-label">Optimized netlist</span>
+              <h3>Otimização lógica e tecnológica</h3>
+              <p>
+                A ferramenta escolhe células reais, reestrutura lógica, ajusta drive strength, insere buffers e tenta
+                atender timing, área, potência e design rules.
+              </p>
+            </div>
+            <div class="concept-card">
+              <span class="mini-label">Coarse placement</span>
+              <h3>Colocação física aproximada</h3>
+              <p>
+                A netlist passa a carregar uma noção inicial de onde as células podem ficar. Não é o placement final, mas
+                melhora a estimativa de fios e atrasos.
+              </p>
+            </div>
+          </div>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Entradas</strong>
+              RTL, constraints, bibliotecas lógicas, bibliotecas físicas e, quando disponível, floorplan.
+            </div>
+            <div class="flow-step">
+              <strong>Processamento</strong>
+              Tradução, otimização lógica, estimativa física, gate mapping e coarse placement.
+            </div>
+            <div class="flow-step">
+              <strong>Saídas</strong>
+              Netlist, reports e dados para continuação no IC Compiler II.
+            </div>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que coarse placement não é placement final?</summary>
+            <div class="detail-body">
+              <p>
+                Coarse placement é uma aproximação usada para guiar a síntese. O placement final ainda precisa de legalização,
+                clock tree synthesis, roteamento, extração parasítica e signoff. A síntese física não substitui o backend;
+                ela entrega uma netlist mais bem preparada para ele.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="topographical">Topographical mode</h2>
+          <p>
+            O material mostra o DC NXT sendo aberto em modo topográfico:
+          </p>
+          <pre><code>unix% dcnxt_shell -topographical_mode
+dcnxt_shell-topo></code></pre>
+          <p>
+            Esse modo é o interruptor conceitual da aula. Ele diz à ferramenta que ela deve trabalhar com consciência física,
+            usando placement aproximado e virtual routing para estimar melhor os atrasos das interconexões.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Regra para guardar:</strong> se o script foi escrito para physical synthesis, ele precisa ser executado
+            em um contexto compatível com physical synthesis. Rodar o fluxo fora do modo topográfico pode gerar warnings,
+            resultados piores ou comandos sem efeito esperado.
+          </div>
+
+          <details class="expand-block">
+            <summary>O que é virtual routing?</summary>
+            <div class="detail-body">
+              <p>
+                Virtual routing é uma estimativa de roteamento usada ainda durante a síntese. A ferramenta não faz o routing
+                final, mas estima por onde as nets poderiam passar e calcula uma aproximação de comprimento, resistência e
+                capacitância. Isso é melhor do que estimar atraso apenas pelo número de cargas conectadas.
+              </p>
+              <pre><code>fanout puro
+  -> estimativa grosseira
+
+comprimento estimado da net + RC
+  -> estimativa mais próxima do pós-placement</code></pre>
+            </div>
+          </details>
+
+          <details class="expand-block">
+            <summary>Por que RC aparece tanto?</summary>
+            <div class="detail-body">
+              <p>
+                RC vem de resistência e capacitância. Um fio longo tende a ter mais resistência e mais capacitância. Isso
+                aumenta atraso e piora transição. Quando o DC NXT estima RC com base em posição física, ele consegue tomar
+                decisões melhores: trocar células, inserir buffers, reestruturar lógica ou reduzir fanout antes do backend.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="floorplan">Floorplan: o mapa físico inicial</h2>
+          <p>
+            O slide destaca que um floorplan é necessário para placement. Floorplan não é um detalhe decorativo; é a
+            organização física de alto nível do bloco ou chip. Ele pode incluir tamanho do core, macros, keepouts, regiões
+            de placement e restrições físicas.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Core area</strong>
+              Espaço onde as standard cells podem ser colocadas.
+            </div>
+            <div class="check-item">
+              <strong>Macros</strong>
+              RAMs, IPs e blocos grandes que não são espalhados como standard cells.
+            </div>
+            <div class="check-item">
+              <strong>Keepout</strong>
+              Regiões onde a ferramenta não deve colocar células.
+            </div>
+            <div class="check-item">
+              <strong>Placement guidance</strong>
+              Informações que ajudam a reduzir fios longos e congestionamento.
+            </div>
+          </div>
+
+          <p>
+            Uma memória mal posicionada pode alongar fios, criar congestionamento e gerar violações de timing. Por isso,
+            quando o DC NXT conhece o floorplan, ele sintetiza com uma noção mais realista de distância física.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="duas-fases">Fluxo em duas fases</h2>
+          <p>
+            O material recomenda um fluxo em duas fases: antes e depois do floorplan. Essa ideia é muito importante porque
+            evita achar que a primeira síntese já é a verdade final.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>1. Pre-floorplan synthesis</h3>
+              <div class="command-body">
+                <p>
+                  Gera uma netlist inicial a partir de RTL, bibliotecas e constraints. Essa netlist ajuda a ferramenta física
+                  a planejar melhor o floorplan.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>2. Floorplan no ICC II Design Planning</h3>
+              <div class="command-body">
+                <p>
+                  A ferramenta de layout usa a netlist inicial para posicionar macros, definir áreas e criar uma visão física
+                  mais concreta.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>3. Post-floorplan synthesis</h3>
+              <div class="command-body">
+                <p>
+                  O DC NXT roda novamente, agora com floorplan. Essa segunda síntese tende a correlacionar melhor com o
+                  placement e routing reais.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Aplicação no nosso projeto:</strong> no começo, talvez a gente não tenha um floorplan completo para o
+            CPU do laboratório. Mesmo assim, entender esse fluxo ajuda a não confundir as etapas: primeiro deixar RTL,
+            constraints, Makefile e reports funcionando; depois investigar se o ambiente do professor oferece alvo físico.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="interfaces">Como abrir o Design Compiler NXT</h2>
+          <p>
+            O curso mostra três formas de uso. Elas não competem entre si; cada uma serve para um momento diferente do
+            trabalho.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>Shell interativo</h3>
+              <div class="command-body">
+                <pre><code>dcnxt_shell -topographical_mode</code></pre>
+                <p>
+                  Bom para aprender, testar comandos, consultar objetos e investigar comportamento da ferramenta.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>GUI interativa</h3>
+              <div class="command-body">
+                <pre><code>dcnxt_shell -topo -gui</code></pre>
+                <p>
+                  Útil quando a análise precisa de visualização: hierarquia, objetos, placement e inspeção gráfica.
+                </p>
+              </div>
+            </div>
+            <div class="command-block">
+              <h3>Batch mode</h3>
+              <div class="command-body">
+                <pre><code>dcnxt_shell -topo -f RUN.tcl | tee RUN.log</code></pre>
+                <p>
+                  Este é o modo mais importante para laboratório e projeto. O script fica versionado, o log fica salvo e o
+                  fluxo pode ser repetido sem depender de comandos digitados à mão.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que <code>tee RUN.log</code> é uma prática boa?</summary>
+            <div class="detail-body">
+              <p>
+                O <code>tee</code> mostra a saída no terminal e grava a mesma saída em arquivo. Isso permite ver o progresso
+                enquanto a ferramenta roda e depois auditar warnings, erros, versões de bibliotecas, comandos executados e
+                mensagens de timing.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="transformacoes">Transformações internas do fluxo</h2>
+          <p>
+            O slide organiza a ferramenta em três grandes transformações:
+          </p>
+          <pre><code>Translation -> Logic optimization -> Gate mapping</code></pre>
+          <p>
+            Traduzindo para comandos e objetos que aparecem no laboratório:
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>Comandos típicos</th>
+                  <th>O que acontece</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Translation</td>
+                  <td><code>analyze</code>, <code>elaborate</code></td>
+                  <td>Lê RTL, resolve hierarquia, parâmetros e constrói representação interna.</td>
+                </tr>
+                <tr>
+                  <td>Floorplan</td>
+                  <td><code>read_floorplan</code></td>
+                  <td>Carrega informação física inicial para guiar placement e estimativas.</td>
+                </tr>
+                <tr>
+                  <td>Constraints</td>
+                  <td><code>source</code>, <code>create_clock</code>, <code>set_input_delay</code></td>
+                  <td>Define o problema de timing e as metas da síntese.</td>
+                </tr>
+                <tr>
+                  <td>Logic optimization</td>
+                  <td><code>compile_ultra</code></td>
+                  <td>Reestrutura lógica, melhora timing, área, potência e prepara mapeamento.</td>
+                </tr>
+                <tr>
+                  <td>Gate mapping</td>
+                  <td><code>compile_ultra</code></td>
+                  <td>Escolhe células reais da tecnologia para implementar a lógica.</td>
+                </tr>
+                <tr>
+                  <td>Save</td>
+                  <td><code>write_icc2_files</code></td>
+                  <td>Escreve dados para continuidade no IC Compiler II.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="expand-block">
+            <summary>O que significa GTECH/unmapped antes da síntese?</summary>
+            <div class="detail-body">
+              <p>
+                Depois de ler e elaborar o RTL, a ferramenta ainda não escolheu as células reais da biblioteca. Ela pode usar
+                uma representação genérica, como GTECH, para expressar portas, operadores, flip-flops e aritmética antes do
+                mapeamento tecnológico. Só depois do compile a implementação vira uma netlist com células concretas.
+              </p>
+              <pre><code>RTL:         assign y = (a & b) | c;
+GTECH:       lógica genérica interna
+Mapped net:  NAND2_X1, INV_X1, OR2_X2, DFF_X1...</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="workshop">Fluxo coberto no workshop</h2>
+          <p>
+            O material resume o workshop nesta ordem:
+          </p>
+
+          <ol>
+            <li>Specify libraries.</li>
+            <li>Load RTL code.</li>
+            <li>Load floorplan.</li>
+            <li>Apply constraints.</li>
+            <li>Synthesize the design.</li>
+            <li>Analyze results.</li>
+            <li>Write netlist with cell placement.</li>
+          </ol>
+
+          <p>
+            Essa lista é praticamente um esqueleto de Makefile/Tcl. O Makefile pode chamar alvos como <code>make synth</code>,
+            e esse alvo executa um script Tcl que segue essa ordem. O mais importante é perceber que o script precisa ser
+            organizado em fases: setup, leitura, constraints, síntese, reports e exportação.
+          </p>
+
+          <pre><code># Ideia de alvo de síntese
+make synth
+  -> cria diretórios de saída
+  -> chama dcnxt_shell -topo -f scripts/synth.tcl
+  -> salva logs e reports
+  -> escreve netlist/DDC/dados para próxima etapa</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="shell">Comandos úteis dentro do shell</h2>
+          <p>
+            A aula também lista comandos de conveniência do <code>dcnxt_shell</code>. Eles parecem simples, mas ajudam muito
+            quando você está no servidor remoto tentando descobrir onde está, o que rodou e qual arquivo a ferramenta viu.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Comando</th>
+                  <th>Uso prático</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>pwd</code>, <code>cd</code>, <code>ls</code></td><td>Confirmar diretório de trabalho e arquivos disponíveis.</td></tr>
+                <tr><td><code>history</code></td><td>Ver comandos já executados na sessão.</td></tr>
+                <tr><td><code>!!</code></td><td>Repetir o último comando.</td></tr>
+                <tr><td><code>!7</code></td><td>Executar o comando número 7 do histórico.</td></tr>
+                <tr><td><code>!rep</code></td><td>Executar o último comando que começou com <code>rep</code>, como <code>report_timing</code>.</td></tr>
+                <tr><td><code>sh &lt;comando&gt;</code></td><td>Rodar um comando UNIX sem sair do shell.</td></tr>
+                <tr><td><code>get_unix_variable</code></td><td>Consultar variáveis de ambiente do servidor.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Como isso orienta nosso próximo passo</h2>
+          <p>
+            Para o nosso CPU/laboratório, esta aula diz que o próximo passo não é "apertar botão de síntese" de qualquer
+            jeito. O caminho correto é montar uma estrutura mínima que permita repetir, auditar e evoluir:
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Separar fontes</strong>
+              RTL sintetizável em uma filelist e testbench fora do fluxo de síntese.
+            </div>
+            <div class="check-item">
+              <strong>Criar SDC mínimo</strong>
+              Pelo menos clock, delays de entrada/saída e, quando necessário, carga ou driving cell.
+            </div>
+            <div class="check-item">
+              <strong>Script Tcl claro</strong>
+              Ler bibliotecas, ler RTL, elaborar top, aplicar constraints, compilar e gerar reports.
+            </div>
+            <div class="check-item">
+              <strong>Makefile simples</strong>
+              Um alvo <code>make synth</code> que execute o Tcl e preserve logs/reports em diretórios conhecidos.
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Leitura estratégica:</strong> o ambiente do professor provavelmente quer que a gente explore justamente
+            essa automação. Primeiro simulação reproduzível; depois síntese reproduzível; depois SDC, reports e, se houver
+            suporte no setup, elementos físicos como topographical mode e dados para ICC II.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão rápida</h2>
+          <div class="quiz-card">
+            <strong>O que é physical synthesis?</strong>
+            <p>Síntese que converte RTL em netlist otimizada usando também informação física, como placement aproximado e estimativa de RC.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>O que ativa essa visão no DC NXT?</strong>
+            <p>O uso do <code>dcnxt_shell</code> em <code>topographical_mode</code> ou <code>-topo</code>.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Por que virtual routing é melhor que fanout puro?</strong>
+            <p>Porque estima comprimento e parasitas das nets com base em uma visão física aproximada, aumentando a correlação com o pós-placement.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Qual comando aparece como centro da síntese?</strong>
+            <p><code>compile_ultra</code>, responsável por otimização lógica, física e mapeamento para células reais.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Por que batch mode é essencial?</strong>
+            <p>Porque torna a execução repetível: o Tcl fica versionado, o log fica salvo e o fluxo pode ser rodado por Makefile.</p>
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/01_Introduction_DC_NXT.md">01 Introduction DC NXT</a>.
+          Próxima fonte recomendada:
+          <a data-md-source href="../../assets/md_normalizado/02_Design_Setup_for_Physical_Synthesis_parte_A.md">Design Setup for Physical Synthesis parte A</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_7_2_design_setup_physical_synthesis.html">Próxima: Design Setup</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base em Markdown de aulas2.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

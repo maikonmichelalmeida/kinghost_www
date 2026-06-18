@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VHDL Reference Designs</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">02 VHDL Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">VHDL Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">02 VHDL Refresher</a><span>/</span>Reference Designs
+    </nav>
+
+    <h1 class="page-title">VHDL Reference Designs</h1>
+    <p class="lead">
+      Aula prática sobre fluxo VHDL com VCS: analisar com <code>vhdlan</code>,
+      elaborar com <code>vcs</code>, simular com <code>simv</code> e depurar com Verdi.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Um design de referência não ensina só o circuito. Ele ensina o fluxo de trabalho:
+            onde está o DUT, onde está o testbench, como os arquivos entram no simulador,
+            como verificar resultado e como depurar quando algo falha.
+          </p>
+          <pre><code>identificar DUT -> identificar testbench -> analisar -> elaborar -> simular -> checar -> depurar</code></pre>
+          <div class="callout">
+            <strong>Regra prática:</strong> se você só rodou a simulação mas não sabe qual sinal prova sucesso,
+            ainda não terminou a verificação.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fluxo">Fluxo VHDL em três passos</h2>
+          <p>
+            Para VHDL no ambiente Synopsys, pense no fluxo principal como três etapas:
+          </p>
+          <pre><code>vhdlan -work work -kdb -f source_list -l analyze.log
+vcs -kdb top_tb -debug_access -l elaborate.log
+./simv -l sim.log</code></pre>
+          <p>
+            <code>vhdlan</code> analisa os arquivos VHDL. <code>vcs</code> elabora a hierarquia e gera o executável.
+            <code>simv</code> roda a simulação. Se o makefile esconder esses comandos, você ainda deve saber
+            que essas fases existem.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_testbench_three_step_flow.png" alt="Diagrama do testbench e fluxo em três passos com análise, elaboração e simulação">
+            <figcaption>
+              Recorte visual do slide: no topo, testbench com estímulo, DUT e checker; abaixo, análise, elaboração e simulação.
+            </figcaption>
+          </figure>
+          <details class="nested-detail">
+            <summary>Dois passos ou três passos?</summary>
+            <div class="detail-body">
+              <p>
+                O curso mostra exemplo simples que pode ser rodado de forma compacta, mas o modelo mental
+                robusto para VHDL é o de três passos. Em projetos mistos, com muitos arquivos ou com debug,
+                separar análise, elaboração e simulação evita confusão.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="adder">O exemplo do somador</h2>
+          <p>
+            O somador aparece de novo porque é simples e expõe uma regra universal: aritmética precisa
+            preservar largura. Se dois operandos de 2 bits podem valer 3, a soma máxima é 6, que precisa
+            de 3 bits.
+          </p>
+          <pre><code>x = 3 = 2'b11
+y = 3 = 2'b11
+x + y = 6 = 3'b110</code></pre>
+          <p>
+            No lab real, o somador de 32 bits aplica a mesma ideia criando um resultado interno de 33 bits:
+          </p>
+          <pre><code>signal ca_sum : std_logic_vector(32 downto 0);
+
+ca_sum    <= ('0' & op_a) + ('0' & op_b) + (i_cin_ext & carry_cin);
+adder_out <= ca_sum(31 downto 0);
+carry_out <= ca_sum(32);</code></pre>
+          <p>
+            Essa é uma ótima prática: separar resultado visível de resultado interno completo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="testbench">O testbench do adder</h2>
+          <p>
+            O testbench real do lab instancia o DUT e aplica casos com <code>wait for 10 ns</code>.
+            Isso é suficiente para treinar fluxo, mas ainda é um testbench simples, porque não parece
+            emitir automaticamente <code>PASSED/FAILED</code>.
+          </p>
+          <pre><code>op_a <= X"00000000"; op_b <= X"00000001"; carry_cin <= '0'; wait for 10 ns;
+op_a <= X"00000001"; op_b <= X"00000011"; carry_cin <= '1'; wait for 10 ns;
+op_a <= X"00000010"; op_b <= X"00000101"; carry_cin <= '0'; wait for 10 ns;</code></pre>
+          <details class="nested-detail" open>
+            <summary>Como deixar esse testbench mais forte?</summary>
+            <div class="detail-body">
+              <p>
+                O próximo passo seria calcular o resultado esperado e usar asserts. Assim, o testbench
+                deixa de apenas aplicar valores e passa a verificar.
+              </p>
+              <pre><code>assert adder_out = expected(31 downto 0)
+    report "adder_out mismatch"
+    severity error;
+
+assert carry_out = expected(32)
+    report "carry_out mismatch"
+    severity error;</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="waveform">Terminal e waveform</h2>
+          <p>
+            O console ajuda a ler valores discretos e mensagens do testbench. A waveform ajuda a entender
+            tempo, ordem dos eventos e origem da divergência.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_ref_waveform.png" alt="Waveform de simulação do adder VHDL no Verdi">
+            <figcaption>
+              Recorte visual da waveform: use a onda para investigar temporalmente, não como substituta de checker.
+            </figcaption>
+          </figure>
+          <p>
+            O ideal é o log dizer que falhou e a waveform explicar por que falhou.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="debug">Debug com Verdi</h2>
+          <p>
+            Verdi entra depois ou junto da simulação para investigar sinais, hierarquia e código.
+          </p>
+          <pre><code>verdi -nologo -ssf adder2bit_tb.fsdb &</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_debug_flow_diagram.png" alt="Diagrama de fluxo de debug com análise, compilação/elaboração, FSDB/KDB e debug interativo">
+            <figcaption>
+              Recorte visual do fluxo de debug: o banco de sinais e debug conecta simulação, waveform, código e análise.
+            </figcaption>
+          </figure>
+          <p>
+            Debug bom é metódico: encontre o primeiro erro, volte no tempo, compare entradas e saídas,
+            decida se o problema está no DUT ou no testbench, corrija e rode de novo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="designs">Os 10 designs de referência</h2>
+          <p>
+            A tabela dos slides foi convertida em uma explicação. A ideia é enxergar uma escada de conceitos.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Design</th><th>O que treina</th><th>O que observar</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>32-bit adder</td><td>carry e largura aritmética</td><td>resultado interno maior que saída</td></tr>
+                <tr><td>16x16 multiplier</td><td>produto com largura maior</td><td>resultado de 32 bits</td></tr>
+                <tr><td>counter with overflow</td><td>clock, load e flag</td><td>momento exato do overflow</td></tr>
+                <tr><td>up/down counter</td><td>controle de direção</td><td>troca entre subir e descer</td></tr>
+                <tr><td>2-client arbiter</td><td>prioridade e FSM</td><td>requests simultâneos ou alternados</td></tr>
+                <tr><td>mux/demux</td><td>seleção combinacional</td><td>todas as seleções possíveis</td></tr>
+                <tr><td>encoder/decoder</td><td>codificação e one-hot</td><td>entradas inválidas ou prioridade</td></tr>
+                <tr><td>matrix multiplication</td><td>aritmética composta</td><td>largura e ordem dos produtos</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details class="nested-detail">
+            <summary>Por que o arbiter é especialmente útil?</summary>
+            <div class="detail-body">
+              <p>
+                O arbiter treina FSM: estado atual, próximo estado, requests e grants. É mais próximo
+                de controle real do que mux ou adder. Ao estudá-lo, procure processo sequencial de estado,
+                processo combinacional de próximo estado e processo de saída.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="boas-praticas">Boas práticas de simulação</h2>
+          <p>
+            Os slides textuais foram convertidos em práticas concretas:
+          </p>
+          <ul class="key-list compact-list">
+            <li>Tenha plano de verificação, mesmo simples.</li>
+            <li>Separe DUT, testbench, logs, scripts e waves.</li>
+            <li>Use filelists em vez de comandos longos digitados à mão.</li>
+            <li>Automatize análise, elaboração, simulação e limpeza.</li>
+            <li>Compile incrementalmente quando o projeto crescer.</li>
+            <li>Use Verdi para investigar, não como único critério de aprovação.</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="lab">Ligação com o lab real</h2>
+          <p>
+            A pasta <code>VHDLRefDesign</code> contém pares como:
+          </p>
+          <pre><code>adder_32.vhd
+adder_32_tb.vhd
+arbiter.vhd
+arbiter_tb.vhd
+counter.vhd
+counter_tb.vhd</code></pre>
+          <p>
+            O README mostra o fluxo:
+          </p>
+          <pre><code>vhdlan adder.vhd adder_tb.vhd -kdb
+vcs adder_tb -kdb -debug_access
+./simv -ucli -i run.sim</code></pre>
+          <p>
+            Esse é exatamente o tipo de sequência que um makefile pode encapsular.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="quiz">Quizzes, sem decorar cegamente</h2>
+          <ul class="key-list compact-list">
+            <li><strong>VHDL flow:</strong> pense em três passos: <code>vhdlan</code>, <code>vcs</code>, <code>simv</code>.</li>
+            <li><strong>Testbench:</strong> DUT + stimulus generator + response checker.</li>
+            <li><strong><code>vhdlan</code>:</strong> analisa VHDL e encontra erros de sintaxe/semântica antes da elaboração.</li>
+            <li><strong>Model libraries:</strong> podem não ser necessárias em RTL simples, mas são importantes em gate-level/IP/tecnologia.</li>
+          </ul>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/04_VHDL_Reference_Designs.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/04_VHDL_Reference_Designs.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_2_2_vhdl_for_verification.html">Anterior: VHDL for Verification</a>
+          <a href="bloco_2_4_lab_vhdlrefdesign.html">Próximo: Lab VHDLRefDesign</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

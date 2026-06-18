@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SystemVerilog Reference Design-1</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">03 SystemVerilog Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">03 SystemVerilog Refresher</a><span>/</span>Reference Design-1
+    </nav>
+
+    <h1 class="page-title">SystemVerilog Reference Design-1</h1>
+    <p class="lead">
+      Leitura guiada de um reference design com adder DUT, interface, transaction object,
+      test, environment, driver, monitor, scoreboard, VCS, Verdi e boas práticas de simulação.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            Este bloco é a ponte entre sintaxe e projeto. O DUT é apenas um somador de dois operandos de 8 bits,
+            mas o objetivo real é aprender a ler a estrutura de um testbench SystemVerilog.
+          </p>
+          <p>
+            A pergunta agora não é "como funciona um adder?", porque isso é simples. A pergunta útil é:
+            <strong>como o ambiente aplica estímulo, observa resposta, compara resultado e permite debug?</strong>
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_adder_reference_tb_architecture.png" alt="Arquitetura do testbench de referência do adder">
+            <figcaption>
+              Diagrama limpo criado a partir dos slides: o foco é enxergar responsabilidades, não decorar prints de código.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="dut-interface">DUT e interface</h2>
+          <p>
+            O DUT é combinacional. Ele recebe <code>a</code>, <code>b</code> e reset, e produz <code>sum</code> e
+            <code>carry</code>. Uma versão conceitual limpa é:
+          </p>
+          <pre><code class="language-systemverilog">module my_adder (adder_if intf);
+    always_comb begin
+        if (!intf.rstn) begin
+            intf.sum   = '0;
+            intf.carry = 1'b0;
+        end else begin
+            {intf.carry, intf.sum} = intf.a + intf.b;
+        end
+    end
+endmodule</code></pre>
+          <p>
+            A interface agrupa os sinais do adder:
+          </p>
+          <pre><code class="language-systemverilog">interface adder_if();
+    logic rstn;
+    logic [7:0] a;
+    logic [7:0] b;
+    logic [7:0] sum;
+    logic carry;
+endinterface</code></pre>
+          <p>
+            Mesmo o adder sendo combinacional, o testbench usa clock para organizar amostragem, aplicação de estímulo
+            e debug. Esse é um padrão importante: clock de testbench não significa necessariamente que o DUT seja sequencial.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="virtual-interface">Virtual interface</h2>
+          <p>
+            Classes como driver e monitor não têm portas físicas. Para acessar sinais reais, elas recebem uma referência
+            para a interface. Essa referência é a <code>virtual interface</code>.
+          </p>
+          <pre><code class="language-systemverilog">class monitor;
+    virtual adder_if m_adder_vif;
+    virtual clk_intf m_clk_vif;
+endclass</code></pre>
+          <p>
+            Quando você encontrar isso no ambiente do professor, procure onde a conexão é feita. Normalmente será no
+            <code>tb</code>, <code>test</code> ou <code>environment</code>.
+          </p>
+          <pre><code class="language-systemverilog">t0.e0.m_adder_vif = m_adder_if;
+t0.e0.m_clk_vif   = m_clk_if;</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="packet">Transaction object: Packet</h2>
+          <p>
+            O <code>Packet</code> é a transação. Ele carrega operandos, reset e resultado. Em vez de passar sinais soltos,
+            o testbench passa um objeto que representa uma operação.
+          </p>
+          <pre><code class="language-systemverilog">class Packet;
+    rand bit rstn;
+    rand bit [7:0] a;
+    rand bit [7:0] b;
+    bit [7:0] sum;
+    bit carry;
+
+    function void print(string tag="");
+        $display("T=%0t %s a=0x%0h b=0x%0h sum=0x%0h carry=0x%0h",
+                 $time, tag, a, b, sum, carry);
+    endfunction
+
+    function void copy(Packet tmp);
+        this.a     = tmp.a;
+        this.b     = tmp.b;
+        this.rstn  = tmp.rstn;
+        this.sum   = tmp.sum;
+        this.carry = tmp.carry;
+    endfunction
+endclass</code></pre>
+          <details class="expand-block" open>
+            <summary>Por que o Packet tem print e copy?</summary>
+            <div class="detail-body">
+              <p>
+                <code>print</code> melhora o log: você vê o que driver, monitor e scoreboard estão manipulando.
+                <code>copy</code> permite que o scoreboard crie uma versão de referência do item observado sem
+                modificar o objeto original.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="tb-test-env">tb, test e environment</h2>
+          <p>
+            O <code>tb</code> é a fronteira entre módulos e classes. Ele instancia interfaces, DUT, test e comandos de dump.
+          </p>
+          <pre><code class="language-systemverilog">module tb;
+    clk_intf  m_clk_if();
+    adder_if m_adder_if();
+    my_adder u0(m_adder_if);
+
+    initial begin
+        test t0;
+        t0 = new;
+        t0.e0.m_adder_vif = m_adder_if;
+        t0.e0.m_clk_vif   = m_clk_if;
+        t0.run();
+    end
+
+    initial begin
+        $fsdbDumpfile("adder.fsdb");
+        $fsdbDumpvars(3, tb);
+        #1000 $finish;
+    end
+endmodule</code></pre>
+          <p>
+            O <code>test</code> cria o cenário. O <code>environment</code> conecta componentes.
+            Em projetos maiores, vários testes reaproveitam o mesmo environment.
+          </p>
+          <pre><code class="language-systemverilog">class env;
+    driver d0;
+    monitor m0;
+    scoreboard s0;
+    mailbox drv_mbx;
+    mailbox scb_mbx;
+    event drv_done;
+
+    virtual adder_if m_adder_vif;
+    virtual clk_intf m_clk_vif;
+endclass</code></pre>
+          <p>
+            O papel do environment é distribuir handles: virtual interfaces para driver/monitor, mailboxes para
+            comunicação e eventos para sincronização.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="monitor-scoreboard">Monitor e scoreboard</h2>
+          <p>
+            O monitor observa sinais e reconstrói uma transação. Ele não dirige o DUT.
+          </p>
+          <pre><code class="language-systemverilog">forever begin
+    Packet m_pkt = new();
+    @(posedge m_clk_vif.tb_clk);
+    #2;
+    m_pkt.a     = m_adder_vif.a;
+    m_pkt.b     = m_adder_vif.b;
+    m_pkt.rstn  = m_adder_vif.rstn;
+    m_pkt.sum   = m_adder_vif.sum;
+    m_pkt.carry = m_adder_vif.carry;
+    scb_mbx.put(m_pkt);
+end</code></pre>
+          <p>
+            O scoreboard recebe o pacote observado e calcula o resultado esperado.
+          </p>
+          <pre><code class="language-systemverilog">if (ref_item.rstn == 1'b0)
+    {ref_item.carry, ref_item.sum} = 0;
+else
+    {ref_item.carry, ref_item.sum} = ref_item.a + ref_item.b;
+
+if (ref_item.carry != item.carry)
+    $display("Scoreboard Error! Carry mismatch");
+
+if (ref_item.sum != item.sum)
+    $display("Scoreboard Error! Sum mismatch");</code></pre>
+          <div class="callout">
+            <strong>Leitura prática:</strong> driver transforma transação em sinais; monitor transforma sinais em transação;
+            scoreboard transforma transação observada em veredito.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="logs-waveform">Logs e waveform</h2>
+          <p>
+            O log do slide mostra mensagens de driver, monitor, generator/test e scoreboard. Um log bem escrito
+            permite reconstruir a simulação sem abrir waveform a cada pequeno problema.
+          </p>
+          <pre><code class="language-text">[Driver] waiting for item
+[Monitor] starting
+Monitor a=... b=... sum=... carry=...
+Scoreboard Pass! Carry match
+Scoreboard Pass! sum match
+$finish</code></pre>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_adder_verdi_waveform_crop.png" alt="Waveform do adder no Verdi">
+            <figcaption>
+              O waveform mostra clock, reset, operandos, sum e carry no tempo. Ele serve para investigar divergências entre log e sinal real.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="section">
+          <h2 id="vcs-verdi">VCS, Verdi e Makefile</h2>
+          <p>
+            O bloco diferencia simulador e ambiente de debug. VCS compila/elabora/simula. Verdi navega por waveform,
+            hierarquia e código-fonte.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/03_systemverilog_refresher/sv_vcs_verdi_sim_debug_flow.png" alt="Fluxo VCS e Verdi">
+            <figcaption>
+              O fluxo do slide é exatamente o tipo de coisa que normalmente aparece encapsulada em Makefiles.
+            </figcaption>
+          </figure>
+          <pre><code class="language-bash">vcs -sverilog -f adder.f -debug_access -l comp.log
+./simv -l sim.log
+verdi -nologo -ssf adder.fsdb &</code></pre>
+          <p>
+            Para Verilog/SystemVerilog puro, o curso mostra um fluxo de duas etapas: compilar/elaborar e simular.
+            Para designs mistos com Verilog/SV e VHDL, aparece o fluxo de três etapas: analyze, elaborate e simulate.
+          </p>
+          <details class="expand-block">
+            <summary>Como isso vira Makefile?</summary>
+            <div class="detail-body">
+              <pre><code class="language-makefile">test: clean comp sim
+
+comp:
+    vcs -sverilog -f adder.f -debug_access -l comp.log
+
+sim:
+    ./simv -l sim.log
+
+debug:
+    verdi -nologo -ssf adder.fsdb &
+
+clean:
+    rm -rf simv* csrc* *.log *.fsdb</code></pre>
+              <p>
+                O Makefile não é magia. Ele guarda comandos longos em alvos curtos, como <code>make comp</code>,
+                <code>make sim</code>, <code>make debug</code> e <code>make clean</code>.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="boas-praticas">Boas práticas de simulação</h2>
+          <p>
+            Os slides reforçam práticas que conectam diretamente com o ambiente do professor:
+          </p>
+          <ul class="key-list compact-list">
+            <li>Organizar diretórios de RTL, simulação, logs e scripts.</li>
+            <li>Separar filelists de RTL e testbench.</li>
+            <li>Manter README explicando como rodar.</li>
+            <li>Transformar tarefas repetitivas em scripts ou Makefile.</li>
+            <li>Limpar arquivos intermediários antes de novas rodadas.</li>
+            <li>Usar <code>-debug_access</code> quando precisar investigar no Verdi.</li>
+          </ul>
+          <p>
+            O verification plan também aparece aqui: ele é para verificação o que a especificação funcional é para RTL.
+            Mesmo em um projeto pequeno, vale listar cenários: reset, soma sem carry, soma com carry, bordas 0x00/0xFF,
+            erros esperados e critérios de aprovação.
+          </p>
+          <details class="expand-block" open>
+            <summary>Mini verification plan para este adder</summary>
+            <div class="detail-body">
+              <ul class="key-list compact-list">
+                <li>Reset zera <code>sum</code> e <code>carry</code>?</li>
+                <li>Soma simples sem carry funciona, por exemplo <code>8'h01 + 8'h02</code>?</li>
+                <li>Soma com carry funciona, por exemplo <code>8'hFF + 8'h01</code>?</li>
+                <li>Valores de borda <code>0x00</code>, <code>0xFF</code> e combinações aleatórias foram testados?</li>
+                <li>O scoreboard acusa erro se o DUT ou o modelo esperado estiver incorreto?</li>
+                <li>O fluxo gera log e waveform suficientes para debug?</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arquivos">Arquivos do fluxo</h2>
+          <p>
+            O slide de simulação lista arquivos típicos. Isso é importante porque, no ambiente real,
+            entender "quem chama quem" costuma começar pela árvore de arquivos e pela filelist.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Arquivo</th><th>Papel</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>adder.sv</code></td><td>RTL do DUT, contendo o somador.</td></tr>
+                <tr><td><code>tb.sv</code></td><td>Top de testbench com DUT, interfaces, test, driver, monitor, scoreboard e environment.</td></tr>
+                <tr><td><code>adder.f</code></td><td>Filelist usada pelo VCS para saber quais fontes compilar.</td></tr>
+                <tr><td><code>README</code></td><td>Instruções de execução e detalhes do exemplo.</td></tr>
+                <tr><td><code>Makefile</code></td><td>Alvos para compilar, simular, depurar e limpar arquivos temporários.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Essa visão é diretamente reaproveitável no projeto: antes de mexer no código, devemos localizar
+            filelists, tops, scripts e logs. Isso reduz tentativa cega.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="debug-flow">Debug flow</h2>
+          <p>
+            Debug não é apenas abrir waveform. O fluxo correto é localizar a lógica responsável, isolar o bug e entender
+            por que o DUT não respondeu como deveria.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Recurso</th><th>Por que ajuda</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Waveform</td><td>Mostra valores no tempo.</td></tr>
+                <tr><td>Source browser</td><td>Relaciona sinal com linha de código.</td></tr>
+                <tr><td>Schematic viewer</td><td>Ajuda a enxergar conectividade.</td></tr>
+                <tr><td>Assertion debug</td><td>Mostra regra violada no ciclo certo.</td></tr>
+                <tr><td>Transaction/messages</td><td>Conecta eventos abstratos com sinais reais.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="quizzes">Quizzes explicados</h2>
+          <div class="quiz-card">
+            <strong>Testbench consists of DUT, stimulus generator and __________.</strong>
+            <p class="answer">response checker.</p>
+            <p>No exemplo, o response checker é o scoreboard.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Simulator and debug environment are same.</strong>
+            <p class="answer">False.</p>
+            <p>VCS simula; Verdi depura.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Mixed Verilog/SV and VHDL models use which flow?</strong>
+            <p class="answer">three-step flow.</p>
+            <p>Analyze, elaborate and simulate.</p>
+          </div>
+          <div class="quiz-card">
+            <strong><code>vlogan</code> analyses the design for __________.</strong>
+            <p class="answer">instantiations, conforme o quiz.</p>
+            <p>Na prática, entenda <code>vlogan</code> como etapa de análise de fontes antes da elaboração.</p>
+          </div>
+          <div class="quiz-card">
+            <strong>Model libraries are not required for simulation.</strong>
+            <p class="answer">True, no contexto simplificado do exemplo.</p>
+            <p>Em gate-level simulation, IPs ou bibliotecas tecnológicas, essa resposta pode depender do fluxo.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="praticas">Designs para praticar</h2>
+          <p>
+            O curso fecha o bloco sugerindo pequenos designs para simular. A lista não é aleatória: cada item
+            treina um tipo de verificação.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Design</th><th>O que treina</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Adder / multiplier</td><td>Modelo de referência aritmético, carry, overflow e largura de resultado.</td></tr>
+                <tr><td>Counter with overflow</td><td>Reset, enable, contagem, wrap-around e flag de overflow.</td></tr>
+                <tr><td>Up/down counter</td><td>Direção de contagem, fronteiras e transições de controle.</td></tr>
+                <tr><td>Arbiter</td><td>Prioridade, exclusão mútua, grant correto e fairness.</td></tr>
+                <tr><td>Mux/demux</td><td>Seleção, roteamento e cobertura de todas as entradas/saídas.</td></tr>
+                <tr><td>Encoder/decoder</td><td>Mapeamento entre código e sinais one-hot/binários.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Ponte com o projeto</h2>
+          <p>
+            Este bloco é muito útil para o ambiente clonado do professor. Quando formos trabalhar nele, vamos procurar
+            exatamente estes elementos:
+          </p>
+          <ul class="key-list compact-list">
+            <li>filelists que dizem quais arquivos entram no VCS;</li>
+            <li>Makefile com alvos de compile, simulação, debug e limpeza;</li>
+            <li>top de testbench que conecta DUT, interface e test;</li>
+            <li>classes ou módulos com papel de driver, monitor e scoreboard;</li>
+            <li>logs com mensagens de PASS/ERROR;</li>
+            <li>arquivos FSDB/VCD para abrir no Verdi.</li>
+          </ul>
+          <div class="callout">
+            <strong>Resumo para guardar:</strong>
+            <code>Packet -> Driver -> Interface -> DUT -> Monitor -> Scoreboard</code>,
+            e nas ferramentas:
+            <code>filelist -> VCS -> simv -> log/waveform -> Verdi</code>.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/05_SystemVerilog_Reference_Design-1.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/05_SystemVerilog_Reference_Design-1.md">texto extraído</a>,
+          <a data-md-source href="../../assets/md_normalizado/05_SystemVerilog_Reference_Design-1.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_3_4_systemverilog_for_verification_2.html">Anterior: Verification-2</a>
+          <a href="index.html">Voltar ao curso</a>
+          <a href="bloco_3_6_systemverilog_reference_design_2.html">Próximo: Reference Design-2</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

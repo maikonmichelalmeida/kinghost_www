@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>04 RTL Design Synthesis</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Este curso</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span>04 RTL Design Synthesis
+    </nav>
+
+    <h1 class="page-title">04 RTL Design Synthesis</h1>
+    <p class="lead">
+      Curso para entender como RTL vira netlist, por que constraints são entrada da síntese
+      e como reports de timing, área e power entram no fluxo.
+    </p>
+
+    <section class="section">
+      <h2>Aulas Processadas</h2>
+      <div class="lesson-grid">
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Introdução à Síntese e Constraints</h3>
+          <p>Fluxo IC, síntese lógica/física, entradas e saídas, constraints e relação com <code>make synth</code>.</p>
+          <a class="button-link" href="bloco_1_2a_introducao_e_constraints.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>SDC, Caminhos de Timing e I/O</h3>
+          <p>Aula longa sobre <code>create_clock</code>, caminhos reg-to-reg, input/output delay, clock virtual, carga e validação do SDC.</p>
+          <a class="button-link" href="bloco_1_2b_sdc_timing_io.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>compile_ultra e Técnicas DC_NXT</h3>
+          <p>DesignWare, datapath, hierarquia, auto-ungrouping, boundary optimization, scan, path groups, reports e QoR.</p>
+          <a class="button-link" href="bloco_1_2c_compile_ultra_tecnicas_dc_nxt.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Reports, Netlist e Gate-Level</h3>
+          <p>Como ler reports, usar <code>mapped.v</code>, aplicar SDF e preparar simulação pós-síntese.</p>
+          <a class="button-link" href="bloco_1_2d_reports_netlist_gate_level.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Timing Analysis e Ajuste de SDC</h3>
+          <p>Como interpretar slack, WNS/TNS, path groups, <code>report_timing</code> e decidir se a correção está no SDC, RTL ou compile.</p>
+          <a class="button-link" href="bloco_1_2e_timing_analysis_ajuste_sdc.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Múltiplos Clocks e Exceptions</h3>
+          <p>Generated clocks, clock groups, false paths, multicycle paths e exceções sem mascarar bugs reais.</p>
+          <a class="button-link" href="bloco_1_2f_multiplos_clocks_exceptions.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Constraints Complexas de Clock e I/O</h3>
+          <p>Waveform, duty-cycle, borda de descida, múltiplos paths de I/O, driving cell, latências e clocks virtuais externos.</p>
+          <a class="button-link" href="bloco_1_2g_constraints_complexas_clock_io.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>SPG, Congestionamento e Layout GUI</h3>
+          <p>Como a síntese passa a considerar informação física, congestionamento, camadas de roteamento e visualização de layout.</p>
+          <a class="button-link" href="bloco_1_2h_spg_congestion_layout_gui.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Constraints Complexas: Guia Operacional</h3>
+          <p>Clock waveform, input/output delay avançado, driving cell, cargas, clocks virtuais e latências pré/pós-CTS.</p>
+          <a class="button-link" href="bloco_1_2i_constraints_complexas_design_considerations.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Post-Synthesis Output Data</h3>
+          <p>Netlist, DDC, SDC, SCAN-DEF, <code>assign</code>, nomes especiais, multiple port nets e arquivos para backend.</p>
+          <a class="button-link" href="bloco_1_2j_post_synthesis_output_data.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Lab Guide DC_NXT: roteiro prático</h3>
+          <p>Como transformar o material do Lab Guide em uma sequência executável de preparação, síntese, reports e análise.</p>
+          <a class="button-link" href="bloco_1_2k_lab_guide_dc_nxt_roteiro_pratico.html">Estudar aula</a>
+        </article>
+
+        <article class="lesson-card">
+          <span class="status">Processado</span>
+          <h3>Job Aid DC_NXT: checklist final</h3>
+          <p>Mapa operacional de comandos, setup, Tcl, constraints, compile, reports, SPG, saída e revisão para prova.</p>
+          <a class="button-link" href="bloco_1_2l_job_aid_checklist_final.html">Estudar aula</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Curso Concluído</h2>
+      <p>
+        Este curso agora cobre o arco completo de síntese RTL no DC NXT: fundamentos, SDC, timing, compile ultra,
+        relatórios, SPG, dados pós-síntese, Lab Guide e Job Aid. O próximo uso recomendado é aplicar este material no
+        ambiente do professor, começando por SDC e targets de Makefile para simulação e síntese do CPU.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Relação com o projeto</h2>
+      <p>
+        Este curso prepara a leitura do fluxo de síntese do ambiente do professor. Ele ajuda a entender
+        por que o projeto precisa separar RTL de testbench, criar constraints mínimas e ler reports.
+      </p>
+    </section>
+
+    <nav class="pager" aria-label="Navegação entre páginas">
+      <a href="../../index.html">Voltar para cursos</a>
+      <a href="bloco_1_2l_job_aid_checklist_final.html">Última aula processada</a>
+    </nav>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

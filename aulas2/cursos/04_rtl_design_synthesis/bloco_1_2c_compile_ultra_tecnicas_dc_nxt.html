@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>compile_ultra e Técnicas DC_NXT</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>compile_ultra
+    </nav>
+
+    <h1 class="page-title">compile_ultra e Técnicas DC_NXT</h1>
+    <p class="lead">
+      Depois que o RTL foi lido, o top foi elaborado, as bibliotecas foram ligadas e o SDC foi aplicado, chega o momento
+      em que o Design Compiler NXT transforma intenção em implementação: otimização, mapeamento, reports e netlist.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Esta aula explica o que realmente acontece quando um script chama <code>compile_ultra</code>. A visão curta
+            seria dizer: “ele sintetiza”. A visão correta é mais rica: ele reescreve lógica, escolhe arquiteturas de
+            datapath, usa DesignWare, altera hierarquia, otimiza timing, área e DRCs, pode preparar o design para scan,
+            pode usar informação física e depois gera relatórios que dizem se o resultado presta.
+          </p>
+          <p>
+            O ponto central para o seu projeto é entender que <code>compile_ultra</code> não conserta RTL ruim nem SDC
+            ruim. Ele amplia a capacidade de otimização da ferramenta, mas precisa receber um problema bem especificado:
+            RTL sintetizável, top correto, bibliotecas corretas, constraints coerentes e filelist limpa.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="onde-entra">Onde o compile entra no fluxo</h2>
+          <p>
+            Antes do compile, o DC_NXT ainda está preparando o problema. Ele leu arquivos, elaborou a hierarquia,
+            resolveu referências e aplicou constraints. O compile é o momento em que a ferramenta decide como transformar
+            o design em uma rede de células reais da biblioteca.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step"><strong>1. RTL</strong><p>Descrição comportamental/sintetizável.</p></div>
+            <div class="flow-step"><strong>2. Elaborate + link</strong><p>Top resolvido e bibliotecas conectadas.</p></div>
+            <div class="flow-step"><strong>3. SDC</strong><p>Clock, delays, cargas e margens.</p></div>
+            <div class="flow-step"><strong>4. compile_ultra</strong><p>Otimização arquitetural, lógica e gate-level.</p></div>
+            <div class="flow-step"><strong>5. Reports + netlist</strong><p>Timing, área, potência, QoR, mapped.v, SDF e SVF.</p></div>
+          </div>
+
+          <pre><code>analyze -format sverilog -vcs "-f filelist.f"
+elaborate top_cpu
+current_design top_cpu
+link
+source constraints.sdc
+check_timing
+compile_ultra</code></pre>
+
+          <div class="lesson-note">
+            <strong>Sequência mental:</strong> se <code>check_timing</code> está ruim antes do compile, o problema ainda
+            não está bem definido. Nessa situação, rodar <code>compile_ultra</code> pode produzir uma netlist, mas não
+            necessariamente uma netlist confiável.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="tres-niveis">Os três níveis de otimização</h2>
+          <p>
+            Os slides dizem que <code>compile_ultra</code> trabalha em vários níveis. Isso é importante porque a ferramenta
+            não está apenas trocando um operador por uma porta. Ela pode mudar a forma interna do circuito mantendo a
+            função lógica.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Otimização arquitetural</h3>
+              <p>Escolhe arquiteturas melhores para datapaths, somadores, comparadores, multiplicadores e estruturas aritméticas.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Otimização lógica</h3>
+              <p>Reescreve expressões booleanas, compartilha subexpressões, remove constantes e pode atravessar fronteiras.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Otimização gate-level</h3>
+              <p>Escolhe células reais da biblioteca, troca drive strength, insere buffers, duplica lógica e tenta cumprir DRCs.</p>
+            </article>
+          </div>
+
+          <p>
+            Por isso a netlist pós-síntese pode parecer diferente do RTL. Isso não significa erro. Significa que a
+            ferramenta teve liberdade para transformar estrutura preservando função. Mais tarde, Formality existe
+            justamente para verificar essa equivalência de forma robusta.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="rtl-bom">Por que RTL bom ainda importa</h2>
+          <p>
+            <code>compile_ultra</code> não faz milagre. Se o RTL tem latches acidentais, clocks derivados de lógica,
+            resets confusos, caminhos combinacionais gigantes, larguras mal dimensionadas ou hierarquia ruim, o
+            sintetizador pode até encontrar uma implementação, mas o QoR tende a ser pior.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item"><strong>RTL limpo</strong>Separação clara entre combinacional e sequencial; nada de testbench no design.</div>
+            <div class="check-item"><strong>Top correto</strong>O módulo sintetizado deve ser o top real do bloco, não o top de simulação.</div>
+            <div class="check-item"><strong>Filelist limpa</strong>Em síntese, a filelist deve conter RTL sintetizável, não <code>tb</code> ou dumps.</div>
+            <div class="check-item"><strong>SDC coerente</strong>Clock, delays, cargas e exceções precisam fazer sentido para o bloco.</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="designware">DesignWare: quando operadores viram arquiteturas</h2>
+          <p>
+            DesignWare é uma biblioteca de componentes sintetizáveis e parametrizáveis. O curso enfatiza que operadores
+            HDL não determinam uma única implementação física. Um <code>+</code>, um <code>*</code> ou um comparador
+            pode virar uma arquitetura diferente dependendo de largura, timing, área e biblioteca.
+          </p>
+
+          <pre><code>assign sum  = a + b;
+assign mult = x * y;
+assign flag = value_a &gt; value_b;</code></pre>
+
+          <p>
+            Para poucos bits, a ferramenta pode mapear diretamente em gates simples. Para datapaths maiores, ela pode
+            inferir componentes DesignWare, testar alternativas e escolher uma implementação mais eficiente. Isso é uma
+            das razões pelas quais o RTL deve expressar intenção de forma clara.
+          </p>
+
+          <details class="nested-detail" open>
+            <summary>O que é CSA e por que aparece nos slides?</summary>
+            <div class="detail-body">
+              <p>
+                CSA significa Carry-Save Adder. Em somas com muitos operandos, propagar carry a cada soma cria caminhos
+                longos. O CSA adia a propagação completa do carry e usa uma rede de compressores para reduzir múltiplos
+                operandos de forma mais rápida.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="expressoes">Otimizações de expressão aritmética</h2>
+          <p>
+            Os slides citam transformações que explicam por que dois RTLs equivalentes podem sintetizar com resultados
+            diferentes.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Técnica</th><th>Ideia</th><th>Por que importa</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Constant folding</td><td>Reduz expressões com constantes antes do mapeamento.</td><td>Remove lógica desnecessária.</td></tr>
+                <tr><td>Operand folding</td><td>Reorganiza operandos para simplificar aritmética.</td><td>Pode melhorar área e timing.</td></tr>
+                <tr><td>Common sub-expression sharing</td><td>Compartilha uma subexpressão usada em mais de um lugar.</td><td>Economiza área, mas pode aumentar fanout.</td></tr>
+                <tr><td>Comparator sharing</td><td>Reaproveita lógica comum entre comparadores.</td><td>Reduz duplicação em datapaths.</td></tr>
+                <tr><td>Parallel constant multipliers</td><td>Otimiza multiplicações por constantes.</td><td>Pode substituir multiplicadores por shifts e somas.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="sharing">Resource sharing: deixar a ferramenta decidir</h2>
+          <p>
+            A forma como você escreve operadores no RTL pode facilitar ou impedir compartilhamento de recursos. Compartilhar
+            um somador economiza área, mas pode colocar muxes antes dele e aumentar o caminho crítico.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card"><h3>Sem compartilhamento</h3><p>Dois caminhos usam dois somadores separados. Pode ser mais rápido, mas usa mais área.</p></article>
+            <article class="concept-card warn"><h3>Compartilhamento forçado</h3><p>Um único somador recebe muxes grandes. Economiza área, mas pode tornar <code>SEL → SUM</code> crítico.</p></article>
+            <article class="concept-card"><h3>Estilo equilibrado</h3><p>Escrever RTL claro para permitir que o DC_NXT avalie timing e área antes de decidir compartilhar.</p></article>
+          </div>
+
+          <pre><code>always_comb begin
+  unique case (sel)
+    2'b00: y = a + b;
+    2'b01: y = c + d;
+    2'b10: y = e + f;
+    default: y = '0;
+  endcase
+end</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="load-splitting">Load splitting e duplicação de lógica</h2>
+          <p>
+            Quando uma lógica dirige cargas demais ou espalhadas demais, a ferramenta pode duplicar parte da lógica.
+            Isso parece piorar área, mas pode melhorar timing porque reduz fanout e encurta caminhos físicos.
+          </p>
+          <div class="lesson-note">
+            <strong>Intuição:</strong> um único driver tentando alimentar muitos destinos pode virar gargalo. Duplicar
+            lógica cria drivers locais menores. O preço é área; o benefício pode ser timing.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="alib">ALIB: a ferramenta aprende a biblioteca</h2>
+          <p>
+            ALIB é a análise da biblioteca alvo. A ferramenta caracteriza opções úteis da tecnologia e cria um cache para
+            acelerar e melhorar decisões de síntese. Se aparecerem diretórios de ALIB na pasta de run, eles são artefatos
+            de suporte da ferramenta, não resultado final do projeto.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="hierarquia">Hierarquia: organização para humanos, limite para otimização</h2>
+          <p>
+            Hierarquia é excelente para humanos. Ela separa blocos, dá nomes, ajuda debug e organiza o projeto. Mas para
+            a ferramenta, fronteiras hierárquicas podem impedir otimização melhor. Por isso <code>compile_ultra</code>
+            usa auto-ungrouping e boundary optimization.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Auto-ungrouping</h3>
+              <p>Remove hierarquias automaticamente quando elas atrapalham otimização. É ligado por padrão.</p>
+              <pre><code>compile_ultra -no_autoungroup</code></pre>
+            </article>
+            <article class="concept-card">
+              <h3>Preservar seletivamente</h3>
+              <p>Se um bloco precisa permanecer visível para debug, teste ou equivalência, você pode impedir ungroup.</p>
+              <pre><code>set_ungroup [get_cells U_DEBUG_BLOCK] false</code></pre>
+            </article>
+            <article class="concept-card">
+              <h3>DesignWare ungrouping</h3>
+              <p>Hierarquias DesignWare também podem ser removidas por padrão. Dá para controlar isso.</p>
+              <pre><code>set_app_var compile_ultra_ungroup_dw false</code></pre>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="boundary">Boundary optimization: otimizar através da fronteira</h2>
+          <p>
+            Boundary optimization não é exatamente apagar hierarquia. Ela permite otimizar atravessando fronteiras:
+            propagar constantes, empurrar inversões, simplificar lógica de entrada/saída e melhorar timing ao redor de
+            submódulos.
+          </p>
+
+          <pre><code>compile_ultra -no_boundary_optimization
+set_boundary_optimization [get_cells U_SENSITIVE_BLOCK] false</code></pre>
+
+          <div class="lesson-note">
+            <strong>Regra prática:</strong> preserve hierarquia quando houver motivo real. Preservar tudo por medo pode
+            prejudicar timing; liberar tudo sem critério pode dificultar debug.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="partitioning">Particionamento: resolver no RTL antes de forçar na ferramenta</h2>
+          <p>
+            O melhor cenário não é depender de auto-ungrouping para consertar uma hierarquia ruim. O ideal é particionar
+            bem desde o RTL.
+          </p>
+          <ul class="key-list compact-list">
+            <li>Evite módulos pequenos demais que só encapsulam uma porta lógica trivial.</li>
+            <li>Evite blocos gigantes que misturam controle, datapath e interface sem necessidade.</li>
+            <li>Prefira fronteiras com sinais registrados quando possível.</li>
+            <li>Não crie hierarquia artificial em caminhos críticos sem motivo.</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="scan">Test-ready synthesis e scan</h2>
+          <p>
+            Em ASIC, scan é usado para teste de fabricação. Um flip-flop comum pode virar um scan flip-flop com mux extra
+            na entrada. Esse mux aumenta área e pode piorar setup. Se você sintetiza ignorando scan e depois adiciona
+            scan, timing pode falhar depois.
+          </p>
+
+          <pre><code>set_scan_configuration -style multiplexed_flip_flop
+compile_ultra -scan</code></pre>
+
+          <p>
+            O detalhe de prova dos MDs é sutil: <code>compile_ultra -scan</code> considera impacto de área e atraso dos
+            registradores scan, mas não deve ser confundido com scan chain stitching completo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="qor">QoR, WNS e TNS</h2>
+          <p>
+            QoR significa Quality of Results. Em síntese, envolve timing, área, potência, DRCs e congestionamento. Para
+            timing, dois termos aparecem muito:
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card"><h3>WNS</h3><p>Worst Negative Slack. É o pior slack do design.</p></article>
+            <article class="concept-card"><h3>TNS</h3><p>Total Negative Slack. Soma das violações negativas.</p></article>
+            <article class="concept-card"><h3>DRC</h3><p>Design Rule Constraints: max transition, max capacitance, max fanout e regras elétricas.</p></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="path-groups">Path groups: ensinar a ferramenta onde olhar</h2>
+          <p>
+            Path groups permitem orientar a otimização. Caminhos subcríticos ou grupos específicos podem ser ignorados
+            se outros caminhos dominam a função objetivo.
+          </p>
+
+          <pre><code>group_path -name REG2REG \
+  -from [all_registers] \
+  -to   [all_registers]
+
+group_path -name REG2REG \
+  -critical_range 0.3 \
+  -weight 2</code></pre>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Opção</th><th>Significado</th><th>Intuição</th></tr></thead>
+              <tbody>
+                <tr><td><code>-critical_range</code></td><td>Inclui caminhos próximos do crítico.</td><td>Evita consertar só o pior caminho.</td></tr>
+                <tr><td><code>-weight</code></td><td>Dá prioridade relativa a um grupo.</td><td>A ferramenta pode aceitar piora em grupos menos prioritários.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="spg">SPG e otimização física</h2>
+          <p>
+            Recursos ligados a <code>compile_ultra -spg</code> aproximam a síntese de uma visão física: placement,
+            congestionamento, buffers e estimativas mais realistas. Isso é importante porque atrasos reais não dependem
+            apenas de portas; fios e posicionamento também importam.
+          </p>
+
+          <pre><code>compile_ultra -spg</code></pre>
+
+          <div class="concept-grid">
+            <article class="concept-card"><h3>Buffer-aware placement</h3><p>Considera buffers durante placement para melhorar timing global.</p></article>
+            <article class="concept-card"><h3>Automatic timing control</h3><p>Ajusta a função objetivo de timing durante placement.</p></article>
+            <article class="concept-card"><h3>Congestion-driven restructuring</h3><p>Reestrutura árvores lógicas para reduzir congestionamento físico.</p></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="runtime">Runtime, multi-core e incremental compile</h2>
+          <p>
+            Síntese avançada pode demorar. Os slides mostram recursos para usar múltiplos cores, reduzir runtime e rodar
+            relatórios em paralelo. Reduzir esforço pode impactar QoR, então isso deve ser usado com intenção.
+          </p>
+
+          <pre><code>set_host_options -max_cores 8
+
+set_app_var compile_prefer_runtime true
+compile_ultra
+
+compile_ultra -incremental</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="reports">Depois do compile: reports são o diagnóstico</h2>
+          <p>
+            O resultado do compile não é apenas uma netlist. Os reports dizem o que a ferramenta conseguiu, onde falhou
+            e qual deve ser o próximo movimento.
+          </p>
+
+          <pre><code>report_constraint -all_violators &gt; reports/top_constraints.rpt
+report_timing -max_paths 20      &gt; reports/top_timing.rpt
+report_area -hierarchy           &gt; reports/top_area.rpt
+report_power                     &gt; reports/top_power.rpt
+report_qor                       &gt; reports/top_qor.rpt</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="artefatos">Artefatos finais: o que o fluxo deve escrever</h2>
+          <p>
+            Depois de compilar, o script precisa exportar dados para as próximas etapas: simulação gate-level, análise
+            de timing, implementação física e Formality.
+          </p>
+
+          <pre><code>change_names -rules verilog -hierarchy
+
+write -format verilog -hierarchy -output outputs/top_cpu_mapped.v
+write_sdc -nosplit outputs/top_cpu_final.sdc
+write_sdf outputs/top_cpu_delays.sdf
+set_svf -off</code></pre>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Arquivo</th><th>Uso</th></tr></thead>
+              <tbody>
+                <tr><td><code>mapped.v</code></td><td>Netlist gate-level usada em simulação pós-síntese e implementação.</td></tr>
+                <tr><td><code>final.sdc</code></td><td>Constraints atualizadas após síntese.</td></tr>
+                <tr><td><code>delays.sdf</code></td><td>Atrasos para anotação em gate-level simulation.</td></tr>
+                <tr><td><code>.svf</code></td><td>Registro de transformações para ajudar Formality.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="script">Script didático de síntese com compile_ultra</h2>
+          <p>
+            Um script mínimo deve deixar visível a ordem dos eventos. O objetivo não é copiar este bloco literalmente
+            agora, mas entender a anatomia.
+          </p>
+
+          <pre><code>set DESIGN_NAME top_cpu
+set REPORTS_DIR ../rpt
+set OUTPUTS_DIR ../outputs
+set CONSTRAINTS_DIR ../../../constraints
+set RTL_FILELIST ../../../verif/filelist.f
+
+file mkdir $REPORTS_DIR
+file mkdir $OUTPUTS_DIR
+
+source ../scripts/setup.tcl
+
+set_svf ${OUTPUTS_DIR}/${DESIGN_NAME}.svf
+
+analyze -format sverilog -vcs "-f ${RTL_FILELIST}"
+elaborate $DESIGN_NAME
+current_design $DESIGN_NAME
+link
+check_design -unresolved
+
+source ${CONSTRAINTS_DIR}/constraints.sdc
+check_timing
+
+compile_ultra
+
+report_constraint -all_violators &gt; ${REPORTS_DIR}/${DESIGN_NAME}_constraints.rpt
+report_timing                    &gt; ${REPORTS_DIR}/${DESIGN_NAME}_timing.rpt
+report_area -hierarchy           &gt; ${REPORTS_DIR}/${DESIGN_NAME}_area.rpt
+report_power                     &gt; ${REPORTS_DIR}/${DESIGN_NAME}_power.rpt
+report_qor                       &gt; ${REPORTS_DIR}/${DESIGN_NAME}_qor.rpt
+
+change_names -rules verilog -hierarchy
+write -format verilog -hierarchy -output ${OUTPUTS_DIR}/${DESIGN_NAME}_mapped.v
+write_sdc -nosplit ${OUTPUTS_DIR}/${DESIGN_NAME}_final.sdc
+write_sdf ${OUTPUTS_DIR}/${DESIGN_NAME}_delays.sdf
+
+set_svf -off</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Ligação direta com nosso projeto</h2>
+          <p>
+            O próximo passo no seu laboratório não é sair ativando todas as opções. A ordem segura é: simulação RTL,
+            SDC inicial, <code>check_timing</code>, <code>compile_ultra</code> simples, leitura dos reports e geração de
+            artefatos pós-síntese.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Resumo para o professor:</strong> estamos indo em direção ao ambiente dele quando o nosso projeto
+            passa a ter <code>constraints/constraints.sdc</code>, <code>tools/dc_nxt/scripts/synth.tcl</code>,
+            <code>tools/dc_nxt/rpt</code>, <code>tools/dc_nxt/outputs</code> e Makefile chamando <code>make synth</code>.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Perguntas de revisão</h2>
+          <div class="quiz-card"><strong>1. Por que <code>compile_ultra</code> não é apenas “gerar gates”?</strong><p class="answer">Porque faz otimização arquitetural, lógica e gate-level, podendo usar DesignWare, alterar hierarquia e reestruturar datapaths.</p></div>
+          <div class="quiz-card"><strong>2. O que é DesignWare neste contexto?</strong><p class="answer">Uma biblioteca de componentes sintetizáveis e parametrizáveis, especialmente útil para datapaths.</p></div>
+          <div class="quiz-card"><strong>3. O que auto-ungrouping pode fazer?</strong><p class="answer">Remover hierarquias que atrapalham otimização, inclusive hierarquias DesignWare por padrão.</p></div>
+          <div class="quiz-card"><strong>4. Qual a diferença entre auto-ungrouping e boundary optimization?</strong><p class="answer">Auto-ungrouping remove hierarquia; boundary optimization otimiza através das fronteiras.</p></div>
+          <div class="quiz-card"><strong>5. O que <code>compile_ultra -scan</code> considera?</strong><p class="answer">Considera impacto de área e atraso dos registradores scan, mas não é scan chain stitching completo.</p></div>
+          <div class="quiz-card"><strong>6. Por que reports são obrigatórios?</strong><p class="answer">Porque dizem se há violações, onde está o caminho crítico, quanto custou a área e se o QoR é aceitável.</p></div>
+        </section>
+
+        <section class="section">
+          <h2 id="proximo">Próximo bloco do site</h2>
+          <p>
+            Depois desta aula, a sequência natural é uma página focada em <strong>reports, netlist pós-síntese e
+            simulação gate-level</strong>. Ela deve explicar como ler <code>report_timing</code>, como usar
+            <code>mapped.v</code>, quando entra o <code>SDF</code> e como isso prepara o terreno para Formality.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_A.md">Ultra Synthesis parte A</a>,
+          <a data-md-source href="../../assets/md_normalizado/06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_B.md">parte B</a>,
+          <a data-md-source href="../../assets/md_normalizado/06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_C.md">parte C</a>,
+          <a data-md-source href="../../assets/md_normalizado/06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_D.md">parte D</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2b_sdc_timing_io.html">Anterior: SDC e Timing</a>
+          <a href="bloco_1_2d_reports_netlist_gate_level.html">Próxima: Reports e Gate-Level</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base md_normalizado.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

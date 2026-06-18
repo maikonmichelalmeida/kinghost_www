@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SPG, Congestionamento e Layout GUI</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">04 RTL Design Synthesis</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">RTL Design Synthesis</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">04 RTL Design Synthesis</a><span>/</span>SPG e Congestionamento
+    </nav>
+
+    <h1 class="page-title">SPG, Congestionamento e Layout GUI</h1>
+    <p class="lead">
+      Esta aula explica por que a síntese deixa de ser apenas uma transformação lógica e passa a considerar sinais físicos:
+      posição aproximada das células, camadas de metal, congestionamento, floorplan e correlação com o IC Compiler II.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Até aqui, o curso vinha respondendo uma pergunta central: como escrever RTL, aplicar constraints e obter uma
+            netlist que fecha timing em um modelo de síntese. Agora a pergunta muda um pouco: essa netlist também tem
+            chance de virar um layout físico roteável? O bloco pode ter timing limpo no Design Compiler NXT e ainda assim
+            dar trabalho no backend se a lógica ficar mal distribuída, se muitas conexões disputarem a mesma região ou se
+            as estimativas de atraso não representarem bem as camadas reais de metal.
+          </p>
+          <p>
+            O tema dos slides é o SPG, <strong>Synopsys Physical Guidance</strong>. A ideia é fazer o DC NXT enxergar parte
+            do problema físico antes de entregar o design ao IC Compiler II. Para o nosso projeto acadêmico, isso não quer
+            dizer que vamos sair usando todas as opções avançadas imediatamente. Quer dizer que precisamos entender o
+            vocabulário: floorplan, congestionamento, heat map, GRC, overflow, Net Layer Optimization, topology optimization
+            e fluxo incremental.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="por-que-fisico">Por que a síntese precisa pensar em físico?</h2>
+          <p>
+            Em uma visão simplificada, síntese lógica recebe RTL e biblioteca de células e escolhe portas para implementar
+            o comportamento. Mas o atraso real de um chip não vem só da porta lógica. Ele também vem dos fios. E fios não
+            são abstrações: eles têm comprimento, resistência, capacitância, camada metálica, vias, ocupação de rota e
+            relação com outras conexões.
+          </p>
+          <p>
+            Em tecnologias mais modernas, o atraso de interconexão pode ser tão importante quanto o atraso das células.
+            Uma estrutura lógica aparentemente boa pode ser ruim fisicamente se criar muitas conexões longas, atravessar
+            regiões densas, forçar detours de roteamento ou depender de nets críticas em camadas desfavoráveis.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Síntese lógica pura</h3>
+              <p>
+                Foca em portas, área, timing estimado e restrições lógicas. É suficiente para começar e para blocos
+                pequenos, mas pode ter baixa correlação com o layout final.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3>Síntese topográfica</h3>
+              <p>
+                Usa informação física aproximada para estimar fios e posicionamento. O DC NXT tenta prever melhor o que
+                acontecerá no backend.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Síntese com SPG</h3>
+              <p>
+                Além de otimizar, gera orientação física para o IC Compiler II. A meta é reduzir surpresas quando a netlist
+                entra em place and route.
+              </p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Tradução para o estudo:</strong> uma netlist "correta" funcionalmente ainda pode ser ruim para
+            implementação física. SPG tenta antecipar esse problema enquanto ainda estamos em síntese.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="spg">O que é SPG?</h2>
+          <p>
+            SPG significa <strong>Synopsys Physical Guidance</strong>. É um modo de fluxo em que o Design Compiler NXT usa
+            conhecimento físico para melhorar a síntese e, depois, passa orientação ao IC Compiler II. Essa orientação pode
+            incluir placement aproximado, decisões de roteabilidade, informações de camada de metal para nets e uma base
+            mais coerente para a próxima ferramenta.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>1. RTL + SDC</strong>
+              O bloco começa como sempre: RTL, bibliotecas, constraints e configuração do ambiente.
+            </div>
+            <div class="flow-step">
+              <strong>2. DC NXT com SPG</strong>
+              A síntese considera estimativas físicas, congestionamento, camadas de metal e placement aproximado.
+            </div>
+            <div class="flow-step">
+              <strong>3. ICC II guiado</strong>
+              O IC Compiler II recebe uma netlist mais preparada e pode reaproveitar a orientação física.
+            </div>
+          </div>
+
+          <pre><code># Forma típica apresentada nos slides
+compile_ultra -spg</code></pre>
+
+          <p>
+            Esse comando não deve ser decorado como mágica. Ele faz sentido quando o ambiente tem base física suficiente:
+            tecnologia, bibliotecas físicas, informações de floorplan ou pelo menos um contexto topográfico que permita ao
+            DC NXT estimar placement e roteamento. Em um primeiro laboratório de CPU simples, o uso imediato de SPG pode
+            ser mais conceitual do que obrigatório. Mas o ambiente do professor usa DC NXT em modo topográfico, então este
+            conteúdo explica a direção que ele provavelmente quer que a turma explore.
+          </p>
+
+          <details class="expand-block">
+            <summary>O que o SPG tenta melhorar na prática?</summary>
+            <div class="detail-body">
+              <p>
+                Ele tenta melhorar correlação entre síntese e implementação. Sem isso, você pode fechar timing na síntese,
+                entrar no backend e descobrir que o placement real mudou os atrasos. Ou pode otimizar área agressivamente
+                e criar uma região com lógica muito densa. Ou pode escolher uma topologia de portas que parece boa em
+                atraso lógico, mas cria um conjunto de fios difícil de rotear.
+              </p>
+              <p>
+                A promessa do SPG não é eliminar iteração. A promessa é fazer a primeira resposta da síntese ficar mais
+                parecida com uma resposta que o backend consegue implementar.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="pre-pos-floorplan">Pre-floorplan synthesis versus post-floorplan synthesis</h2>
+          <p>
+            Os slides separam dois momentos. Antes de haver um floorplan confiável, a ferramenta trabalha com hipóteses e
+            defaults físicos. Depois de existir um floorplan, o DC NXT pode usar dados mais reais: tamanho do core, posição
+            de macros, distribuição de portas, bloqueios, regiões de placement e restrições físicas.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>O que a ferramenta sabe</th>
+                  <th>Resultado esperado</th>
+                  <th>Risco principal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Pre-floorplan synthesis</td>
+                  <td>RTL, SDC, bibliotecas e estimativas físicas default ou definidas pelo usuário.</td>
+                  <td>Netlist inicial e dados para ajudar o planejamento físico.</td>
+                  <td>A estimativa pode mudar bastante quando o floorplan real aparecer.</td>
+                </tr>
+                <tr>
+                  <td>IC Compiler II Design Planning</td>
+                  <td>Netlist inicial e intenção física do chip ou bloco.</td>
+                  <td>Criação ou ajuste do floorplan.</td>
+                  <td>Macros, portas e densidade podem revelar problemas que não eram visíveis no RTL.</td>
+                </tr>
+                <tr>
+                  <td>Post-floorplan synthesis</td>
+                  <td>RTL, SDC e floorplan real ou mais maduro.</td>
+                  <td>Netlist pós-floorplan, placement aproximado e melhor correlação com backend.</td>
+                  <td>Se o floorplan ainda é ruim, a síntese pode otimizar em cima de uma hipótese ruim.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Ligação com o ambiente do professor:</strong> quando ele fala em "design compiler", "SDC do bloco" e
+            depois "Formality", provavelmente está montando a sequência: RTL validado, constraints mínimas, síntese, reports,
+            netlist e, em etapas posteriores, equivalência formal. SPG entra quando a síntese começa a conversar com o lado
+            físico do fluxo.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="nlo">Net Layer Optimization: por que camada de metal importa?</h2>
+          <p>
+            Uma net não é apenas uma linha no esquemático. No layout, ela será roteada em camadas metálicas. Cada camada tem
+            propriedades diferentes. Em geral, camadas mais baixas são mais congestionadas e podem ter resistência maior para
+            certos tipos de conexão; camadas superiores podem ser usadas para nets longas e críticas, dependendo da tecnologia
+            e das regras do processo.
+          </p>
+          <p>
+            O slide destaca que a resistência pode variar muito entre camadas. Se a síntese estima todas as nets com uma
+            resistência média genérica, pode errar timing: uma net crítica que no backend seria promovida para camada melhor
+            pode parecer pior do que é; ou uma net curta em região congestionada pode ser otimizada de forma inadequada.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Automatic NLO</h3>
+              <p>
+                A própria ferramenta decide restrições de camada para melhorar correlação e timing. É a forma mais comum
+                de começar.
+              </p>
+            </article>
+            <article class="concept-card">
+              <h3>Pattern-based NLO</h3>
+              <p>
+                Aplica regras por padrão de nets, por exemplo nets longas ou críticas, quando há intenção física conhecida.
+              </p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Manual NLO</h3>
+              <p>
+                O engenheiro força ou sugere camadas para nets específicas. É poderoso, mas exige conhecimento físico real.
+              </p>
+            </article>
+          </div>
+
+          <pre><code># Ver as atribuições de camada feitas pelo DC NXT
+report_net_routing_layer_constraints [get_nets -hier] -output NLO.tcl</code></pre>
+
+          <p>
+            O arquivo gerado pode orientar o IC Compiler II. A ideia é: se o DC NXT já percebeu que certas nets deveriam
+            ter tratamento especial, essa informação não deve se perder quando o design passa para o backend.
+          </p>
+
+          <details class="expand-block">
+            <summary>Quando eu devo me preocupar com NLO no nosso laboratório?</summary>
+            <div class="detail-body">
+              <p>
+                Para o primeiro SDC do CPU, provavelmente não é o primeiro alvo. O que precisa vir antes é: RTL limpo,
+                testbench rodando, Makefile organizado, SDC mínimo, síntese executando, reports gerados e entendimento de
+                timing. NLO fica como conceito de fluxo físico: importante para entender a direção do curso e para responder
+                perguntas sobre por que o DC NXT não é apenas um compilador lógico.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="congestionamento">Congestionamento: demanda versus capacidade</h2>
+          <p>
+            Congestionamento é uma disputa por recursos de roteamento. Imagine que o core do chip é dividido em uma grade.
+            Cada região tem uma quantidade limitada de trilhas por onde fios podem passar. Se muitas nets querem atravessar
+            a mesma borda dessa região, a demanda fica maior que a capacidade. O resultado é overflow.
+          </p>
+
+          <div class="equation">
+            Congestionamento = demanda de roteamento maior que capacidade disponível
+          </div>
+
+          <p>
+            O ponto sutil é que o congestionamento não aparece apenas porque o design tem muitas portas. Ele aparece porque
+            as conexões precisam passar por lugares específicos. Um bloco com área aceitável pode ser difícil de rotear se
+            concentra muita comunicação em uma região pequena. Do mesmo modo, uma escolha de RTL ou de topologia lógica pode
+            criar cruzamentos desnecessários.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sintoma</th>
+                  <th>Significado</th>
+                  <th>Possível resposta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Hotspot pequeno</td>
+                  <td>Região localizada com demanda maior que capacidade.</td>
+                  <td>O roteador pode contornar com detour, mas timing pode piorar.</td>
+                </tr>
+                <tr>
+                  <td>Hotspots numerosos</td>
+                  <td>Problema distribuído, não apenas um acidente local.</td>
+                  <td>Avaliar placement, densidade, floorplan e estrutura da netlist.</td>
+                </tr>
+                <tr>
+                  <td>Overflow alto</td>
+                  <td>Faltam muitos recursos de roteamento em uma borda ou região.</td>
+                  <td>Tratar como congestionamento severo, não apenas ruído visual.</td>
+                </tr>
+                <tr>
+                  <td>Timing piora após roteamento</td>
+                  <td>Detours e RC real aumentaram atraso das nets.</td>
+                  <td>Rever floorplan, SPG, topology optimization ou RTL.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="grc-overflow">GRC, overflow e heat map</h2>
+          <p>
+            O slide usa o conceito de <strong>GRC</strong>, Global Routing Cell. Pense em GRC como uma célula da grade de
+            roteamento global. A ferramenta não está fazendo detailed route final nesse momento; ela está estimando se as
+            conexões cabem na malha global. Cada borda de GRC tem uma capacidade de roteamento. Se a demanda passa da
+            capacidade, há overflow.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Core dividido em GRCs</strong>
+              A área de placement vira uma malha para estimar rotas globais.
+            </div>
+            <div class="flow-step">
+              <strong>Demanda calculada</strong>
+              A ferramenta estima quantas nets precisam passar por cada borda.
+            </div>
+            <div class="flow-step">
+              <strong>Overflow reportado</strong>
+              Quando demanda excede capacidade, aparece hotspot no relatório ou heat map.
+            </div>
+          </div>
+
+          <pre><code># Relatório textual
+report_congestion
+
+# Construir mapa para visualização
+report_congestion -build_map</code></pre>
+
+          <p>
+            O heat map usa cores para indicar intensidade. Cores frias tendem a indicar regiões tranquilas. Cores quentes
+            indicam regiões com mais congestionamento. O erro comum é olhar apenas a cor e não olhar os números. Um pequeno
+            ponto quente pode ser contornável; um conjunto de hotspots extensos ou overflow alto pode inviabilizar timing ou
+            roteamento.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Overall Congestion</strong>
+              Resume o overflow geral. Ajuda a ver se o problema é global ou localizado.
+            </div>
+            <div class="check-item">
+              <strong>Worst Hotspot</strong>
+              Mostra o pior ponto. Um overflow acima de 10 já é sinal forte de problema severo nos slides.
+            </div>
+            <div class="check-item">
+              <strong>Violating GRCs</strong>
+              Mostra quantas GRCs violam e qual porcentagem do total. Cerca de 2% ou mais já merece atenção.
+            </div>
+          </div>
+
+          <details class="expand-block">
+            <summary>Como interpretar congestionamento leve e severo</summary>
+            <div class="detail-body">
+              <p>
+                Congestionamento leve é como um trânsito pontual: talvez o roteador consiga desviar. O problema é que o
+                desvio alonga fios e aumenta RC. Então mesmo um congestionamento localizado pode virar piora de timing.
+              </p>
+              <p>
+                Congestionamento severo é estrutural: muitos hotspots, hotspots grandes, overflow alto ou porcentagem
+                relevante de GRCs violadas. Nesse caso, insistir apenas no detailed route costuma gerar iterações caras.
+                A resposta mais inteligente pode ser mexer em placement, floorplan, constraints físicas ou até RTL.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="topology">Netlist topology optimization</h2>
+          <p>
+            A síntese não precisa implementar uma expressão lógica de uma única forma. A mesma função booleana pode virar
+            árvores diferentes de portas, muxes, AOI/OAI, buffers e decomposições. Em uma visão só lógica, a ferramenta
+            escolhe a estrutura que melhora timing, área ou power. Em uma visão física, a pergunta inclui roteabilidade:
+            essa estrutura espalha conexões de forma saudável ou concentra fios demais em uma região?
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Estrutura boa logicamente</h3>
+              <p>
+                Pode reduzir número de níveis, usar uma célula complexa e parecer eficiente em atraso de célula.
+              </p>
+              <p>
+                Exemplo conceitual: uma AOI grande agrupando várias entradas.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>Estrutura boa fisicamente</h3>
+              <p>
+                Pode usar muxes, decomposição em árvore ou agrupamento diferente para aproximar conexões relacionadas.
+              </p>
+              <p>
+                Exemplo conceitual: árvore associativa-comutativa reorganizada por proximidade.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            Os slides citam exemplos em que um MUX pode ser preferível a uma AOI para aliviar congestionamento. Isso não
+            significa que MUX é sempre melhor. Significa que a ferramenta pode sacrificar uma solução lógica localmente
+            elegante para obter uma solução fisicamente mais roteável.
+          </p>
+
+          <details class="expand-block">
+            <summary>Por que uma árvore associativa-comutativa pode ser rearranjada?</summary>
+            <div class="detail-body">
+              <p>
+                Operações como AND, OR, XOR e soma parcial podem ter propriedades associativas e comutativas em certos
+                contextos. Isso permite reorganizar a árvore sem mudar a função. Se sinais que chegam de regiões próximas
+                forem combinados primeiro, o roteamento pode ficar mais curto e menos cruzado.
+              </p>
+              <pre><code># Ideia lógica, não comando:
+(a & b) & (c & d)
+
+# Se a posição física sugerir outra organização:
+(a & c) & (b & d)</code></pre>
+              <p>
+                A equivalência funcional precisa ser preservada. Por isso, em fluxo real, mudanças de topologia reforçam a
+                importância de Formality depois da síntese.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="controlar">Como controlar onde aplicar otimização de congestionamento</h2>
+          <p>
+            A otimização de congestionamento não precisa ser aplicada de forma cega em todo o design. Às vezes um sub-bloco
+            é crítico em timing e não queremos que a ferramenta mexa agressivamente nele por roteabilidade. Às vezes só uma
+            região ou célula hierárquica é problemática. O comando dos slides para controlar isso é
+            <code>set_congestion_optimization</code>.
+          </p>
+
+          <div class="command-stack">
+            <div class="command-block">
+              <h3>Desabilitar em um design específico</h3>
+              <div class="command-body">
+                <pre><code>set_congestion_optimization [get_designs A] false
+compile_ultra -spg</code></pre>
+                <p>
+                  Útil quando você quer proteger determinado bloco de transformações motivadas por congestionamento.
+                </p>
+              </div>
+            </div>
+
+            <div class="command-block">
+              <h3>Começar desabilitado e habilitar só onde interessa</h3>
+              <div class="command-body">
+                <pre><code>set_congestion_optimization [get_designs *] false
+set_congestion_optimization [get_designs "A D"] true
+set_congestion_optimization [get_cells I_X4] true
+compile_ultra -spg</code></pre>
+                <p>
+                  Útil em análise dirigida: você viu no heat map ou relatório que certos blocos contribuem para o problema
+                  e quer concentrar otimização ali.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Cuidado importante:</strong> otimização física não substitui entendimento do RTL. Se o congestionamento
+            nasce de uma arquitetura ruim, por exemplo muitos barramentos largos cruzando o bloco inteiro, comando nenhum
+            resolve de forma limpa sem alguma mudança estrutural.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="gui">Layout GUI e trace back to RTL</h2>
+          <p>
+            A GUI entra para responder perguntas que o relatório textual não responde com facilidade. O relatório diz que
+            existe congestionamento, mas a tela mostra onde ele está. E quando a ferramenta permite selecionar uma região e
+            rastrear de volta até células, nets e até linhas de RTL, ela ajuda a transformar o problema físico em ação de
+            engenharia.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Ver o mapa</strong>
+              Abrir a janela de layout e gerar heat map de congestionamento.
+            </div>
+            <div class="flow-step">
+              <strong>Selecionar região</strong>
+              Identificar hotspot, nets, células e blocos hierárquicos envolvidos.
+            </div>
+            <div class="flow-step">
+              <strong>Voltar ao RTL</strong>
+              Decidir se a correção é floorplan, placement, constraint física ou reescrita de RTL.
+            </div>
+          </div>
+
+          <p>
+            Esse ponto é muito alinhado com o que o professor chamou de "brincar" com o ambiente. Não é apertar botões sem
+            método. É explorar o fluxo para entender quais evidências cada ferramenta entrega: simulação prova comportamento,
+            síntese gera netlist e reports, GUI física mostra sintomas de implementação, e Formality depois confere se a
+            netlist continua equivalente ao RTL.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="icc2">Physical guidance para IC Compiler II</h2>
+          <p>
+            O SPG não termina no DC NXT. A finalidade é levar orientação física ao IC Compiler II. Os slides descrevem o DC
+            NXT escrevendo placement aproximado e dados que o ICC II pode usar como ponto inicial. Isso melhora runtime
+            porque o backend não começa totalmente do zero, e melhora correlação porque a síntese já foi otimizada pensando
+            em uma implementação física parecida.
+          </p>
+
+          <pre><code># Exemplo conceitual de fluxo
+# 1. DC NXT gera netlist e orientação física
+compile_ultra -spg
+write_icc2_files
+
+# 2. ICC II usa a informação como ponto de partida
+# O comando exato depende do setup do laboratório e dos scripts do ambiente.</code></pre>
+
+          <p>
+            O detalhe importante é que os comandos exatos podem variar com o ambiente. Por isso, no nosso projeto, a postura
+            correta é primeiro entender o Makefile e os scripts do professor, depois encaixar o bloco CPU no esqueleto dele.
+            Não convém inventar um fluxo ICC II isolado se o tutorial já define variáveis, diretórios, nomes de targets e
+            convenções.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="incremental">Incremental synthesis versus full re-synthesis</h2>
+          <p>
+            Depois de mexer em floorplan ou otimização física, você pode fazer uma síntese incremental ou uma ressíntese
+            completa. A escolha depende do tamanho da mudança.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Situação</th>
+                  <th>Estratégia</th>
+                  <th>Por quê?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Pequena edição no floorplan</td>
+                  <td><code>compile_ultra -incremental</code></td>
+                  <td>Preserva grande parte da solução e ajusta o que foi afetado.</td>
+                </tr>
+                <tr>
+                  <td>Pequena mudança no RTL</td>
+                  <td>Incremental, se o restante do design continua válido.</td>
+                  <td>Reduz runtime e evita perturbar áreas que já estavam boas.</td>
+                </tr>
+                <tr>
+                  <td>Floorplan criado do zero</td>
+                  <td>Full re-synthesis</td>
+                  <td>A base física mudou demais para confiar em ajuste local.</td>
+                </tr>
+                <tr>
+                  <td>Mudança arquitetural no RTL</td>
+                  <td>Full re-synthesis</td>
+                  <td>A topologia, timing e congestionamento podem mudar globalmente.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code># Ideia de sequência incremental apresentada pelo curso
+compile_ultra -scan
+
+# Pequenas mudanças no floorplan
+compile_ultra -scan -incremental</code></pre>
+        </section>
+
+        <section class="section">
+          <h2 id="roteiro-pratico">Roteiro prático de leitura de SPG</h2>
+          <p>
+            Para estudar esse assunto sem se perder, use uma sequência de perguntas. Ela serve tanto para prova quanto para
+            quando estivermos adaptando o laboratório.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>1. Existe floorplan?</strong>
+              Se não existe, a síntese é pre-floorplan e trabalha com estimativas. Se existe, posso pensar em post-floorplan
+              synthesis.
+            </div>
+            <div class="check-item">
+              <strong>2. O bloco está congestionado?</strong>
+              Use heat map e <code>report_congestion</code>. Não confie só na impressão visual.
+            </div>
+            <div class="check-item">
+              <strong>3. O problema é local ou estrutural?</strong>
+              Hotspot pequeno pode ser detour. Hotspots grandes ou numerosos pedem mudança mais profunda.
+            </div>
+            <div class="check-item">
+              <strong>4. A correção é física ou lógica?</strong>
+              Pode ser placement/floorplan, configuração de congestion optimization ou reescrita de RTL.
+            </div>
+            <div class="check-item">
+              <strong>5. A netlist continua equivalente?</strong>
+              Depois de síntese e otimizações, Formality entra para comparar RTL e netlist.
+            </div>
+            <div class="check-item">
+              <strong>6. Vale incremental?</strong>
+              Pequenas mudanças pedem incremental. Mudanças grandes pedem full re-synthesis.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="script">Script consolidado para reconhecer no ambiente</h2>
+          <p>
+            Este não é um script para rodar cegamente no nosso CPU agora. É uma referência para você reconhecer comandos
+            quando aparecerem no tutorial, no Makefile do professor ou em scripts de síntese do curso.
+          </p>
+
+          <pre><code>################################################################################
+# Setup físico e lógico
+################################################################################
+set_app_var alib_library_analysis_path [get_unix_variable HOME]
+define_design_lib WORK -path ./work
+
+# Ler RTL, elaborar, linkar e aplicar constraints
+analyze -format sverilog $rtl_files
+elaborate $top
+link
+source constraints.sdc
+check_timing
+
+################################################################################
+# Floorplan, se disponível
+################################################################################
+# extract_physical_constraints -allow_physical_cells floorplan.def
+# read_floorplan floorplan.tcl
+
+################################################################################
+# Síntese com orientação física
+################################################################################
+compile_ultra -spg
+
+################################################################################
+# Relatórios físicos e de congestionamento
+################################################################################
+report_congestion -build_map
+report_congestion
+report_net_routing_layer_constraints [get_nets -hier] -output NLO.tcl
+
+################################################################################
+# Saídas para próxima etapa
+################################################################################
+write -format verilog -hierarchy -output mapped.v
+write_sdc output.sdc
+write_icc2_files</code></pre>
+
+          <div class="lesson-note">
+            <strong>Leitura correta:</strong> se o ambiente do professor não tiver floorplan ou biblioteca física completa
+            para essa etapa, não é fracasso. O aprendizado inicial é reconhecer o lugar de cada comando no fluxo.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Como isso entra no nosso projeto agora?</h2>
+          <p>
+            No curto prazo, nossa prioridade continua sendo alinhar o CPU ao esqueleto do professor: diretórios, Makefiles,
+            targets, simulação, síntese, SDC e reports. SPG é uma camada acima. Ele explica por que o ambiente do professor
+            não deve ser visto só como "rodar script"; ele está tentando aproximar o laboratório de um fluxo profissional:
+            cada etapa gera artefatos que alimentam a etapa seguinte.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Recomendação prática:</strong> para o CPU, faça primeiro um SDC honesto e simples. Depois rode síntese e
+            leia reports de timing, área e design. Quando essa base estiver controlada, investigue se o fluxo do professor
+            tem target para topographical/SPG ou relatórios físicos. Aí sim faz sentido "brincar" com congestionamento,
+            heat map e opções de SPG.
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Agora</th>
+                  <th>Depois</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Organizar o projeto em blocos e Makefiles.</td>
+                  <td>Adicionar targets de síntese mais próximos do ambiente do professor.</td>
+                </tr>
+                <tr>
+                  <td>Escrever SDC mínimo do bloco.</td>
+                  <td>Comparar reports antes/depois de ajustes no SDC.</td>
+                </tr>
+                <tr>
+                  <td>Gerar netlist e reports.</td>
+                  <td>Preparar Formality para provar equivalência RTL versus netlist.</td>
+                </tr>
+                <tr>
+                  <td>Entender SPG conceitualmente.</td>
+                  <td>Usar SPG se o setup físico do ambiente estiver disponível.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. O que o SPG adiciona à síntese?</strong>
+            Ele adiciona orientação física: placement aproximado, análise de congestionamento, uso de informações de
+            floorplan, otimização de camadas de net e melhor correlação com o IC Compiler II.
+          </div>
+          <div class="quiz-card">
+            <strong>2. Por que um design sem violação de timing na síntese pode falhar no backend?</strong>
+            Porque o backend revela atrasos reais de interconexão, detours, congestionamento, camadas de metal e efeitos de
+            placement que a síntese lógica pura não modelou bem.
+          </div>
+          <div class="quiz-card">
+            <strong>3. O que é uma GRC?</strong>
+            É uma Global Routing Cell, uma célula da grade usada para estimar roteamento global. Overflow ocorre quando mais
+            nets precisam atravessar uma borda de GRC do que a capacidade disponível.
+          </div>
+          <div class="quiz-card">
+            <strong>4. Quando usar full re-synthesis em vez de incremental?</strong>
+            Quando o floorplan foi criado do zero, mudou muito, ou quando houve mudança arquitetural relevante no RTL.
+          </div>
+          <div class="quiz-card">
+            <strong>5. O que fazer se o heat map mostra congestionamento severo?</strong>
+            Confirmar com <code>report_congestion</code>, identificar região e origem, e decidir entre ajustar placement,
+            floorplan, congestion optimization ou RTL.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>09_SPG_Flow_Congestion_Layout_GUI.md</code>, com apoio de <code>06_Design_Compiler_NXT_Ultra_Synthesis_Techniques_parte_C.md</code>
+          e <code>13_Design_Compiler_NXT_RTL_Synthesis_2021_06_Job_Aid_corrigido.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_2g_constraints_complexas_clock_io.html">Anterior: Constraints Complexas</a>
+          <a href="bloco_1_2i_constraints_complexas_design_considerations.html">Próxima: Constraints Operacionais</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#por-que-fisico">Por que físico importa</a>
+        <a href="#spg">O que é SPG</a>
+        <a href="#pre-pos-floorplan">Pre e post-floorplan</a>
+        <a href="#nlo">Net Layer Optimization</a>
+        <a href="#congestionamento">Congestionamento</a>
+        <a href="#grc-overflow">GRC e heat map</a>
+        <a href="#topology">Topology optimization</a>
+        <a href="#controlar">Controle da otimização</a>
+        <a href="#gui">Layout GUI</a>
+        <a href="#icc2">IC Compiler II</a>
+        <a href="#incremental">Incremental vs full</a>
+        <a href="#roteiro-pratico">Roteiro prático</a>
+        <a href="#script">Script</a>
+        <a href="#projeto">Projeto</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

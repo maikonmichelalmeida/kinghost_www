@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VHDL: Introdução e Síntese</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">02 VHDL Refresher</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">VHDL Refresher</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">02 VHDL Refresher</a><span>/</span>Introdução e Síntese
+    </nav>
+
+    <h1 class="page-title">VHDL: Introdução e Síntese</h1>
+    <p class="lead">
+      Uma aula para ler VHDL como hardware: entidade, arquitetura, concorrência,
+      processos, tipos fortes, sintetizabilidade e operadores que inferem circuito.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="section">
+          <h2 id="ideia-central">Ideia central</h2>
+          <p>
+            VHDL não é apenas uma sintaxe alternativa a Verilog. Ele organiza hardware com uma
+            disciplina própria: bibliotecas, entidade, arquitetura, tipos fortes, statements concorrentes
+            e processos sequenciais.
+          </p>
+          <pre><code>linguagem VHDL -> modelo RTL -> hardware inferido</code></pre>
+          <p>
+            O objetivo da aula é fazer você olhar para uma linha VHDL e perguntar: que hardware essa
+            linha está tentando criar?
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="entidade-arquitetura">Entidade e arquitetura</h2>
+          <p>
+            Em VHDL, a <strong>entidade</strong> define a interface do bloco. A <strong>arquitetura</strong>
+            define a implementação. Esse par é a base para ler qualquer arquivo VHDL de design.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_rtl_mux.png" alt="Slide mostrando RTL de mux de 32 bits em Verilog, SystemVerilog e VHDL">
+            <figcaption>
+              A figura é estratégica porque mostra o mesmo mux de 32 bits em três linguagens. O hardware é o mesmo;
+              VHDL apenas expressa o bloco com entidade, arquitetura, portas tipadas e biblioteca IEEE.
+            </figcaption>
+          </figure>
+          <pre><code>entity mux is
+    port (
+        s : in  std_logic;
+        x : in  std_logic_vector(31 downto 0);
+        y : in  std_logic_vector(31 downto 0);
+        z : out std_logic_vector(31 downto 0)
+    );
+end mux;</code></pre>
+          <p>
+            Leia a entidade como contrato: quais sinais entram, quais saem e qual largura cada um tem.
+            A arquitetura responde como esse contrato será implementado.
+          </p>
+          <details class="nested-detail">
+            <summary>Detalhe: por que <code>library ieee</code> e <code>use ieee.std_logic_1164.all</code> aparecem tanto?</summary>
+            <div class="detail-body">
+              <p>
+                Esses comandos trazem para o arquivo tipos e operações usados em RTL, especialmente
+                <code>std_logic</code> e <code>std_logic_vector</code>. Sem eles, o compilador pode não
+                conhecer esses tipos. Em VHDL, dependências de pacote são parte explícita do código.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="concorrencia-process">Concorrência e <code>process</code></h2>
+          <p>
+            Statements dentro da arquitetura são concorrentes: eles descrevem hardware ativo em paralelo.
+            Um <code>process</code> cria uma região de código sequencial, mas isso não significa software.
+          </p>
+          <pre><code>process(a, b, sel)
+begin
+    if sel = '0' then
+        y <= a;
+    else
+        y <= b;
+    end if;
+end process;</code></pre>
+          <p>
+            Esse processo parece um programa com <code>if</code>, mas o hardware inferido é um mux.
+            A pergunta correta não é “qual linha executa primeiro?”, e sim “qual circuito esse padrão descreve?”.
+          </p>
+          <details class="nested-detail">
+            <summary>Combinacional ou sequencial?</summary>
+            <div class="detail-body">
+              <p>
+                Um processo combinacional depende dos sinais de entrada e deve atribuir todas as saídas
+                em todos os caminhos. Um processo sequencial usa borda de clock, normalmente com
+                <code>rising_edge(clk)</code>, e infere registradores.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="tipos">Tipos e vetores</h2>
+          <p>
+            VHDL é fortemente tipado. Isso deixa o código mais explícito, mas exige cuidado com conversões
+            e aritmética.
+          </p>
+          <ul class="key-list compact-list">
+            <li><code>std_logic</code>: sinal de um bit com estados como 0, 1, X, Z e U.</li>
+            <li><code>std_logic_vector</code>: vetor de sinais, útil para barramentos.</li>
+            <li><code>unsigned</code>/<code>signed</code>: melhores para aritmética quando se usa <code>numeric_std</code>.</li>
+          </ul>
+          <div class="callout">
+            <strong>Nuance importante:</strong> <code>std_logic_vector</code> não é automaticamente “número”.
+            Pode ser opcode, máscara, barramento, estado codificado ou valor aritmético. O tipo deve deixar a intenção clara.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="abstracoes">Níveis de abstração</h2>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_abstraction_levels.png" alt="Slide sobre behavioral, RTL e structural modeling em VHDL">
+            <figcaption>
+              Esta figura é importante porque separa os níveis de modelagem. Para síntese ASIC/FPGA, o centro é RTL:
+              operações e transferência de dados entre registradores.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Nível</th><th>Como ler</th><th>Risco</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Behavioral</td><td>descreve comportamento em nível alto</td><td>pode usar constructs não sintetizáveis</td></tr>
+                <tr><td>RTL</td><td>descreve registradores e lógica entre eles</td><td>é o alvo principal da síntese</td></tr>
+                <tr><td>Structural</td><td>instancia blocos/células conectados</td><td>pode ficar difícil de manter em alto nível</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="compilar-sintetizar">Compilar não é sintetizar</h2>
+          <p>
+            Este é o slide mais importante do bloco. Ele corrige uma confusão perigosa:
+            se o VHDL compila, isso só diz que ele passou por regras de linguagem. Não diz que vira hardware aceitável.
+          </p>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/compilation_vs_synthesis.png" alt="Tabela comparando compilação e síntese">
+            <figcaption>
+              A figura mostra a fronteira conceitual: compilação prepara execução/simulação; síntese mapeia um subconjunto da linguagem para hardware.
+            </figcaption>
+          </figure>
+          <pre><code>VHDL que compila não necessariamente sintetiza.</code></pre>
+          <details class="nested-detail" open>
+            <summary>Exemplos que podem compilar e ainda assim não servir para RTL</summary>
+            <div class="detail-body">
+              <ul class="key-list compact-list">
+                <li><code>wait for 10 ns</code> no design RTL.</li>
+                <li>File I/O dentro do módulo que deveria virar hardware.</li>
+                <li>Delays temporais usados como comportamento real.</li>
+                <li>Loops sem limite estático.</li>
+                <li>Constructs de testbench colocados na filelist de síntese.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="latch-wait-loop">Latch, loop e <code>wait</code></h2>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_synthesis_guidelines_latch_wait_loop.png" alt="Guidelines VHDL para latch, loop e wait em síntese">
+            <figcaption>
+              A imagem é central para prova e projeto: ela junta três fontes clássicas de problema em síntese VHDL.
+            </figcaption>
+          </figure>
+          <p>
+            Latch acidental nasce quando uma saída combinacional não recebe valor em todos os caminhos.
+          </p>
+          <pre><code>process(a, b, sel)
+begin
+    if sel = '1' then
+        y <= a;
+    end if;
+end process;</code></pre>
+          <p>
+            Se <code>sel</code> não for 1, o que acontece com <code>y</code>? A ferramenta pode inferir que
+            <code>y</code> deve manter valor anterior. Isso é latch.
+          </p>
+          <details class="nested-detail">
+            <summary>Forma mais segura com default</summary>
+            <div class="detail-body">
+              <pre><code>process(a, b, sel)
+begin
+    y <= b;
+    if sel = '1' then
+        y <= a;
+    end if;
+end process;</code></pre>
+              <p>
+                O default dá valor a <code>y</code> antes dos ramos condicionais. Isso reduz o risco de
+                esquecer uma atribuição e deixa claro que a lógica é combinacional.
+              </p>
+            </div>
+          </details>
+          <details class="nested-detail">
+            <summary>Loop e wait em síntese</summary>
+            <div class="detail-body">
+              <p>
+                Um <code>for</code> com limite fixo pode virar hardware repetido ou estrutura regular.
+                Um <code>while</code> com condição dinâmica é problemático porque a ferramenta não sabe
+                quantas repetições precisa materializar.
+              </p>
+              <p>
+                Para clock, prefira <code>elsif rising_edge(clk)</code>. O uso de <code>wait</code> em RTL
+                sintetizável é restrito e fácil de errar.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="hardware-inferido">Operadores e hardware inferido</h2>
+          <figure class="figure-block">
+            <img src="../../assets/img/02_vhdl_refresher/vhdl_equivalent_hardware.png" alt="Operadores VHDL e hardware equivalente">
+            <figcaption>
+              A figura é útil porque obriga a ler operador como hardware. Shift constante pode ser só fio; shift variável exige circuito.
+            </figcaption>
+          </figure>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>VHDL</th><th>Hardware provável</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>and</code>, <code>or</code>, <code>not</code>, <code>xor</code></td><td>portas lógicas</td></tr>
+                <tr><td><code>+</code>, <code>-</code></td><td>somador/subtrator</td></tr>
+                <tr><td>comparações</td><td>comparadores</td></tr>
+                <tr><td>expressão condicional</td><td>mux ou lógica equivalente</td></tr>
+                <tr><td>shift constante</td><td>conexões de fios</td></tr>
+                <tr><td>shift variável</td><td>circuito adicional de deslocamento</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Carry e largura:</strong> se você soma dois vetores de 8 bits, o resultado pode precisar
+            de 9 bits. O mesmo bug de largura que apareceu em Verilog vale aqui.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Ligação com o projeto</h2>
+          <p>
+            Mesmo se o <code>RTL_LAB2</code> estiver em Verilog/SystemVerilog, esta aula ajuda a auditar qualquer
+            arquivo VHDL que apareça no ambiente do professor.
+          </p>
+          <ul class="key-list compact-list">
+            <li>O arquivo tem <code>entity</code> e <code>architecture</code> de design?</li>
+            <li>É RTL sintetizável ou testbench?</li>
+            <li>Usa libraries/packages que precisam entrar no fluxo?</li>
+            <li>Tem <code>wait for</code>, file I/O ou delays de simulação?</li>
+            <li>Tem processos combinacionais incompletos?</li>
+            <li>Pode entrar em <code>filelist_rtl.f</code>?</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 id="audio">Audio: precisa?</h2>
+          <p>
+            Não parece necessário ouvir o áudio completo. O áudio seria útil apenas se o professor tiver
+            dado exemplos extras de <code>signal</code> versus <code>variable</code>, syntax de <code>process</code>,
+            uso de packages ou quizzes sobre <code>wait</code> e <code>loop</code>.
+          </p>
+        </section>
+
+        <p class="source-note">
+          Base Markdown:
+          <a data-md-source href="../../assets/md_normalizado/01_VHDL_Introduction.md">aula didática</a>,
+          <a data-md-source href="../../assets/md_normalizado/02_VHDL_for_Synthesis.md">cobertura slide a slide</a>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="../01_verilog_refresher/bloco_1_1e_robot_model.html">Anterior: ROBOT Model</a>
+          <a href="bloco_2_2_vhdl_for_verification.html">Próxima: VHDL for Verification</a>
+        </nav>
+      </article>
+
+      <aside class="toc" data-toc>
+        <h2>Nesta aula</h2>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>
+

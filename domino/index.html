@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dominó IA</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="controls" aria-label="Controles">
+        <button id="new-game" type="button">Nova partida</button>
+        <button id="reset-results" type="button" class="secondary">Zerar resultados</button>
+        <button id="train-start" type="button">Iniciar treino</button>
+        <button id="train-stop" type="button" hidden>Parar treino</button>
+        <label class="training-mode-control">
+          Treino
+          <select id="training-mode">
+            <option value="normal">Normal</option>
+            <option value="tournament">Torneio genético</option>
+          </select>
+        </label>
+        <label class="tournament-target-control">
+          Vitórias torneio
+          <input id="tournament-target" type="number" min="4" max="1000" step="1" value="50" />
+        </label>
+        <label class="reset-control">
+          Zerar cérebro
+          <select id="reset-brain-target">
+            <option value="all">Todos</option>
+            <option value="0">J1</option>
+            <option value="1">J2</option>
+            <option value="2">J3</option>
+            <option value="3">J4</option>
+          </select>
+        </label>
+        <button id="reset-brain" type="button">Zerar</button>
+        <div class="brain-file-controls" aria-label="Arquivos de cérebro">
+          <label>
+            Nome
+            <input id="brain-file-name" type="text" value="cerebro" />
+          </label>
+          <label>
+            Salvar
+            <select id="brain-save-target">
+              <option value="all">Todos</option>
+              <option value="0">J1</option>
+              <option value="1">J2</option>
+              <option value="2">J3</option>
+              <option value="3">J4</option>
+            </select>
+          </label>
+          <button id="save-brain-file" type="button">Salvar arquivo</button>
+          <label>
+            Carregar em
+            <select id="brain-load-target">
+              <option value="0">J1</option>
+              <option value="1">J2</option>
+              <option value="2">J3</option>
+              <option value="3">J4</option>
+            </select>
+          </label>
+          <input id="brain-file-input" type="file" accept=".json,.txt,.J1,.J2,.J3,.J4,application/json,text/plain" hidden />
+          <button id="load-brain-file" type="button">Carregar arquivo</button>
+        </div>
+        <label class="speed-control">
+          Bots contra humano
+          <input id="human-speed" type="range" min="0" max="100" step="1" value="50" />
+          <span id="human-speed-value">1.0s</span>
+        </label>
+        <div class="agent-controls" aria-label="Agentes">
+          <label>
+            J1
+            <select id="agent-0">
+              <option value="trained">Bot treinado</option>
+              <option value="random">Aleatório</option>
+              <option value="human">Humano</option>
+            </select>
+          </label>
+          <label>
+            J2
+            <select id="agent-1">
+              <option value="trained">Bot treinado</option>
+              <option value="random">Aleatório</option>
+            </select>
+          </label>
+          <label>
+            J3
+            <select id="agent-2">
+              <option value="trained">Bot treinado</option>
+              <option value="random">Aleatório</option>
+            </select>
+          </label>
+          <label>
+            J4
+            <select id="agent-3">
+              <option value="trained">Bot treinado</option>
+              <option value="random">Aleatório</option>
+            </select>
+          </label>
+        </div>
+        <details class="reward-panel">
+          <summary>Ajustes de recompensa</summary>
+          <div class="reward-grid">
+            <section class="reward-player">
+              <h3>J1</h3>
+              <label>Passe <input type="range" min="0" max="100" value="50" data-player="0" data-reward="pass" /><span data-reward-value="0-pass">50</span></label>
+              <label>Parceiro <input type="range" min="0" max="100" value="50" data-player="0" data-reward="partner" /><span data-reward-value="0-partner">50</span></label>
+              <label>Agressivo <input type="range" min="0" max="100" value="50" data-player="0" data-reward="aggression" /><span data-reward-value="0-aggression">50</span></label>
+              <label>Mobilidade <input type="range" min="0" max="100" value="50" data-player="0" data-reward="mobility" /><span data-reward-value="0-mobility">50</span></label>
+              <label>Segurança <input type="range" min="0" max="100" value="50" data-player="0" data-reward="safety" /><span data-reward-value="0-safety">50</span></label>
+            </section>
+            <section class="reward-player">
+              <h3>J2</h3>
+              <label>Passe <input type="range" min="0" max="100" value="50" data-player="1" data-reward="pass" /><span data-reward-value="1-pass">50</span></label>
+              <label>Parceiro <input type="range" min="0" max="100" value="50" data-player="1" data-reward="partner" /><span data-reward-value="1-partner">50</span></label>
+              <label>Agressivo <input type="range" min="0" max="100" value="50" data-player="1" data-reward="aggression" /><span data-reward-value="1-aggression">50</span></label>
+              <label>Mobilidade <input type="range" min="0" max="100" value="50" data-player="1" data-reward="mobility" /><span data-reward-value="1-mobility">50</span></label>
+              <label>Segurança <input type="range" min="0" max="100" value="50" data-player="1" data-reward="safety" /><span data-reward-value="1-safety">50</span></label>
+            </section>
+            <section class="reward-player">
+              <h3>J3</h3>
+              <label>Passe <input type="range" min="0" max="100" value="50" data-player="2" data-reward="pass" /><span data-reward-value="2-pass">50</span></label>
+              <label>Parceiro <input type="range" min="0" max="100" value="50" data-player="2" data-reward="partner" /><span data-reward-value="2-partner">50</span></label>
+              <label>Agressivo <input type="range" min="0" max="100" value="50" data-player="2" data-reward="aggression" /><span data-reward-value="2-aggression">50</span></label>
+              <label>Mobilidade <input type="range" min="0" max="100" value="50" data-player="2" data-reward="mobility" /><span data-reward-value="2-mobility">50</span></label>
+              <label>Segurança <input type="range" min="0" max="100" value="50" data-player="2" data-reward="safety" /><span data-reward-value="2-safety">50</span></label>
+            </section>
+            <section class="reward-player">
+              <h3>J4</h3>
+              <label>Passe <input type="range" min="0" max="100" value="50" data-player="3" data-reward="pass" /><span data-reward-value="3-pass">50</span></label>
+              <label>Parceiro <input type="range" min="0" max="100" value="50" data-player="3" data-reward="partner" /><span data-reward-value="3-partner">50</span></label>
+              <label>Agressivo <input type="range" min="0" max="100" value="50" data-player="3" data-reward="aggression" /><span data-reward-value="3-aggression">50</span></label>
+              <label>Mobilidade <input type="range" min="0" max="100" value="50" data-player="3" data-reward="mobility" /><span data-reward-value="3-mobility">50</span></label>
+              <label>Segurança <input type="range" min="0" max="100" value="50" data-player="3" data-reward="safety" /><span data-reward-value="3-safety">50</span></label>
+            </section>
+          </div>
+        </details>
+      </section>
+
+      <section class="stats" aria-label="Estatísticas">
+        <span>Rodadas: <strong id="hands">0</strong></span>
+        <span class="brain-stat" id="brain-stat-0">J1 treino: <strong id="brain-0">0</strong></span>
+        <span class="brain-stat" id="brain-stat-1">J2 treino: <strong id="brain-1">0</strong></span>
+        <span class="brain-stat" id="brain-stat-2">J3 treino: <strong id="brain-2">0</strong></span>
+        <span class="brain-stat" id="brain-stat-3">J4 treino: <strong id="brain-3">0</strong></span>
+        <span class="tournament-stat" id="tournament-generation-stat">Geração: <strong id="tournament-generation">0</strong></span>
+        <span class="tournament-stat" id="tournament-score-stat">Torneio A/B: <strong id="tournament-score">0 x 0</strong></span>
+        <span class="tournament-stat" id="tournament-last-stat">Último filho: <strong id="tournament-last">nenhum</strong></span>
+      </section>
+
+      <section class="scoreboard table-scoreboard" aria-label="Placar">
+        <span class="team-score team-a-score">Time A <strong id="score-a">0</strong><small>Partidas <strong id="wins-a">0</strong></small></span>
+        <span class="team-score team-b-score">Time B <strong id="score-b">0</strong><small>Partidas <strong id="wins-b">0</strong></small></span>
+      </section>
+
+      <section class="table" aria-label="Mesa">
+        <div class="player player-top" id="player-2"></div>
+        <div class="middle">
+          <div class="player player-left" id="player-3"></div>
+          <div class="board-wrap">
+            <div class="status" id="status"></div>
+            <div class="ends" id="ends"></div>
+            <div class="result-overlay" id="result-overlay" hidden></div>
+            <div class="board" id="board"></div>
+            <div class="actions" id="human-actions"></div>
+          </div>
+          <div class="player player-right" id="player-1"></div>
+        </div>
+        <div class="player player-bottom" id="player-0"></div>
+      </section>
+
+      <section class="hand-panel" aria-label="Mão do jogador">
+        <h2>Sua mão</h2>
+        <div id="human-hand" class="human-hand"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

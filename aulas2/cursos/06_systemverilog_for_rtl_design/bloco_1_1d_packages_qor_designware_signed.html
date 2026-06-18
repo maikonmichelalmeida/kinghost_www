@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Packages, QoR, DesignWare e signed arithmetic</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">06 SystemVerilog for RTL Design</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">SystemVerilog RTL</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">06 SystemVerilog for RTL Design</a><span>/</span>QoR e fechamento
+    </nav>
+
+    <h1 class="page-title">Packages, QoR, DesignWare e signed arithmetic</h1>
+    <p class="lead">
+      Este bloco fecha o curso 06. A mensagem final é direta: RTL não é texto que apenas “compila”; RTL é uma descrição de
+      hardware, e pequenas escolhas de SystemVerilog podem mudar área, timing, nomes de netlist, simulação gate-level e
+      capacidade de integração no fluxo Synopsys.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            Até aqui, o curso ensinou a escrever sinais, blocos combinacionais, registradores, FSMs, interfaces e wrappers.
+            O bloco final mostra o que acontece quando esse RTL chega mais perto da síntese real: parâmetros precisam ser
+            elaborados, packages precisam ser analisados na ordem certa, DesignWare precisa estar linkado, e o estilo de
+            codificação influencia QoR.
+          </p>
+          <p>
+            Esta aula também amarra o que importa para o laboratório do professor: se o ambiente dele automatiza análise,
+            simulação e síntese com Makefiles/scripts, então nosso código precisa ter fronteiras previsíveis, dependências
+            claras, pacotes bem organizados e datapaths escritos de forma que a ferramenta entenda a intenção.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="visao-final">Visão final do curso 06</h2>
+          <p>
+            O curso 06 fecha um arco completo:
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Bloco 1</strong>
+              Tipos, portas, `always_comb`, `always_ff`, resets e enums.
+            </div>
+            <div class="flow-step">
+              <strong>Bloco 2</strong>
+              FSMs, `unique0`, `X`, wildcards, arrays e structs.
+            </div>
+            <div class="flow-step">
+              <strong>Bloco 3</strong>
+              Interfaces, modports, parâmetros e wrappers.
+            </div>
+            <div class="flow-step">
+              <strong>Bloco 4</strong>
+              Packages, scripts, QoR, DesignWare e aritmética signed.
+            </div>
+          </div>
+
+          <div class="project-bridge">
+            <strong>Amarração:</strong> o SystemVerilog bom para RTL é aquele que deixa explícito o hardware pretendido e
+            reduz o trabalho de adivinhação da ferramenta. Quanto menos a ferramenta precisa inferir intenção, mais previsível
+            fica o fluxo de simulação, síntese e debug.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="wrappers">Wrappers e parâmetros: fechando a história</h2>
+          <p>
+            A parte D retoma wrappers porque eles são uma resposta prática para uma diferença inevitável: o RTL que você
+            escreve pode ser bonito e abstrato; a netlist sintetizada precisa ter nomes, portas e instâncias concretas.
+          </p>
+
+          <pre><code>module fifo #(WIDTH = 8, BUF_SIZE = 16)
+  (input logic clk,
+   input logic reset_n,
+   fifo_io.fifo fifo_if);
+endmodule</code></pre>
+
+          <p>
+            Quando você elabora uma versão com parâmetros não default, por exemplo <code>WIDTH=4</code> e
+            <code>BUF_SIZE=8</code>, a ferramenta pode criar um design especializado. O nome final pode deixar de ser apenas
+            <code>fifo</code> e virar algo como:
+          </p>
+
+          <pre><code>fifo_WIDTH4_BUF_SIZE8_I_fifo_if_fifo_io__4</code></pre>
+
+          <p>
+            Além disso, a porta de interface pode ser achatada em portas reais, como <code>fifo_if.rd_n</code>,
+            <code>fifo_if.wr_n</code>, <code>fifo_if.empty</code> e assim por diante. O wrapper entra para dar contexto ao
+            bloco durante a elaboração e para permitir que o script descubra o nome real do design.
+          </p>
+
+          <pre><code>analyze -format sverilog { fifo_io.sv fifo.sv wrapper_fifo.sv }
+elaborate wrapper_fifo -parameter "WIDTH=4, BUF_SIZE=8"
+current_design [get_designs fifo*]</code></pre>
+
+          <div class="lesson-note">
+            <strong>Por que o wildcard aparece?</strong> porque o nome do módulo pode ter sido modificado pela especialização
+            de parâmetros. Usar <code>current_design fifo</code> pode falhar; <code>current_design [get_designs fifo*]</code>
+            encontra a versão elaborada.
+          </div>
+
+          <details class="expand-block">
+            <summary>Como isso conversa com gate-level simulation?</summary>
+            <div class="detail-body">
+              <p>
+                Depois da síntese, o testbench ou wrapper antigo pode tentar instanciar <code>fifo</code>, enquanto a netlist
+                contém <code>fifo_WIDTH4_BUF_SIZE8...</code>. Também pode tentar conectar uma interface, enquanto a netlist
+                tem portas achatadas. Por isso o fluxo precisa gerar ou atualizar um wrapper de simulação compatível com a
+                netlist real.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="integracao">Integrando netlist de bloco no top-level</h2>
+          <p>
+            A aula mostra um cenário comum em fluxo bottom-up: você sintetiza um bloco isolado e depois quer integrá-lo no
+            design maior. A sequência conceitual é:
+          </p>
+
+          <ol>
+            <li>Analisar o RTL completo do top-level.</li>
+            <li>Elaborar o top-level.</li>
+            <li>Remover o RTL do bloco que será substituído pela netlist sintetizada.</li>
+            <li>Ler a netlist gate-level daquele bloco.</li>
+            <li>Linkar o design para resolver referências.</li>
+          </ol>
+
+          <pre><code>analyze -format sverilog { fifo_io.sv fifo.sv top.sv }
+elaborate top
+remove_design fifo
+read_verilog fifo_mapped.v
+link</code></pre>
+
+          <p>
+            A parte importante para nós não é decorar comandos isolados, mas entender o motivo: se você mantém o RTL original
+            e também lê a netlist do mesmo bloco, a ferramenta pode ter duas definições concorrentes. O fluxo precisa dizer
+            com clareza: neste ponto, use a versão sintetizada.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="packages">Packages: biblioteca de definições, não hardware global</h2>
+          <p>
+            Packages servem para compartilhar declarações entre módulos, interfaces e outros elementos SystemVerilog. Eles
+            são excelentes para constantes, tipos, enums, structs, funções utilitárias e parâmetros locais de configuração.
+          </p>
+
+          <pre><code>package cpu_pkg;
+  localparam int XLEN = 32;
+
+  typedef enum logic [2:0] {
+    ALU_ADD,
+    ALU_SUB,
+    ALU_AND,
+    ALU_OR
+  } alu_op_t;
+
+  typedef struct packed {
+    logic    valid;
+    alu_op_t alu_op;
+    logic    reg_write;
+    logic    mem_read;
+    logic    mem_write;
+  } control_t;
+endpackage</code></pre>
+
+          <p>
+            Isso evita repetir a mesma definição em vários arquivos. Se todos os módulos usam o mesmo <code>alu_op_t</code>,
+            o decode, a ALU e o testbench ficam mais alinhados. Mas o package não é um módulo de hardware e não deve virar um
+            depósito de estado global.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bom uso de package</th>
+                  <th>Evitar em RTL sintetizável</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>localparam</code>, typedefs, enums, structs.</td>
+                  <td>Declarar <code>wire</code>, <code>logic</code> variável ou estado físico no escopo do package.</td>
+                </tr>
+                <tr>
+                  <td>Funções utilitárias <code>automatic</code>.</td>
+                  <td><code>always</code>, <code>initial</code> ou <code>assign</code> dentro do package.</td>
+                </tr>
+                <tr>
+                  <td>Definições autocontidas e fáceis de importar.</td>
+                  <td>Dependências implícitas difíceis de resolver no script.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="warning callout">
+            <strong>Pegadinha de prova:</strong> parâmetros em package devem ser <code>localparam</code>. Eles não são
+            parâmetros configuráveis por instância como em um módulo.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="import">Importar package no escopo correto</h2>
+          <p>
+            O curso também diferencia acesso explícito e importação. Você pode acessar um item com qualificação:
+          </p>
+
+          <pre><code>cpu_pkg::alu_op_t op;</code></pre>
+
+          <p>
+            Ou importar itens para o escopo:
+          </p>
+
+          <pre><code>import cpu_pkg::*;
+
+alu_op_t op;</code></pre>
+
+          <p>
+            O estilo explícito é mais verboso, mas deixa claro de onde veio o nome. O import global é mais conveniente, mas
+            aumenta risco de colisão. Em projeto pequeno, ambos aparecem; em projeto maior, vale ser mais disciplinado.
+          </p>
+
+          <details class="expand-block">
+            <summary>Fluxo de Design Compiler para packages</summary>
+            <div class="detail-body">
+              <p>
+                Se o RTL depende de package, o package precisa ser analisado antes e precisa estar no caminho/biblioteca que
+                a ferramenta consegue encontrar.
+              </p>
+              <pre><code>define_design_lib pkg_lib -path ./pkg_lib
+lappend search_path { ./package ./pkg_lib }
+
+analyze -format sverilog -library pkg_lib { pkg.sv }
+analyze -format sverilog { encryptor.sv }
+elaborate encryptor
+link
+compile</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="automatic">Funções em packages precisam ser `automatic`</h2>
+          <p>
+            O slide de regras diz que tasks e functions em packages devem ser <code>automatic</code>. A razão didática é que
+            uma função em package deve se comportar como lógica combinacional reutilizável, sem estado compartilhado implícito
+            entre chamadas.
+          </p>
+
+          <pre><code>package math_pkg;
+  function automatic logic [3:0] sat_add4 (
+    input logic [3:0] a,
+    input logic [3:0] b
+  );
+    logic [4:0] tmp;
+    tmp = a + b;
+    sat_add4 = tmp[4] ? 4'hF : tmp[3:0];
+  endfunction
+endpackage</code></pre>
+
+          <p>
+            Esse tipo de função pode deixar o RTL mais limpo quando a operação é pequena e aparece em vários lugares. Mas não
+            transforme package em lugar para processos, registradores ou sinais globais. O hardware deve estar em módulos e
+            interfaces, não perdido no escopo do package.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="qor">QoR: estilo de código vira hardware diferente</h2>
+          <p>
+            QoR significa Quality of Results. No contexto de síntese, estamos olhando principalmente para área, timing,
+            contagem de células, uso de memória e tempo de execução da ferramenta. A aula usa uma função simples para mostrar
+            algo profundo: rotacionar um vetor à esquerda pode ser descrito de várias formas, mas essas formas não geram
+            necessariamente o mesmo hardware.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Shift left</h3>
+              <p>Desloca bits e preenche posições novas com zero.</p>
+              <pre><code>out = din &lt;&lt; k;</code></pre>
+            </div>
+            <div class="note-box">
+              <h3>Rotate left</h3>
+              <p>Desloca bits e reinjeta os bits que saíram no outro lado.</p>
+              <pre><code>out = (din &lt;&lt; k) | (din &gt;&gt; (WIDTH-k));</code></pre>
+            </div>
+          </div>
+
+          <p>
+            O curso compara estilos como <code>assign</code>, <code>for loop</code>, <code>while</code>, <code>case</code>,
+            <code>shift</code> e componente DesignWare. A conclusão é que estilo não é estética: dois códigos equivalentes em
+            simulação podem induzir estruturas diferentes no sintetizador.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Clareza funcional</h3>
+              <p>A ferramenta entende melhor quando o código expressa diretamente a operação pretendida.</p>
+            </article>
+            <article class="concept-card">
+              <h3>QoR medido</h3>
+              <p>Área e timing precisam ser lidos em reports, não presumidos só pela aparência do código.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Loop não é software</h3>
+              <p>Loop em RTL geralmente descreve hardware replicado ou lógica combinacional expandida.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="loops">Loops em RTL não rodam no tempo como software</h2>
+          <p>
+            Quando um aluno vê <code>for</code>, a tendência é imaginar um processador executando iterações. Em RTL
+            sintetizável, dentro de um <code>always_comb</code>, um loop geralmente é desenrolado pela síntese para criar
+            lógica combinacional. Ele é uma forma compacta de descrever hardware repetido.
+          </p>
+
+          <pre><code>always_comb begin
+  out = '0;
+
+  for (int i = 0; i &lt; WIDTH; i++) begin
+    out[(i + k) % WIDTH] = din[i];
+  end
+end</code></pre>
+
+          <p>
+            Esse código pode ser funcionalmente correto para rotate, mas pode gerar lógica menos óbvia do que uma formulação
+            com shifts e OR. A ferramenta pode otimizar, mas a forma inicial de descrição influencia a inferência.
+          </p>
+
+          <div class="lesson-note">
+            <strong>Regra mental:</strong> em RTL, pergunte sempre “que hardware isso descreve?” antes de perguntar “esse
+            algoritmo funciona?”.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="designware">DesignWare: usar biblioteca quando faz sentido</h2>
+          <p>
+            DesignWare é uma biblioteca de componentes parametrizáveis da Synopsys. Em vez de confiar apenas na inferência, o
+            designer pode instanciar um componente conhecido, como um barrel shifter.
+          </p>
+
+          <pre><code>// Exemplo conceitual de instância DesignWare
+DW01_bsh #(
+  .A_width(WIDTH),
+  .SH_width($clog2(WIDTH))
+) u_shifter (
+  .A(din),
+  .SH(k),
+  .B(out)
+);</code></pre>
+
+          <p>
+            A vantagem é usar uma implementação parametrizável reconhecida pelo fluxo. O cuidado é que a simulação e a síntese
+            precisam enxergar as bibliotecas DesignWare.
+          </p>
+
+          <pre><code>// Simulação: apontar modelos DesignWare
+-y ${SYNOPSYS}/dw/sim_ver +libext+.v+.sv +incdir+${SYNOPSYS}/dw/sim_ver+
+
+// Síntese: linkar biblioteca DesignWare
+set_app_var link_library "* $target_library dw_foundation.sldb"</code></pre>
+
+          <p>
+            No exemplo do curso, a inferência por estilos bem escritos conseguiu chegar a resultado equivalente ao componente
+            DesignWare. Isso também é uma lição: DesignWare é ferramenta poderosa, mas bom RTL inferível continua sendo muito
+            valioso.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="timing-area">Timing e área podem melhorar juntos?</h2>
+          <p>
+            Uma ideia comum é imaginar que melhorar timing sempre aumenta área, e reduzir área sempre piora timing. Muitas
+            vezes existe tradeoff, sim. Mas o slide pergunta se bom timing e boa área podem existir ao mesmo tempo. A resposta
+            prática é: podem, quando o estilo de RTL permite que a ferramenta encontre uma estrutura melhor.
+          </p>
+
+          <p>
+            Um código ruim pode ser simultaneamente maior e mais lento. Um código mais direto pode permitir uma implementação
+            menor e com caminho crítico melhor. Por isso, quando olhamos reports, não devemos apenas apertar constraints; às
+            vezes o problema está no modo como o RTL descreveu o datapath.
+          </p>
+
+          <div class="project-bridge">
+            <strong>Para o CPU:</strong> se a síntese mostrar área/timing ruins em ALU, shifter, muxes ou controle, não pense
+            só em constraint. Revise o estilo RTL e veja se a operação está escrita de forma clara para o sintetizador.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="signed">Signed arithmetic: deixe a linguagem expressar a intenção</h2>
+          <p>
+            O curso fecha com aritmética signed em datapath, um tema pequeno que pode gerar diferença enorme de hardware. O
+            erro mostrado é fazer extensão manual de sinal e, sem querer, transformar uma multiplicação signed 8x8 em uma
+            multiplicação unsigned 16x16.
+          </p>
+
+          <pre><code>// Pior QoR: extensão manual pode induzir multiplicação maior
+logic [15:0] a_ext;
+logic [15:0] b_ext;
+logic [15:0] z;
+
+assign a_ext = {{8{a[7]}}, a};
+assign b_ext = {{8{b[7]}}, b};
+assign z     = a_ext * b_ext; // pode ser tratado como unsigned 16x16</code></pre>
+
+          <p>
+            A forma melhor é usar os recursos signed de SystemVerilog, seja com casts, seja declarando as portas como signed.
+          </p>
+
+          <pre><code>// Melhor: cast signed
+logic signed [15:0] z_sgn;
+
+assign z_sgn = signed'(a) * signed'(b);
+assign z     = unsigned'(z_sgn);</code></pre>
+
+          <pre><code>// Melhor ainda quando a interface do bloco permite
+module mul_signed (
+  input  logic signed [7:0]  a,
+  input  logic signed [7:0]  b,
+  output logic signed [15:0] z
+);
+  assign z = a * b;
+endmodule</code></pre>
+
+          <div class="warning callout">
+            <strong>Regra final de datapath:</strong> se a operação é signed, diga isso ao tipo. Não force a ferramenta a
+            deduzir intenção a partir de concatenações manuais.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="fechamento">Fechamento didático do curso</h2>
+          <p>
+            Agora o curso 06 fica amarrado em uma regra só: SystemVerilog permite escrever intenção. Quando você declara bem
+            a intenção, ganha legibilidade, warnings melhores, síntese mais previsível e integração mais limpa. Quando você
+            deixa intenção implícita, a ferramenta precisa inferir, e a inferência pode aparecer como latch, mux estranho,
+            nome de netlist inesperado, área maior, timing pior ou simulação gate-level difícil.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Dentro do módulo</strong>
+              Use `logic`, `always_comb`, `always_ff`, enums, defaults e resets consistentes.
+            </div>
+            <div class="check-item">
+              <strong>Na decisão</strong>
+              Use `unique`, `priority`, `unique0`, `==?` e `case inside` apenas quando a intenção for real.
+            </div>
+            <div class="check-item">
+              <strong>Na conexão</strong>
+              Use interfaces/modports quando vários sinais formam um protocolo; use wrappers para fluxo controlado.
+            </div>
+            <div class="check-item">
+              <strong>Na organização</strong>
+              Use packages para tipos e constantes, sem criar estado global.
+            </div>
+            <div class="check-item">
+              <strong>No datapath</strong>
+              Escreva operações de forma que a ferramenta reconheça shifters, multiplicadores e signed arithmetic.
+            </div>
+            <div class="check-item">
+              <strong>No fluxo</strong>
+              Leia reports de QoR e revise RTL antes de culpar apenas constraints.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="aplicacao">Aplicação prática no nosso próximo passo</h2>
+          <p>
+            Para o nosso CPU/laboratório, este curso sugere uma ordem madura de evolução:
+          </p>
+
+          <ol>
+            <li>Revisar o RTL atual procurando latches involuntários, resets inconsistentes e portas pouco explícitas.</li>
+            <li>Padronizar FSMs com enum, largura explícita e defaults em `always_comb`.</li>
+            <li>Separar constantes e tipos compartilhados em package somente quando isso reduzir duplicação real.</li>
+            <li>Criar wrappers quando começarmos a sintetizar blocos de forma isolada ou parametrizada.</li>
+            <li>Usar Makefiles para automatizar análise, elaboração, simulação, síntese e abertura de reports.</li>
+            <li>Ler QoR e ajustar estilo RTL quando área/timing indicarem problema.</li>
+          </ol>
+
+          <div class="project-bridge">
+            <strong>Transição natural:</strong> o próximo curso, Design Compiler NXT / RTL Synthesis, deve aprofundar
+            exatamente a etapa seguinte: ler, elaborar, linkar, aplicar constraints, compilar e interpretar reports.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão final</h2>
+          <div class="quiz-card">
+            <strong>1. Por que usar wrapper em síntese bottom-up?</strong>
+            Para instanciar interface, parâmetros e DUT em um contexto controlado, e para lidar com nomes/portas que mudam na
+            síntese.
+          </div>
+
+          <div class="quiz-card">
+            <strong>2. O que pode acontecer com um módulo parametrizado?</strong>
+            A ferramenta pode gerar um nome especializado, como uma versão de `fifo` com `WIDTH` e `BUF_SIZE` embutidos.
+          </div>
+
+          <div class="quiz-card">
+            <strong>3. Package pode declarar `logic state;` no escopo global para síntese?</strong>
+            Não. Package deve guardar definições reutilizáveis, não estado físico global.
+          </div>
+
+          <div class="quiz-card">
+            <strong>4. O que deve vir antes no script: package ou RTL que usa package?</strong>
+            O package deve ser analisado primeiro e estar no search path/biblioteca correta.
+          </div>
+
+          <div class="quiz-card">
+            <strong>5. O que é QoR?</strong>
+            Quality of Results: métricas como área, timing, células, nets, memória e tempo de execução da síntese.
+          </div>
+
+          <div class="quiz-card">
+            <strong>6. DesignWare substitui bom RTL?</strong>
+            Não. Ela fornece componentes otimizados, mas RTL bem escrito pode inferir estruturas equivalentes em alguns casos.
+          </div>
+
+          <div class="quiz-card">
+            <strong>7. Qual a regra para signed arithmetic?</strong>
+            Declare ou caste como `signed` para expressar a intenção, evitando extensão manual que induz hardware maior.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>01_SystemVerilog_for_RTL_Design_parte_D.md</code>. Este bloco fecha o arquivo grande do curso 06 e
+          prepara a transição para Design Compiler NXT / RTL Synthesis.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1c_interfaces_modports_wrappers.html">Anterior: interfaces e wrappers</a>
+          <a href="index.html">Voltar ao curso concluído</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#visao-final">Visão final</a>
+        <a href="#wrappers">Wrappers</a>
+        <a href="#integracao">Integração</a>
+        <a href="#packages">Packages</a>
+        <a href="#import">Import</a>
+        <a href="#automatic">Automatic</a>
+        <a href="#qor">QoR</a>
+        <a href="#loops">Loops</a>
+        <a href="#designware">DesignWare</a>
+        <a href="#timing-area">Timing e área</a>
+        <a href="#signed">Signed</a>
+        <a href="#fechamento">Fechamento</a>
+        <a href="#aplicacao">Aplicação</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

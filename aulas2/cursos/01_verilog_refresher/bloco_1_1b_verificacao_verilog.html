@@ -1,0 +1,250 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Verilog: Verificacao</title><link rel="stylesheet" href="../../assets/css/style.css"></head><body><header class="site-header"><div class="header-inner"><div class="brand"><a class="brand-title" href="../../index.html">Conhecimento RTL</a><span class="brand-subtitle">01 Verilog Refresher</span></div><nav class="top-nav" aria-label="Navegação principal"><a href="../../index.html">Cursos</a><a href="index.html">Verilog Refresher</a></nav></div></header><main class="page"><nav class="breadcrumbs" aria-label="Você está aqui"><a href="../../index.html">Raiz</a><span>/</span><a href="index.html">01 Verilog Refresher</a><span>/</span>Verificacao</nav><h1 class="page-title">Verilog: Verificacao</h1><p class="lead">Aula didatica sobre testbench, DUT, self-checking, VCS/Verdi e boas praticas de simulacao.</p><div class="layout"><article data-content><section class="section"><h2 id="introducao">Introducao</h2>
+</section>
+<section class="section"><h2 id="como-estudar-esta-aula">Como estudar esta aula</h2><p>Esta aula explica como criar um ambiente de simulacao ao redor de um design. O foco nao e escrever RTL novo, mas verificar se o RTL se comporta como esperado.</p>
+<p>Use este arquivo como aula principal. O arquivo <code>cobertura_slide_a_slide.md</code> fica como rastreabilidade dos slides.</p>
+</section>
+<section class="section"><h2 id="objetivo-da-aula">Objetivo da aula</h2><p>Ao final, voce deve conseguir:</p>
+<ul class="key-list compact-list">
+<li>explicar o que e DUT;</li>
+<li>montar mentalmente um testbench simples;</li>
+<li>separar estimulo, driver, checker, scoreboard e debug;</li>
+<li>entender system tasks como <code>$display</code>, <code>$monitor</code>, <code>$finish</code> e dump de onda;</li>
+<li>entender por que testbench nao entra em sintese;</li>
+<li>conectar VCS/Verdi com o fluxo <code>make sim</code>.</li>
+</ul>
+</section>
+<section class="section"><h2 id="a-ideia-central">A ideia central</h2><p>Verificacao nao e apenas abrir waveform.</p>
+<p>Um ambiente de verificacao minimamente bom faz quatro coisas:</p>
+<p>1. gera estimulos;</p>
+<p>2. aplica os estimulos no DUT;</p>
+<p>3. observa as respostas;</p>
+<p>4. decide se a resposta esta correta.</p>
+<p>O diagrama basico dos slides e:</p>
+<pre><code>Stimulus -&gt; DUT -&gt; Response checker</code></pre>
+<p>Essa estrutura simples ja separa papeis. O DUT e o design. O testbench fica ao redor.</p>
+</section>
+<section class="section"><h2 id="dut-design-under-test">DUT: Design Under Test</h2>
+DUT e o modulo que queremos verificar.
+
+No exemplo dos slides, o DUT e um somador de 2 bits:
+
+```verilog
+module adder2bit (
+    input  [1:0] x,
+    input  [1:0] y,
+    output [2:0] z
+);
+    assign z = x + y;
+endmodule
+```
+
+A saida tem 3 bits porque a soma de dois numeros de 2 bits pode gerar carry.
+
+<h3>Aplicacao ao seu projeto</h3>
+<p>No <code>RTL_LAB2</code>, o DUT pode ser algo como <code>top_cpu</code>. O testbench instancia esse DUT e aplica comandos/instrucoes. O conceito e o mesmo, so muda o tamanho do design.</p>
+</section>
+<section class="section"><h2 id="testbench-sem-portas">Testbench sem portas</h2><p>Um testbench normalmente nao tem portas externas. Ele e o topo da simulacao.</p>
+<p>Estrutura minima:</p>
+<pre><code>module top_tb;
+    reg clk;
+    reg reset_n;
+    reg [1:0] x;
+    reg [1:0] y;
+    wire [2:0] z;
+
+    adder2bit dut (
+        .x(x),
+        .y(y),
+        .z(z)
+    );
+endmodule</code></pre>
+<p>Entradas do DUT costumam ser dirigidas por <code>reg</code> no testbench; saidas observadas costumam ser <code>wire</code>.</p>
+</section>
+<section class="section"><h2 id="clock-e-reset">Clock e reset</h2><p>Clock e o eixo temporal da simulacao.</p>
+<p>Gerador simples:</p>
+<pre><code>initial clk = 1&#x27;b0;
+always #5 clk = ~clk;</code></pre>
+<p>Isso e correto em testbench. Nao e RTL sintetizavel. O <code>#5</code> e delay de simulacao.</p>
+<p>Reset deve ser aplicado no comeco para colocar o DUT em estado conhecido:</p>
+<pre><code>initial begin
+    reset_n = 1&#x27;b0;
+    repeat (2) @(posedge clk);
+    reset_n = 1&#x27;b1;
+end</code></pre>
+<details class="nested-detail"><summary>Aprofundamento: clock avancado</summary><div class="detail-body"><p>Os slides tambem mostram clocks parametrizados, multiplos clocks e jitter. Isso e mais avancado. Para o seu projeto agora, comece com um clock simples e estavel. Depois, se o design tiver mais de um dominio de clock, o testbench precisa evoluir.</p></div></details>
+</section>
+<section class="section"><h2 id="system-tasks-de-verificacao">System tasks de verificacao</h2>
+System tasks sao chamadas especiais do simulador. Elas comecam com `$`.
+
+As mais importantes:
+
+- `$display`: imprime mensagem em um instante;
+- `$monitor`: imprime quando algum sinal monitorado muda;
+- `$finish`: encerra simulacao;
+- `$stop`: pausa simulacao;
+- `$dumpfile`, `$dumpvars`: geram arquivo de waveform;
+- `$readmemh`, `$readmemb`: carregam memoria/estimulos de arquivo.
+
+Essas chamadas pertencem ao testbench. Nao devem entrar no RTL sintetizavel.
+
+<h3>Exemplo de uso</h3>
+<pre><code>initial begin
+    $display(&quot;Inicio do teste&quot;);
+    x = 2&#x27;d1;
+    y = 2&#x27;d2;
+    #10;
+    $display(&quot;z = %0d&quot;, z);
+    $finish;
+end</code></pre>
+<p>Isso ajuda debug, mas ainda nao e self-checking.</p>
+</section>
+<section class="section"><h2 id="self-checking-o-salto-de-qualidade">Self-checking: o salto de qualidade</h2><p>Um testbench que so imprime sinais ajuda, mas ainda obriga o aluno a olhar manualmente.</p>
+<p>Um testbench melhor compara esperado e observado:</p>
+<pre><code>expected = x + y;
+if (z !== expected) begin
+    $display(&quot;ERRO: x=%0d y=%0d z=%0d expected=%0d&quot;, x, y, z, expected);
+    errors = errors + 1;
+end</code></pre>
+<p>No fim:</p>
+<pre><code>if (errors == 0)
+    $display(&quot;PASSED&quot;);
+else
+    $display(&quot;FAILED: %0d errors&quot;, errors);</code></pre>
+<p>Essa e a diferenca entre &quot;rodei uma simulacao&quot; e &quot;tenho um teste&quot;.</p>
+</section>
+<section class="section"><h2 id="arquitetura-maior-de-verificacao">Arquitetura maior de verificacao</h2>
+Os slides mostram blocos mais organizados:
+
+- stimulus generator;
+- driver ou BFM;
+- DUT;
+- receiver/monitor;
+- scoreboard;
+- checker;
+- coverage.
+
+Em um projeto pequeno, voce pode juntar tudo no mesmo testbench. Em um projeto maior, separar responsabilidades deixa o teste mais legivel.
+
+<h3>Como pensar cada bloco</h3>
+<p>Stimulus generator cria cenarios. Driver aplica sinais no protocolo correto. Monitor observa saidas. Scoreboard guarda esperado e observado. Checker compara. Coverage mede se voce testou o suficiente.</p>
+<p>Mesmo sem UVM, essa organizacao e util.</p>
+</section>
+<section class="section"><h2 id="file-i-o-em-testbench">File I/O em testbench</h2><p>Os slides mostram leitura de arquivo com <code>$readmemh</code> e <code>$readmemb</code>.</p>
+<p>Isso e util quando voce tem muitos vetores de teste:</p>
+<pre><code>reg [31:0] mem [0:255];
+
+initial begin
+    $readmemh(&quot;dados.hex&quot;, mem);
+end</code></pre>
+<p>Para processadores ou CPUs pequenas, isso pode servir para carregar instrucoes, comandos ou resultados esperados.</p>
+</section>
+<section class="section"><h2 id="tasks-e-functions">Tasks e functions</h2><p>Functions e tasks ajudam a evitar repeticao.</p>
+<p>Function:</p>
+<ul class="key-list compact-list">
+<li>retorna um valor;</li>
+<li>nao consome tempo;</li>
+<li>e boa para calcular esperado.</li>
+</ul>
+<p>Task:</p>
+<ul class="key-list compact-list">
+<li>pode consumir tempo;</li>
+<li>pode ter varios argumentos;</li>
+<li>e boa para aplicar uma transacao.</li>
+</ul>
+<p>Exemplo:</p>
+<pre><code>task apply_cmd;
+    input [6:0] cmd;
+    begin
+        cmdin = cmd;
+        @(posedge clk);
+    end
+endtask</code></pre>
+<details class="nested-detail"><summary>Aprofundamento: task automatic</summary><div class="detail-body"><p>Uma task <code>static</code> compartilha variaveis entre chamadas. Uma task <code>automatic</code> cria uma copia por chamada. Se a task puder ser chamada em paralelo, <code>automatic</code> evita interferencia.</p>
+<p>Esse detalhe nao e essencial para o primeiro testbench, mas e importante em verificacao mais avancada.</p></div></details>
+</section>
+<section class="section"><h2 id="begin-end-vs-fork-join">begin/end vs fork/join</h2><p><code>begin/end</code> executa comandos em sequencia.</p>
+<pre><code>begin
+    a = 1;
+    #2 b = 1;
+end</code></pre>
+<p><code>fork/join</code> executa comandos em paralelo.</p>
+<pre><code>fork
+    a = 1;
+    #2 b = 1;
+join</code></pre>
+<p>Em testbench, isso muda o tempo em que sinais sao aplicados. Em RTL sintetizavel, <code>fork/join</code> normalmente nao faz parte do estilo recomendado.</p>
+</section>
+<section class="section"><h2 id="debug-com-logs-e-waveform">Debug com logs e waveform</h2><p>Debug comeca quando o teste falha.</p>
+<p>Ferramentas:</p>
+<ul class="key-list compact-list">
+<li>log de simulacao;</li>
+<li>mensagens <code>$display</code>;</li>
+<li>waveform FSDB/VCD;</li>
+<li>Verdi;</li>
+<li>reducao do caso de teste.</li>
+</ul>
+<p>O fluxo mental e:</p>
+<pre><code>falha detectada -&gt; localizar mismatch -&gt; reduzir caso -&gt; achar causa -&gt; corrigir -&gt; repetir teste</code></pre>
+<p>Waveform e excelente para investigar timing e relacao entre sinais, mas nao substitui checker automatico.</p>
+</section>
+<section class="section"><h2 id="vcs-e-verdi">VCS e Verdi</h2><p>VCS compila e executa simulacao. Verdi ajuda no debug.</p>
+<p>Fluxo basico:</p>
+<pre><code>vcs -full64 -sverilog -debug_access+all -f filelist.f -top top_tb -l compile.log
+./simv -l run.log
+verdi -ssf waveform.fsdb &amp;</code></pre>
+<p>No ambiente do professor, o Makefile provavelmente encapsula esse fluxo:</p>
+<pre><code>make sim
+make verdi</code></pre>
+</section>
+<section class="section"><h2 id="randomizacao-em-verilog">Randomizacao em Verilog</h2><p>Os slides mostram <code>$random</code>. Ele gera valores pseudoaleatorios.</p>
+<p>Uso simples:</p>
+<pre><code>data = $random;
+address = $random % 16;</code></pre>
+<p>Isso ajuda a variar estimulos, mas Verilog puro nao tem CRV tao forte quanto SystemVerilog. Para comecar, use testes dirigidos e depois acrescente randomizacao simples.</p>
+<details class="nested-detail"><summary>Nuance: seed</summary><div class="detail-body"><p>Se um teste randomico falha, voce precisa conseguir repetir. Por isso, seed e importante. Sem reproduzibilidade, debug vira sofrimento.</p></div></details>
+</section>
+<section class="section"><h2 id="compiler-switches-e-plusargs">Compiler switches e plusargs</h2><p>Os slides mostram duas ideias:</p>
+<ul class="key-list compact-list">
+<li><code>+define+TYPE_1</code>: seleciona codigo em tempo de compilacao;</li>
+<li><code>$test$plusargs(&quot;TYPE_1&quot;)</code>: seleciona comportamento em tempo de simulacao.</li>
+</ul>
+<p>Isso e util para rodar cenarios diferentes sem editar o testbench.</p>
+<p>Exemplo conceitual:</p>
+<pre><code>if ($test$plusargs(&quot;LONG_TEST&quot;))
+    run_long_test();
+else
+    run_smoke_test();</code></pre>
+</section>
+<section class="section"><h2 id="estilo-de-codificacao-em-verificacao">Estilo de codificacao em verificacao</h2><p>Testbench tambem pode ter race condition.</p>
+<p>Risco comum:</p>
+<ul class="key-list compact-list">
+<li>um processo escreve um sinal;</li>
+<li>outro processo le o mesmo sinal no mesmo instante;</li>
+<li>o resultado depende da ordem interna do simulador.</li>
+</ul>
+<p>Praticas melhores:</p>
+<ul class="key-list compact-list">
+<li>aplicar estimulos em bordas conhecidas;</li>
+<li>separar driver e monitor;</li>
+<li>evitar multiplos processos dirigindo o mesmo sinal;</li>
+<li>usar nonblocking quando fizer sentido em processos sincronizados;</li>
+<li>evitar <code>force/release</code>, <code>wait</code>, <code>disable</code>, <code>fork/join</code> sem necessidade.</li>
+</ul>
+</section>
+<section class="section"><h2 id="ligacao-com-o-rtl-lab2">Ligacao com o RTL_LAB2</h2><p>O seu lab antigo ja tinha uma caracteristica muito boa: comparacao de resultado esperado.</p>
+<p>Ao levar para o ambiente novo, tente preservar:</p>
+<pre><code>aplicar comando -&gt; esperar resposta -&gt; comparar esperado -&gt; contar erro -&gt; reportar PASSED/FAILED</code></pre>
+<p>Isso e mais valioso do que apenas abrir onda no Verdi.</p>
+</section>
+<section class="section"><h2 id="quando-o-audio-seria-realmente-util">Quando o audio seria realmente util</h2><p>Eu priorizaria audio nestes pontos:</p>
+<ul class="key-list compact-list">
+<li>diferenca entre <code>$display</code>, <code>$monitor</code> e <code>$strobe</code>;</li>
+<li><code>fork/join</code> com diagrama de tempo;</li>
+<li>CRV e <code>$random</code>;</li>
+<li>clock generator com jitter;</li>
+<li>task <code>automatic</code> vs static;</li>
+<li>race conditions em testbench.</li>
+</ul>
+<p>O restante pode ser estudado bem pelo material visual e pela reconstrucao acima.</p>
+</section><p class="source-note">Base Markdown: <a data-md-source href="../../assets/md_normalizado/03_Verilog_for_Verification.md">aula didatica</a>,
+          <a data-md-source href="../../assets/md_normalizado/03_Verilog_for_Verification.md">cobertura slide a slide</a>.</p><nav class="pager" aria-label="Navegação entre aulas"><a href="bloco_1_1_introducao_e_sintese.html">Anterior: Sintese</a><a href="bloco_1_1c_lab_verilog_ref_designs.html">Proximo: Lab VerilogRefDesigns</a></nav></article><aside class="toc" data-toc><h2>Nesta aula</h2></aside></div></main><footer class="site-footer">Aula local gerada a partir da base ConhecimentoRTL.</footer><script src="../../assets/js/app.js"></script></body></html>

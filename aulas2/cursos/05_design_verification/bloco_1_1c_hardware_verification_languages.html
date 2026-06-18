@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hardware Verification Languages</title>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-title" href="../../index.html">Conhecimento RTL</a>
+        <span class="brand-subtitle">05 Design Verification</span>
+      </div>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="../../index.html">Cursos</a>
+        <a href="index.html">Design Verification</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumbs" aria-label="Você está aqui">
+      <a href="../../index.html">Raiz</a><span>/</span><a href="index.html">05 Design Verification</a><span>/</span>HVL
+    </nav>
+
+    <h1 class="page-title">Hardware Verification Languages</h1>
+    <p class="lead">
+      HVLs surgem porque verificar hardware moderno exige mais do que dirigir sinais manualmente. É preciso criar transações,
+      randomizar cenários, coletar cobertura, reaproveitar componentes, separar testes do testbench e automatizar regressões.
+    </p>
+
+    <div class="layout">
+      <article data-content>
+        <section class="study-hero">
+          <h2 id="objetivo">Objetivo desta aula</h2>
+          <p>
+            As aulas anteriores explicaram por que verificação existe e por que metodologia importa. Agora o curso apresenta
+            as linguagens e metodologias que surgiram para escalar esse trabalho. VHDL e Verilog nasceram principalmente
+            para descrever hardware; eles conseguem fazer testbenches, mas não foram pensados originalmente para construir
+            ambientes grandes, randomizados, orientados a transações, com classes, factory, coverage e reuso.
+          </p>
+          <p>
+            O ponto desta aula não é obrigar você a usar UVM imediatamente. O ponto é entender o vocabulário que o professor
+            está aproximando do laboratório: test, environment, agent, driver, monitor, sequence, transaction, scoreboard,
+            coverage, config, factory e automação. Mesmo que a primeira versão do nosso ambiente seja simples, ela deve
+            caminhar nessa direção.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="por-que-hvl">Por que surgiram HVLs?</h2>
+          <p>
+            Um testbench pequeno pode ser escrito com <code>initial</code>, delays, atribuições e alguns <code>if</code>.
+            Isso funciona para validar uma porta lógica, uma FSM pequena ou um bloco muito controlado. O problema aparece
+            quando o design tem protocolos, filas, respostas fora de ordem, erros esperados, dezenas de cenários e regressão
+            diária. A partir daí, dirigir bit por bit vira manutenção cansativa e frágil.
+          </p>
+          <p>
+            Hardware Verification Languages foram criadas para elevar o nível de abstração. Em vez de pensar apenas em
+            sinais, você passa a pensar em <strong>transações</strong>: "execute uma escrita no endereço X", "envie este
+            pacote", "decodifique esta instrução", "faça uma sequência de load/store". O driver transforma essa transação
+            em pinos. O monitor observa pinos e reconstrói transações. O scoreboard compara transações esperadas e observadas.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>Design language</h3>
+              <p>Descreve hardware sintetizável ou modelos estruturais: registradores, lógica, módulos, interfaces e temporização.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Verification language</h3>
+              <p>Descreve estímulos, checkers, coverage, classes, transações, randomização e infraestrutura de teste.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Metodologia</h3>
+              <p>Define arquitetura, regras, padrões de reuso, fases, comunicação e automação do ambiente.</p>
+            </article>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Resumo mental:</strong> RTL fala a língua do circuito. HVL fala a língua do experimento que prova se o
+            circuito se comporta como deveria.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="abstracao">Verificação em abstração maior</h2>
+          <p>
+            Abstração maior não significa ignorar sinais. Significa esconder detalhes repetitivos atrás de componentes
+            reutilizáveis. Um test pode pedir "execute a instrução ADD com estes operandos"; ele não precisa saber todos os
+            detalhes de clock, enable, reset, handshake, espera e amostragem. Esses detalhes ficam no driver e no monitor.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step">
+              <strong>Transação</strong>
+              Representa intenção: instrução, pacote, acesso de memória, operação de barramento.
+            </div>
+            <div class="flow-step">
+              <strong>Driver</strong>
+              Converte intenção em sinais temporais no DUT.
+            </div>
+            <div class="flow-step">
+              <strong>Monitor</strong>
+              Converte sinais observados de volta em eventos ou transações.
+            </div>
+          </div>
+
+          <p>
+            Esse padrão reduz acoplamento. Se o protocolo físico muda, você mexe no driver/monitor. Se o cenário muda, você
+            mexe no test ou sequence. Se a regra de correção muda, você mexe no scoreboard/checker. Essa separação é a raiz
+            do reuso.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="metodologias">Metodologias de verificação</h2>
+          <p>
+            O curso cita várias metodologias e bibliotecas históricas. O importante não é decorar todas como se fossem
+            ferramentas que vamos usar amanhã. O importante é perceber a tendência: a indústria foi convergindo para padrões
+            de arquitetura de testbench, componentes reutilizáveis, coverage e automação.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Ideia principal</th>
+                  <th>Como enxergar no curso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RVM</td>
+                  <td>Reference Verification Methodology, uma das bases históricas para ambientes estruturados.</td>
+                  <td>Ajuda a entender a evolução antes de UVM.</td>
+                </tr>
+                <tr>
+                  <td>OVM</td>
+                  <td>Open Verification Methodology, tentativa de padronizar componentes e fluxo.</td>
+                  <td>Também é ancestral direto do pensamento UVM.</td>
+                </tr>
+                <tr>
+                  <td>OVL</td>
+                  <td>Open Verification Library, biblioteca de checkers/assertions reutilizáveis.</td>
+                  <td>Mostra que checagem de propriedades também pode ser padronizada.</td>
+                </tr>
+                <tr>
+                  <td>OSVVM</td>
+                  <td>Metodologia open source para verificação em VHDL.</td>
+                  <td>Importante para quem vem de VHDL e quer coverage/randomização.</td>
+                </tr>
+                <tr>
+                  <td>UVM</td>
+                  <td>Universal Verification Methodology, padrão dominante em SystemVerilog.</td>
+                  <td>Principal vocabulário para ambientes reutilizáveis modernos.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="uvm">UVM como padronização de SystemVerilog</h2>
+          <p>
+            UVM é uma biblioteca e uma metodologia construída em SystemVerilog. Ela oferece classes base, fases de execução,
+            infraestrutura de mensagens, factory, configuração, transações, componentes e padrões de comunicação. O objetivo
+            é fazer com que ambientes de verificação tenham uma arquitetura reconhecível e reutilizável.
+          </p>
+          <p>
+            UVM não é necessário para todo exercício acadêmico pequeno. Mas é importante porque seus conceitos aparecem
+            mesmo quando fazemos uma versão simplificada: test separado do testbench, driver, monitor, scoreboard, coverage,
+            sequences e regressão.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3><code>uvm_object</code></h3>
+              <p>Base para objetos que não têm hierarquia física de componente, como transações, sequences e configs.</p>
+            </article>
+            <article class="concept-card">
+              <h3><code>uvm_sequence_item</code></h3>
+              <p>Representa uma transação que será gerada, dirigida, monitorada ou comparada.</p>
+            </article>
+            <article class="concept-card">
+              <h3><code>uvm_component</code></h3>
+              <p>Base para elementos hierárquicos permanentes do ambiente: env, agent, driver, monitor e scoreboard.</p>
+            </article>
+          </div>
+
+          <details class="expand-block">
+            <summary>Por que separar object de component?</summary>
+            <div class="detail-body">
+              <p>
+                Um componente vive na hierarquia do testbench e passa pelas fases de build, connect, run e report. Um objeto
+                comum pode ser criado, copiado, randomizado, enviado e destruído sem representar uma peça fixa da hierarquia.
+                A transação que descreve "uma operação de memória" é objeto. O driver que consome essa transação e mexe nos
+                pinos é componente.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="arquitetura-uvm">Arquitetura UVM: quem faz o quê?</h2>
+          <p>
+            O slide de arquitetura UVM é essencial. Ele mostra que o ambiente não é um bloco monolítico. Cada parte tem uma
+            responsabilidade, e essa separação permite trocar testes, reutilizar agentes e depurar com mais clareza.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Elemento</th>
+                  <th>Responsabilidade</th>
+                  <th>Versão simplificada para nosso CPU</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Test</td>
+                  <td>Escolhe cenário, configura ambiente e inicia sequences.</td>
+                  <td>Arquivo ou classe que roda teste de ADD, LOAD, JUMP, reset etc.</td>
+                </tr>
+                <tr>
+                  <td>Environment</td>
+                  <td>Agrupa agentes, scoreboard, coverage e configurações.</td>
+                  <td>Módulo/pacote que instancia driver, monitor e checker.</td>
+                </tr>
+                <tr>
+                  <td>Agent</td>
+                  <td>Agrupa sequencer, driver e monitor de uma interface.</td>
+                  <td>Agente da interface do CPU ou da memória.</td>
+                </tr>
+                <tr>
+                  <td>Driver</td>
+                  <td>Recebe transações e dirige sinais.</td>
+                  <td>Aplica instruções, dados e controle no DUT.</td>
+                </tr>
+                <tr>
+                  <td>Monitor</td>
+                  <td>Observa sinais e publica eventos/transações.</td>
+                  <td>Observa PC, writeback, memória, flags e sinais de controle.</td>
+                </tr>
+                <tr>
+                  <td>Scoreboard</td>
+                  <td>Compara esperado e observado.</td>
+                  <td>Modelo simples do estado esperado dos registradores/memória.</td>
+                </tr>
+                <tr>
+                  <td>Coverage collector</td>
+                  <td>Mede cenários exercitados.</td>
+                  <td>Cobre instruções, flags, branches, hazards simples e resets.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="tlm">TLM: comunicação por transações</h2>
+          <p>
+            TLM, Transaction-Level Modeling, é a ideia de comunicar eventos de alto nível entre componentes. Em vez de
+            passar dezenas de sinais soltos, um monitor pode publicar uma transação "writeback ocorreu: rd=3, value=10".
+            O scoreboard recebe isso e compara com o modelo esperado.
+          </p>
+
+          <pre><code>// Ideia conceitual de transação, não um código UVM completo
+class cpu_txn;
+  rand bit [31:0] instruction;
+  bit [31:0] observed_result;
+  bit [4:0]  rd;
+  string     kind;
+endclass</code></pre>
+
+          <p>
+            O ganho é didático e prático. Quando você olha logs de transações, entende o comportamento no nível do protocolo
+            ou da instrução, não apenas no nível de sinais mudando a cada ciclo.
+          </p>
+        </section>
+
+        <section class="section">
+          <h2 id="systemverilog">SystemVerilog como linguagem de verificação</h2>
+          <p>
+            SystemVerilog une recursos de design e verificação. Para verificação, os recursos mais importantes são classes,
+            randomização com constraints, covergroups, interfaces, assertions, packages, DPI e mecanismos de programação
+            orientada a objetos. Isso permite escrever ambientes mais abstratos que Verilog tradicional.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card">
+              <h3>OOP</h3>
+              <p>Classes, herança, polimorfismo e objetos ajudam a criar transações e componentes reutilizáveis.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Constrained random</h3>
+              <p>Gera estímulos variados obedecendo regras, útil para explorar espaço de estados sem escrever tudo à mão.</p>
+            </article>
+            <article class="concept-card">
+              <h3>Coverage</h3>
+              <p>Covergroups e coverpoints medem cenários funcionais definidos pelo plano.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>DPI/VPI</h3>
+              <p>Permitem interação com C/C++ ou introspecção/controle da simulação, quando o ambiente precisa disso.</p>
+            </article>
+          </div>
+
+          <details class="expand-block">
+            <summary>O que é constrained random?</summary>
+            <div class="detail-body">
+              <p>
+                É randomização com regras. Você não sorteia qualquer coisa; você define limites e relações. Exemplo: gerar
+                instruções válidas, mas variar registradores, operandos e modos. Isso encontra combinações que testes
+                dirigidos talvez não explorem, enquanto evita entradas sem sentido.
+              </p>
+              <pre><code>// Exemplo conceitual
+class alu_item;
+  rand bit [3:0] op;
+  rand bit [31:0] a, b;
+
+  constraint valid_op { op inside {[0:7]}; }
+endclass</code></pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="section">
+          <h2 id="factory-config">Factory e config database</h2>
+          <p>
+            Dois conceitos de UVM assustam no começo, mas têm uma motivação simples. Factory permite trocar implementações
+            sem reescrever a hierarquia. Config database permite passar configuração para componentes sem conexões manuais
+            rígidas.
+          </p>
+
+          <div class="split">
+            <div class="note-box">
+              <h3>Factory</h3>
+              <p>
+                Serve para criar objetos/componentes por tipo configurável. Um teste pode substituir um driver padrão por
+                um driver com erro injetado, ou uma sequence padrão por uma sequence de corner cases.
+              </p>
+            </div>
+            <div class="note-box">
+              <h3>Config database</h3>
+              <p>
+                Serve para distribuir parâmetros: interface virtual, modos de operação, knobs de coverage, endereço base,
+                enable/disable de agentes e outras opções.
+              </p>
+            </div>
+          </div>
+
+          <div class="lesson-note">
+            <strong>Tradução simples:</strong> factory troca peças; config database passa ajustes. Ambos reduzem código
+            duplicado quando você tem muitos testes usando o mesmo ambiente.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="scoreboard-checker">Scoreboard versus checker</h2>
+          <p>
+            O MD destaca uma diferença útil. Checker normalmente valida uma regra local: protocolo, assertion, range,
+            handshake, latência, estabilidade. Scoreboard costuma comparar comportamento fim a fim com um modelo esperado.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Elemento</th>
+                  <th>Foco</th>
+                  <th>Exemplo no CPU</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Checker</td>
+                  <td>Regra local e imediata.</td>
+                  <td>Reset zera PC; write enable não fica X; valid permanece até ready.</td>
+                </tr>
+                <tr>
+                  <td>Scoreboard</td>
+                  <td>Resultado esperado versus observado.</td>
+                  <td>Após ADD x3,x1,x2, valor esperado aparece no registrador x3.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="vantagens">Vantagens reais de UVM</h2>
+          <p>
+            As vantagens listadas nos slides fazem sentido quando o ambiente cresce. UVM separa testes do testbench, permite
+            sequence-based stimulus generation, cria mecanismos de configuração e factory, e ajuda a manter simulador e
+            ambiente menos acoplados.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Modularidade</strong>
+              Componentes têm papéis claros e podem ser trocados.
+            </div>
+            <div class="check-item">
+              <strong>Reuso</strong>
+              Um agent de interface pode ser usado em vários blocos.
+            </div>
+            <div class="check-item">
+              <strong>Tests separados</strong>
+              Você cria novos cenários sem reconstruir o testbench inteiro.
+            </div>
+            <div class="check-item">
+              <strong>Regressão</strong>
+              Tests nomeados e configuráveis ficam mais fáceis de automatizar.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="desvantagens">Desvantagens e cautelas</h2>
+          <p>
+            O curso também é honesto: UVM tem curva de aprendizado alta. Para um bloco pequeno, um ambiente UVM completo
+            pode parecer mais pesado que o próprio DUT. Por isso a decisão boa é evoluir em camadas: primeiro self-checking
+            testbench, depois separação de driver/monitor/scoreboard, depois coverage, depois UVM se o tamanho justificar.
+          </p>
+
+          <div class="concept-grid">
+            <article class="concept-card warn">
+              <h3>Curva de aprendizado</h3>
+              <p>Classes, fases, macros, factory e config parecem abstratos no começo.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Overhead</h3>
+              <p>Para blocos pequenos, a estrutura pode ser maior que a necessidade imediata.</p>
+            </article>
+            <article class="concept-card warn">
+              <h3>Debug do ambiente</h3>
+              <p>Você passa a depurar não só o DUT, mas também o próprio testbench.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="verification-plan">Verification plan e automação</h2>
+          <p>
+            HVL e UVM não substituem o verification plan. O plano define o que precisa ser verificado, como será observado,
+            qual cobertura mede progresso e quais testes são must-pass. A automação transforma esse plano em regressão:
+            rodar testes, coletar logs, mergear coverage, detectar falhas e preservar histórico.
+          </p>
+
+          <div class="check-grid">
+            <div class="check-item">
+              <strong>Must-pass tests</strong>
+              Cenários básicos que nunca podem quebrar.
+            </div>
+            <div class="check-item">
+              <strong>Corner tests</strong>
+              Situações raras, limites, erros e transições perigosas.
+            </div>
+            <div class="check-item">
+              <strong>Regression list</strong>
+              Lista nomeada de testes que o Makefile ou script roda automaticamente.
+            </div>
+            <div class="check-item">
+              <strong>Coverage closure</strong>
+              Processo de fechar buracos de cobertura com novos testes ou exclusões justificadas.
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="projeto">Aplicação no nosso laboratório</h2>
+          <p>
+            Para o nosso CPU e para o ambiente do professor, a decisão mais saudável é usar os conceitos de UVM sem tentar
+            começar pesado demais. Podemos montar um ambiente "estilo UVM" em camadas simples:
+          </p>
+
+          <ol>
+            <li>Separar testes por cenário: reset, instruções aritméticas, memória, branch, flags, erro.</li>
+            <li>Criar tarefas ou classes simples para representar transações de instrução/operação.</li>
+            <li>Adicionar driver que aplica essas operações no DUT.</li>
+            <li>Adicionar monitor que observa resultado, PC, writeback, flags e memória.</li>
+            <li>Adicionar scoreboard simples comparando com modelo esperado.</li>
+            <li>Adicionar coverage funcional mínima por instrução, flag e tipo de cenário.</li>
+            <li>Automatizar regressão no Makefile, gerando logs e FSDB apenas quando necessário.</li>
+          </ol>
+
+          <div class="project-bridge">
+            <strong>Direção prática:</strong> não precisamos chamar tudo de UVM agora. Mas precisamos organizar o pensamento
+            como UVM: testes separados, ambiente reutilizável, checagem automática e cobertura.
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 id="revisao">Revisão para fixar</h2>
+          <div class="quiz-card">
+            <strong>1. Por que VHDL/Verilog não bastam como linguagens de verificação modernas?</strong>
+            Porque foram pensadas principalmente para descrever hardware; verificação moderna precisa de transações,
+            randomização, coverage, classes, reuso, automação e arquitetura de ambiente.
+          </div>
+          <div class="quiz-card">
+            <strong>2. O que é uma transação?</strong>
+            Uma representação de alto nível de uma operação, como acesso de memória, pacote, instrução ou comando.
+          </div>
+          <div class="quiz-card">
+            <strong>3. Qual a diferença entre driver e monitor?</strong>
+            Driver transforma transações em sinais no DUT; monitor observa sinais e reconstrói eventos/transações.
+          </div>
+          <div class="quiz-card">
+            <strong>4. Qual a diferença entre checker e scoreboard?</strong>
+            Checker valida regra local; scoreboard compara comportamento observado contra modelo esperado.
+          </div>
+          <div class="quiz-card">
+            <strong>5. Por que UVM separa test do testbench?</strong>
+            Para permitir novos cenários sem reescrever o ambiente inteiro.
+          </div>
+          <div class="quiz-card">
+            <strong>6. O que automation tem a ver com metodologia?</strong>
+            Sem automação, regressão, coverage e histórico viram trabalho manual e pouco confiável.
+          </div>
+        </section>
+
+        <p class="source-note">
+          Base: <code>03_Hardware_Verification_Languages.md</code>.
+        </p>
+
+        <nav class="pager" aria-label="Navegação entre aulas">
+          <a href="bloco_1_1b_verification_methodology.html">Anterior: Methodology</a>
+          <a href="bloco_1_1d_vcs_verdi_debug_environment.html">Próxima: VCS e Verdi</a>
+          <a href="index.html">Voltar ao curso</a>
+        </nav>
+      </article>
+
+      <aside class="toc">
+        <h2>Nesta aula</h2>
+        <a href="#objetivo">Objetivo</a>
+        <a href="#por-que-hvl">Por que HVL</a>
+        <a href="#abstracao">Abstração</a>
+        <a href="#metodologias">Metodologias</a>
+        <a href="#uvm">UVM</a>
+        <a href="#arquitetura-uvm">Arquitetura</a>
+        <a href="#tlm">TLM</a>
+        <a href="#systemverilog">SystemVerilog</a>
+        <a href="#factory-config">Factory/config</a>
+        <a href="#scoreboard-checker">Scoreboard</a>
+        <a href="#vantagens">Vantagens</a>
+        <a href="#desvantagens">Cautelas</a>
+        <a href="#verification-plan">Plano</a>
+        <a href="#projeto">Projeto</a>
+        <a href="#revisao">Revisão</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">Curso gerado a partir da base ConhecimentoRTL.</footer>
+  <script src="../../assets/js/app.js"></script>
+</body>
+</html>

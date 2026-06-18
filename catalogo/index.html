@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ficha Catalográfica UERGS</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="app-header">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="./uergs-logo.jpg" alt="UERGS">
+        <div>
+          <p class="eyebrow">Universidade Estadual do Rio Grande do Sul</p>
+          <h1>Ficha Catalográfica</h1>
+        </div>
+      </div>
+      <div class="status-card" id="status-card">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="status-text">Preencha os campos obrigatórios</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="form-panel" aria-labelledby="form-title">
+        <div class="section-title">
+          <span class="section-kicker">Dados do trabalho</span>
+          <h2 id="form-title">Formulário</h2>
+        </div>
+
+        <div class="form-health" aria-live="polite">
+          <div class="health-main">
+            <span id="progress-text">0% completo</span>
+            <strong id="progress-detail">Campos essenciais pendentes</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span id="progress-bar"></span>
+          </div>
+          <div class="health-grid">
+            <span id="health-author">Autoria pendente</span>
+            <span id="health-title">Título pendente</span>
+            <span id="health-subjects">0/3 assuntos</span>
+          </div>
+        </div>
+
+        <form id="catalog-form" novalidate>
+          <fieldset>
+            <legend>Autoria</legend>
+            <div class="field full" data-field="authorName">
+              <label for="authorName">Nome completo do(a) autor(a)</label>
+              <input id="authorName" name="authorName" type="text" autocomplete="name" placeholder="Ex.: Amanda Rodrigues Padilha">
+              <p class="field-message" id="authorName-message"></p>
+            </div>
+
+            <div class="field" data-field="cutterSurname">
+              <label for="cutterSurname">Sobrenome para o Cutter</label>
+              <select id="cutterSurname" name="cutterSurname" disabled></select>
+              <p class="field-message" id="cutterSurname-message"></p>
+            </div>
+
+            <div class="field" data-field="authorEntry">
+              <label>Entrada catalográfica</label>
+              <output id="authorEntry">-</output>
+              <p class="field-message neutral">Gerada automaticamente.</p>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Trabalho</legend>
+            <div class="field full" data-field="title">
+              <label for="title">Título e subtítulo do trabalho</label>
+              <input id="title" name="title" type="text" maxlength="240" placeholder="Ex.: Vai e vem: o instante e uma dança-tecnologia">
+              <p class="field-message" id="title-message"></p>
+            </div>
+
+            <div class="field" data-field="documentType">
+              <label for="documentType">Tipo de documento</label>
+              <select id="documentType" name="documentType">
+                <option value="Monografia (Graduação)">Monografia (Graduação)</option>
+                <option value="Monografia (Especialização)">Monografia (Especialização)</option>
+                <option value="Artigo (Graduação)">Artigo (Graduação)</option>
+                <option value="Artigo (Especialização)">Artigo (Especialização)</option>
+                <option value="Produto Educacional (Mestrado)">Produto Educacional (Mestrado)</option>
+                <option value="Produto Técnico (Mestrado)">Produto Técnico (Mestrado)</option>
+                <option value="Dissertação (Mestrado)">Dissertação (Mestrado)</option>
+                <option value="Tese (Doutorado)">Tese (Doutorado)</option>
+              </select>
+              <p class="field-message" id="documentType-message"></p>
+            </div>
+
+            <div class="field" data-field="year">
+              <label for="year">Ano</label>
+              <div class="number-stepper">
+                <button type="button" class="step-button" data-year-step="-1" aria-label="Diminuir ano">-</button>
+                <input id="year" name="year" type="number" inputmode="numeric" min="1900" max="2100">
+                <button type="button" class="step-button" data-year-step="1" aria-label="Aumentar ano">+</button>
+              </div>
+              <p class="field-message" id="year-message"></p>
+            </div>
+
+            <div class="field" data-field="pages">
+              <label for="pages">Número de folhas</label>
+              <input id="pages" name="pages" type="number" inputmode="numeric" min="1" max="9999" placeholder="96">
+              <p class="field-message" id="pages-message"></p>
+            </div>
+
+            <div class="field" data-field="isbn">
+              <label for="isbn">ISBN (se houver)</label>
+              <input id="isbn" name="isbn" type="text" inputmode="numeric" maxlength="22" autocomplete="off" placeholder="ISBN 978-65-5329-053-2">
+              <p class="field-message" id="isbn-message"></p>
+            </div>
+
+            <label class="check-field" for="illustrated">
+              <input id="illustrated" name="illustrated" type="checkbox">
+              <span>Documento ilustrado</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Instituição</legend>
+            <div class="field" data-field="unit">
+              <label for="unit">Unidade</label>
+              <select id="unit" name="unit">
+                <option>Alegrete</option>
+                <option>Bagé</option>
+                <option>Bento Gonçalves</option>
+                <option>Cachoeira do Sul</option>
+                <option>Caxias do Sul</option>
+                <option>Litoral Norte-Osório</option>
+                <option>Cruz Alta</option>
+                <option>Encantado</option>
+                <option>Erechim</option>
+                <option>Frederico Westphalen</option>
+                <option selected>Guaíba</option>
+                <option>Montenegro</option>
+                <option>Novo Hamburgo</option>
+                <option>Porto Alegre</option>
+                <option>Sananduva</option>
+                <option>Santa Cruz do Sul</option>
+                <option>Santana do Livramento</option>
+                <option>São Borja</option>
+                <option>Hortênsias</option>
+                <option>São Luiz Gonzaga</option>
+                <option>Tapes</option>
+                <option>Três Passos</option>
+                <option>Vacaria</option>
+                <option>Botucaraí - Soledade</option>
+              </select>
+              <p class="field-message" id="unit-message"></p>
+            </div>
+
+            <div class="field full" data-field="course">
+              <label for="course">Curso ou programa</label>
+              <select id="course" name="course">
+                <optgroup label="Graduação">
+                  <option>Administração de Sistemas e Serviços de Saúde (Bacharelado)</option>
+                  <option>Administração Pública (Bacharelado)</option>
+                  <option>Administração Rural e Agroindustrial (Bacharelado)</option>
+                  <option>Agroecologia (Bacharelado)</option>
+                  <option>Agronomia (Bacharelado)</option>
+                  <option>Artes Visuais (Licenciatura)</option>
+                  <option>Ciência e Tecnologia de Alimentos (Bacharelado)</option>
+                  <option>Dança (Licenciatura)</option>
+                  <option>Desenvolvimento Rural e Gestão Agroindustrial (Bacharelado)</option>
+                  <option>Engenharia de Bioprocessos e Biotecnologia (Bacharelado)</option>
+                  <option selected>Engenharia de Computação (Bacharelado)</option>
+                  <option>Engenharia de Controle e Automação (Bacharelado)</option>
+                  <option>Engenharia de Energia (Bacharelado)</option>
+                  <option>Gestão Ambiental (Bacharelado)</option>
+                  <option>Letras: Língua Portuguesa e Literatura de Língua Portuguesa (Licenciatura)</option>
+                  <option>Música (Licenciatura)</option>
+                  <option>Pedagogia (Licenciatura)</option>
+                  <option>Teatro (Licenciatura)</option>
+                </optgroup>
+                <optgroup label="Especialização">
+                  <option>Especialização em Teoria e Prática na Formação do Leitor</option>
+                  <option>Especialização em Gestão Pública</option>
+                  <option>Especialização em Gestão Pública Participativa</option>
+                  <option>Especialização em Gestão Pública e Democracia</option>
+                  <option>Especialização em Gestão em Saúde</option>
+                  <option>Especialização em Atendimento Educacional Especializado - AEE</option>
+                  <option>Especialização em Meio Ambiente e Biodiversidade</option>
+                  <option>Especialização em Educação para a Sustentabilidade</option>
+                  <option>Especialização em Agricultura Familiar e Meio Ambiente</option>
+                  <option>Especialização em Meio Ambiente e Desenvolvimento Regional</option>
+                  <option>Especialização em Agroindústria Familiar e Desenvolvimento Sustentável</option>
+                  <option>Especialização em Segurança Alimentar e Agroecologia</option>
+                  <option>Especialização em Gestão da Qualidade no Processamento de Alimentos</option>
+                  <option>Especialização em Agroecologia e Produção Orgânica</option>
+                  <option>Especialização em Gestão de Currículo na Formação Docente</option>
+                  <option>Especialização em Gestão na Agricultura Sustentável</option>
+                  <option>Especialização em Sociedade, Ambiente e Desenvolvimento</option>
+                  <option>Especialização em Gestão e Sustentabilidade Ambiental</option>
+                  <option>Especialização em Ensino e Práticas de Ciências da Natureza e Matemática</option>
+                  <option>Especialização em Gestão em Agronegócios</option>
+                  <option>Especialização em Docência no Ensino Religioso</option>
+                  <option>Especialização em Produção Vegetal</option>
+                  <option>Especialização em Liderança e Sustentabilidade</option>
+                  <option>Especialização em Gestão em Educação: Supervisão e Orientação</option>
+                  <option>Especialização em Educação Infantil: Currículo e Metodologias para a Criação de Propostas Inovadoras</option>
+                  <option>Especialização em Gestão e Desenvolvimento Rural</option>
+                  <option>Especialização em Educação Socioambiental</option>
+                  <option>Especialização em Educação e Cultura</option>
+                  <option>Especialização em Atendimento Educacional Especializado</option>
+                  <option>Especialização em Educação Musical para Professores da Educação Básica</option>
+                  <option>Especialização em Gestão Ambiental na Indústria</option>
+                  <option>Especialização em Qualificação Docente em Ciências da Natureza e Matemática</option>
+                  <option>Especialização em Desenvolvimento Territorial e Agroecologia</option>
+                </optgroup>
+                <optgroup label="Mestrado">
+                  <option>Mestrado em Docência para Ciências, Tecnologias, Engenharia e Matemática</option>
+                  <option>Mestrado Profissional em Ciência e Tecnologia de Alimentos</option>
+                  <option>Mestrado Profissional em Ambiente e Sustentabilidade</option>
+                  <option>Mestrado Profissional em Educação</option>
+                  <option>Mestrado Acadêmico em Sistemática e Conservação da Diversidade Biológica</option>
+                </optgroup>
+                <optgroup label="Doutorado">
+                  <option>Doutorado em Educação</option>
+                </optgroup>
+              </select>
+              <p class="field-message" id="course-message"></p>
+            </div>
+          </fieldset>
+
+          <fieldset class="responsibility-fieldset">
+            <legend>Responsabilidade</legend>
+            <div class="field" data-field="advisorDegree">
+              <label for="advisorDegree">Titulação</label>
+              <select id="advisorDegree" name="advisorDegree" required aria-describedby="advisorDegree-message">
+                <option value="" selected disabled>Selecione</option>
+                <option value="Dr.">Doutor (Dr.)</option>
+                <option value="Dra.">Doutora (Dra.)</option>
+                <option value="Me.">Mestre (Me.)</option>
+                <option value="Ma.">Mestra (Ma.)</option>
+              </select>
+              <p class="field-message" id="advisorDegree-message"></p>
+            </div>
+
+            <div class="field" data-field="advisor">
+              <label for="advisor">Nome do responsável pela orientação</label>
+              <input id="advisor" name="advisor" type="text" placeholder="Ex.: Sílvia da Silva Lopes">
+              <p class="field-message" id="advisor-message"></p>
+            </div>
+
+            <div class="field full" data-field="advisorProfessorTitle">
+              <span class="field-label">Incluir título de professor(a) na orientação?</span>
+              <div class="radio-row" role="radiogroup" aria-describedby="advisorProfessorTitle-message">
+                <label>
+                  <input type="radio" name="advisorProfessorTitle" value="yes" checked>
+                  <span>Sim</span>
+                </label>
+                <label>
+                  <input type="radio" name="advisorProfessorTitle" value="no">
+                  <span>Não</span>
+                </label>
+              </div>
+              <p class="field-message" id="advisorProfessorTitle-message"></p>
+            </div>
+
+            <div class="field" data-field="coadvisorDegree">
+              <label for="coadvisorDegree">Titulação</label>
+              <select id="coadvisorDegree" name="coadvisorDegree" aria-describedby="coadvisorDegree-message">
+                <option value="" selected>Selecione se houver</option>
+                <option value="Dr.">Doutor (Dr.)</option>
+                <option value="Dra.">Doutora (Dra.)</option>
+                <option value="Me.">Mestre (Me.)</option>
+                <option value="Ma.">Mestra (Ma.)</option>
+              </select>
+              <p class="field-message" id="coadvisorDegree-message"></p>
+            </div>
+
+            <div class="field" data-field="coadvisor">
+              <label for="coadvisor">Nome do responsável pela coorientação</label>
+              <input id="coadvisor" name="coadvisor" type="text" placeholder="Opcional">
+              <p class="field-message" id="coadvisor-message"></p>
+            </div>
+
+            <div class="field full" data-field="coadvisorProfessorTitle">
+              <span class="field-label">Incluir título de professor(a) na coorientação?</span>
+              <div class="radio-row" role="radiogroup" aria-describedby="coadvisorProfessorTitle-message">
+                <label>
+                  <input type="radio" name="coadvisorProfessorTitle" value="yes" checked>
+                  <span>Sim</span>
+                </label>
+                <label>
+                  <input type="radio" name="coadvisorProfessorTitle" value="no">
+                  <span>Não</span>
+                </label>
+              </div>
+              <p class="field-message" id="coadvisorProfessorTitle-message"></p>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Assuntos</legend>
+            <div class="subject-grid" id="subject-grid">
+              <div class="field" data-field="subject1">
+                <label for="subject1">Assunto 1</label>
+                <input id="subject1" name="subject1" type="text" maxlength="80">
+                <p class="field-message" id="subject1-message"></p>
+              </div>
+              <div class="field" data-field="subject2">
+                <label for="subject2">Assunto 2</label>
+                <input id="subject2" name="subject2" type="text" maxlength="80">
+                <p class="field-message" id="subject2-message"></p>
+              </div>
+              <div class="field" data-field="subject3">
+                <label for="subject3">Assunto 3</label>
+                <input id="subject3" name="subject3" type="text" maxlength="80">
+                <p class="field-message" id="subject3-message"></p>
+              </div>
+              <div class="field" data-field="subject4">
+                <label for="subject4">Assunto 4</label>
+                <input id="subject4" name="subject4" type="text" maxlength="80">
+                <p class="field-message" id="subject4-message"></p>
+              </div>
+              <div class="field" data-field="subject5">
+                <label for="subject5">Assunto 5</label>
+                <input id="subject5" name="subject5" type="text" maxlength="80">
+                <p class="field-message" id="subject5-message"></p>
+              </div>
+            </div>
+            <p class="field-message" id="subjects-message"></p>
+          </fieldset>
+
+          <div class="form-actions">
+            <button class="ghost-button" type="button" id="fill-sample">Modelo</button>
+            <button class="ghost-button" type="button" id="clear-form">Limpar</button>
+            <button class="primary-button" type="submit" id="download-pdf" disabled>Gerar PDF</button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="preview-panel" aria-labelledby="preview-title">
+        <div class="section-title compact">
+          <span class="section-kicker">Prévia</span>
+          <h2 id="preview-title">Publicação na fonte</h2>
+        </div>
+
+        <div class="cutter-badge">
+          <span>Cutter</span>
+          <strong id="cutterCode">-</strong>
+        </div>
+
+        <div class="catalog-preview" id="catalog-preview">
+          <div class="catalog-heading">Catalogação de Publicação na Fonte</div>
+          <div class="catalog-card" id="preview-card" aria-label="Prévia da ficha catalográfica">
+            <svg id="preview-svg" class="catalog-svg" role="img" aria-label="Ficha catalográfica pré-visualizada"></svg>
+          </div>
+          <div class="catalog-footer">Ficha catalográfica elaborada pelo Sistema de Geração Automática de Ficha Catalográfica da UERGS com os dados fornecidos pelo(a) autor(a).</div>
+        </div>
+      </aside>
+    </main>
+  </div>
+  <script src="./vendor/jspdf.umd.min.js"></script>
+  <script src="./nomes.js"></script>
+  <script src="./js/normalizers.js"></script>
+  <script src="./js/cutter.js"></script>
+  <script src="./js/validation.js"></script>
+  <script src="./js/catalog.js"></script>
+  <script src="./js/pdf.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
