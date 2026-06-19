@@ -5,9 +5,6 @@ const ctx = canvas.getContext("2d");
 const resetButton = document.getElementById("resetButton");
 const modeToggle = document.getElementById("modeToggle");
 const modeLabel = document.getElementById("modeLabel");
-const backpropButton = document.getElementById("backpropButton");
-const geneticButton = document.getElementById("geneticButton");
-const algorithmValue = document.getElementById("algorithmValue");
 const rateLabel = document.getElementById("rateLabel");
 const fpsValue = document.getElementById("fpsValue");
 const metricsTableBody = document.getElementById("metricsTableBody");
@@ -32,7 +29,14 @@ const WALL_BOUNCE = 0.94;
 const BALL_BOUNCE = 0.98;
 const BALL_SEPARATION_KICK = 2.8;
 const BALL_EXTRA_SEPARATION = 4;
-const LEARNING_RATE = 0.035;
+const LEARNING_RATE = 0.004;
+const TEMPORAL_BUFFER_FRAMES = FPS * 8;
+const REWARD_DISCOUNT = 0.99;
+const RETURN_BASELINE_RATE = 0.01;
+const RETURN_STRENGTH_SCALE = 0.25;
+const MAX_POLICY_STRENGTH = 8;
+const ACCELERATION_EXPLORATION = 0.08;
+const DIRECTION_EXPLORATION = 0.18;
 const WALL_PENALTY = -8;
 const RED_HIT_REWARD = 12;
 const BLUE_HIT_PENALTY = -4;
@@ -47,12 +51,6 @@ const TRAINING_BATCH_STEPS = 1000;
 const TRAINING_RENDER_EVERY = 12000;
 const STORAGE_KEY = "bolinhaIA.training.v3";
 const SAVE_INTERVAL_MS = 30000;
-const GENETIC_POPULATION_SIZE = 10;
-const GENETIC_MUTATION_DEVIATION = 0.06;
-const GENETIC_SCORE_BONUS = 2000;
-const GENETIC_BLUE_WALL_BONUS = 200;
-const GENETIC_SPAWN_WALL_CLEARANCE = 75;
-const GENETIC_SPAWN_OPPONENT_DISTANCE = 150;
 const WALL_REPULSION_DISTANCE = 28;
 const WALL_REPULSION_SPEED_THRESHOLD = 1.25;
 const WALL_REPULSION_FORCE = 1.5;
@@ -69,12 +67,6 @@ const metricRows = [
   { key: "recompensa_media", label: "Reward medio total", average: true },
   { key: "media_sem_parede", label: "Frames sem parede (media 10)", average: true },
   { key: "media_entre_bolas", label: "Frames entre bolas (media 10)", average: true }
-];
-
-const geneticMetricRows = [
-  { key: "score_genetico", label: "Score atual" },
-  { key: "geracao_genetica", label: "Geracao" },
-  { key: "individuo_genetico", label: "Individuo" }
 ];
 
 function randomBetween(min, max) {
@@ -123,32 +115,10 @@ function createBrain() {
   ];
 }
 
-function cloneBrain(brain) {
-  return brain.map((layer) => ({
-    weights: layer.weights.map((row) => [...row]),
-    biases: [...layer.biases]
-  }));
-}
-
 function randomGaussian() {
   const first = Math.max(Number.EPSILON, Math.random());
   const second = Math.random();
   return Math.sqrt(-2 * Math.log(first)) * Math.cos(TWO_PI * second);
-}
-
-function mutateBrain(brain) {
-  const mutated = cloneBrain(brain);
-
-  mutated.forEach((layer) => {
-    layer.weights.forEach((row, outputIndex) => {
-      row.forEach((weight, inputIndex) => {
-        layer.weights[outputIndex][inputIndex] = weight + randomGaussian() * GENETIC_MUTATION_DEVIATION;
-      });
-    });
-    layer.biases = layer.biases.map((bias) => bias + randomGaussian() * GENETIC_MUTATION_DEVIATION);
-  });
-
-  return mutated;
 }
 
 function activate(value) {
@@ -189,17 +159,31 @@ function forwardBrain(brain, inputs) {
   };
 }
 
-function trainBrain(brain, cache, target, strength) {
-  if (!cache) {
+function trainBrainFromExperience(brain, experience, advantage) {
+  if (!experience || !Number.isFinite(advantage)) {
     return;
   }
 
+  const cache = forwardBrain(brain, experience.inputs);
   const deltas = Array.from({ length: brain.length });
   const output = cache.activations[cache.activations.length - 1];
-  const scaledStrength = clamp(strength, 0.03, 24);
+  const signedStrength = clamp(
+    advantage * RETURN_STRENGTH_SCALE,
+    -MAX_POLICY_STRENGTH,
+    MAX_POLICY_STRENGTH
+  );
+  const target = [
+    experience.action.acceleration,
+    angleToOutput(experience.action.direction * TWO_PI, output[1]),
+    experience.action.boost
+  ];
+
+  if (Math.abs(signedStrength) < 0.00001) {
+    return;
+  }
 
   deltas[brain.length - 1] = output.map((value, index) => {
-    return (value - target[index]) * value * (1 - value) * scaledStrength;
+    return (value - target[index]) * value * (1 - value) * signedStrength;
   });
 
   for (let layerIndex = brain.length - 2; layerIndex >= 0; layerIndex -= 1) {
@@ -229,6 +213,42 @@ function trainBrain(brain, cache, target, strength) {
   });
 }
 
+function discountedReturn(experience, futureExperiences) {
+  let total = experience.reward;
+  let discount = REWARD_DISCOUNT;
+
+  for (const future of futureExperiences) {
+    total += future.reward * discount;
+    discount *= REWARD_DISCOUNT;
+  }
+
+  return total;
+}
+
+function recordTemporalReward(ball, reward) {
+  const current = ball.experienceBuffer[ball.experienceBuffer.length - 1];
+  if (current) {
+    current.reward += reward;
+  }
+}
+
+function processTemporalLearning(ball) {
+  if (ball.experienceBuffer.length <= TEMPORAL_BUFFER_FRAMES) {
+    return false;
+  }
+
+  const experience = ball.experienceBuffer.shift();
+  const totalReturn = discountedReturn(experience, ball.experienceBuffer);
+  const previousBaseline = ball.returnBaseline;
+  const advantage = totalReturn - previousBaseline;
+
+  ball.returnBaseline += (totalReturn - ball.returnBaseline) * RETURN_BASELINE_RATE;
+  trainBrainFromExperience(ball.brain, experience, advantage);
+  ball.lastDiscountedReturn = totalReturn;
+  ball.lastAdvantage = advantage;
+  return true;
+}
+
 function createBall(role, color, x, y) {
   const direction = randomBetween(0, TWO_PI);
   const speed = randomBetween(0, 2);
@@ -252,6 +272,10 @@ function createBall(role, color, x, y) {
     boostUsedThisFrame: false,
     boostCooldown: 0,
     lastCache: null,
+    experienceBuffer: [],
+    returnBaseline: 0,
+    lastDiscountedReturn: 0,
+    lastAdvantage: 0,
     rewardNow: 0,
     rewardSum: 0,
     rewardFrames: 0,
@@ -286,8 +310,6 @@ let rateWindowStartedAt = performance.now();
 let stepsInRateWindow = 0;
 let tableAverageSnapshot = null;
 let lastTableAverageFrame = -Infinity;
-let trainingAlgorithm = "backprop";
-let geneticState = null;
 let resetConfirmationPending = false;
 let resetConfirmationTimer = null;
 
@@ -299,110 +321,6 @@ function resetSimulation() {
   tableAverageSnapshot = null;
   lastTableAverageFrame = -Infinity;
   relocateYellowBall();
-}
-
-function createGeneticController(baseBrain) {
-  const population = Array.from({ length: GENETIC_POPULATION_SIZE }, (_, index) => ({
-    brain: index === 0 ? cloneBrain(baseBrain) : mutateBrain(baseBrain),
-    score: 0
-  }));
-
-  return {
-    generation: 1,
-    currentIndex: 0,
-    lastBestScore: 0,
-    population
-  };
-}
-
-function initializeGeneticTraining() {
-  geneticState = {
-    red: createGeneticController(redBall.brain),
-    blue: createGeneticController(blueBall.brain)
-  };
-}
-
-function synchronizeCurrentBrainsToGenetic() {
-  for (const role of ["red", "blue"]) {
-    const controller = geneticState[role];
-    const ball = role === "red" ? redBall : blueBall;
-    const individual = controller.population[controller.currentIndex];
-    individual.brain = cloneBrain(ball.brain);
-    individual.score = 0;
-  }
-}
-
-function resetBallForGeneticIndividual(ball, role) {
-  const opponent = role === "red" ? blueBall : redBall;
-  const wallMargin = BALL_RADIUS + GENETIC_SPAWN_WALL_CLEARANCE;
-  let spawn;
-
-  do {
-    spawn = {
-      x: randomBetween(wallMargin, WORLD_SIZE - wallMargin),
-      y: randomBetween(wallMargin, WORLD_SIZE - wallMargin)
-    };
-  } while (
-    Math.hypot(spawn.x - opponent.x, spawn.y - opponent.y) < GENETIC_SPAWN_OPPONENT_DISTANCE ||
-    Math.hypot(spawn.x - yellowBall.x, spawn.y - yellowBall.y) < BALL_RADIUS + YELLOW_RADIUS + 20
-  );
-
-  ball.x = spawn.x;
-  ball.y = spawn.y;
-  ball.hspeed = 0;
-  ball.vspeed = 0;
-  ball.boostCharge = BOOST_MAX_CHARGE;
-  ball.boostActive = false;
-  ball.boostUsedThisFrame = false;
-  ball.boostCooldown = 0;
-  ball.output = { acceleration: 0, direction: 0, boost: false };
-  ball.lastCache = null;
-  ball.lastWallHitFrame = frameNumber;
-  ball.lastBallCollisionFrame = frameNumber;
-}
-
-function activateGeneticIndividual(role) {
-  const controller = geneticState[role];
-  const ball = role === "red" ? redBall : blueBall;
-  ball.brain = cloneBrain(controller.population[controller.currentIndex].brain);
-  resetBallForGeneticIndividual(ball, role);
-}
-
-function evolveGeneticController(controller) {
-  const ranked = [...controller.population].sort((first, second) => second.score - first.score);
-  const bestBrain = ranked[0].brain;
-  const secondBrain = ranked[1].brain;
-  controller.lastBestScore = ranked[0].score;
-  controller.generation += 1;
-  controller.currentIndex = 0;
-  controller.population = Array.from({ length: GENETIC_POPULATION_SIZE }, (_, index) => {
-    if (index === 0) {
-      return { brain: cloneBrain(bestBrain), score: 0 };
-    }
-
-    const parent = index % 2 === 0 ? bestBrain : secondBrain;
-    return { brain: mutateBrain(parent), score: 0 };
-  });
-}
-
-function killGeneticIndividual(role) {
-  const controller = geneticState[role];
-  controller.currentIndex += 1;
-
-  if (controller.currentIndex >= GENETIC_POPULATION_SIZE) {
-    evolveGeneticController(controller);
-  }
-
-  activateGeneticIndividual(role);
-}
-
-function currentGeneticIndividual(role) {
-  if (!geneticState) {
-    return null;
-  }
-
-  const controller = geneticState[role];
-  return controller.population[controller.currentIndex];
 }
 
 function relocateYellowBall() {
@@ -445,29 +363,15 @@ function isValidBrain(brain) {
   });
 }
 
-function isValidGeneticController(controller) {
-  return controller &&
-    Number.isInteger(controller.generation) && controller.generation >= 1 &&
-    Number.isInteger(controller.currentIndex) && controller.currentIndex >= 0 && controller.currentIndex < GENETIC_POPULATION_SIZE &&
-    Array.isArray(controller.population) && controller.population.length === GENETIC_POPULATION_SIZE &&
-    controller.population.every((individual) => isValidBrain(individual.brain) && Number.isFinite(individual.score));
-}
-
-function isValidGeneticState(state) {
-  return state && isValidGeneticController(state.red) && isValidGeneticController(state.blue);
-}
-
 function saveTraining() {
   if (!redBall || !blueBall) {
     return;
   }
 
   const training = {
-    version: 3,
+    version: 4,
     savedAt: Date.now(),
     frameNumber,
-    trainingAlgorithm,
-    geneticState,
     redBrain: redBall.brain,
     blueBrain: blueBall.brain,
     redStats: {
@@ -481,7 +385,8 @@ function saveTraining() {
       averageWallFreeFrames: redBall.averageWallFreeFrames,
       ballCollisionIntervals: redBall.ballCollisionIntervals,
       lastBallCollisionFrame: redBall.lastBallCollisionFrame,
-      averageBallCollisionFrames: redBall.averageBallCollisionFrames
+      averageBallCollisionFrames: redBall.averageBallCollisionFrames,
+      returnBaseline: redBall.returnBaseline
     },
     blueStats: {
       rewardSum: blueBall.rewardSum,
@@ -494,7 +399,8 @@ function saveTraining() {
       averageWallFreeFrames: blueBall.averageWallFreeFrames,
       ballCollisionIntervals: blueBall.ballCollisionIntervals,
       lastBallCollisionFrame: blueBall.lastBallCollisionFrame,
-      averageBallCollisionFrames: blueBall.averageBallCollisionFrames
+      averageBallCollisionFrames: blueBall.averageBallCollisionFrames,
+      returnBaseline: blueBall.returnBaseline
     }
   };
 
@@ -513,7 +419,7 @@ function loadTraining() {
     }
 
     const training = JSON.parse(stored);
-    if (training.version !== 3 || !isValidBrain(training.redBrain) || !isValidBrain(training.blueBrain)) {
+    if (![3, 4].includes(training.version) || !isValidBrain(training.redBrain) || !isValidBrain(training.blueBrain)) {
       return false;
     }
 
@@ -524,15 +430,6 @@ function loadTraining() {
 
     restoreBallStats(redBall, training.redStats);
     restoreBallStats(blueBall, training.blueStats);
-
-    trainingAlgorithm = training.trainingAlgorithm === "genetic" ? "genetic" : "backprop";
-    geneticState = isValidGeneticState(training.geneticState) ? training.geneticState : null;
-
-    if (trainingAlgorithm === "genetic") {
-      if (!geneticState) {
-        initializeGeneticTraining();
-      }
-    }
 
     return true;
   } catch (error) {
@@ -577,6 +474,7 @@ function restoreBallStats(ball, stats) {
   ball.lastBallCollisionFrame = Number.isFinite(stats.lastBallCollisionFrame)
     ? stats.lastBallCollisionFrame
     : frameNumber;
+  ball.returnBaseline = Number.isFinite(stats.returnBaseline) ? stats.returnBaseline : 0;
 }
 
 function getSpeed(ball) {
@@ -676,16 +574,41 @@ function updateBoost(ball) {
   return usedBoost;
 }
 
+function samplePolicyAction(rawOutput) {
+  const acceleration = clamp(
+    rawOutput[0] + randomGaussian() * ACCELERATION_EXPLORATION,
+    0,
+    1
+  );
+  const direction = normalizeAngle(
+    rawOutput[1] * TWO_PI + randomGaussian() * DIRECTION_EXPLORATION
+  ) / TWO_PI;
+  const boost = Math.random() < rawOutput[2] ? 1 : 0;
+
+  return { acceleration, direction, boost };
+}
+
 function applyBrain(ball, otherBall, targetBall) {
   ball.sensors = buildSensors(ball, otherBall, targetBall);
-  ball.lastCache = forwardBrain(ball.brain, normalizeSensors(ball.sensors));
-  ball.output = ball.lastCache.action;
+  const inputs = normalizeSensors(ball.sensors);
+  ball.lastCache = forwardBrain(ball.brain, inputs);
+  const sampledAction = samplePolicyAction(ball.lastCache.rawOutput);
+  ball.output = {
+    acceleration: sampledAction.acceleration * MAX_ACCELERATION,
+    direction: sampledAction.direction * TWO_PI,
+    boost: sampledAction.boost === 1
+  };
+  ball.experienceBuffer.push({
+    inputs: [...inputs],
+    action: sampledAction,
+    reward: 0
+  });
 
   const usedBoost = updateBoost(ball);
   ball.boostUsedThisFrame = usedBoost;
 
   if (usedBoost) {
-    ball.output.acceleration = ball.lastCache.rawOutput[0] * BOOST_ACCELERATION;
+    ball.output.acceleration = sampledAction.acceleration * BOOST_ACCELERATION;
   }
 
   ball.hspeed += Math.cos(ball.output.direction) * ball.output.acceleration;
@@ -827,71 +750,6 @@ function keepInside(ball) {
   ball.y = clamp(ball.y, BALL_RADIUS, WORLD_SIZE - BALL_RADIUS);
 }
 
-function directionToCenter(ball) {
-  return Math.atan2(WORLD_SIZE * 0.5 - ball.y, WORLD_SIZE * 0.5 - ball.x);
-}
-
-function weightedGoalDirection(ball, otherBall, targetBall, touchedYellow) {
-  const directionToOther = Math.atan2(otherBall.y - ball.y, otherBall.x - ball.x);
-  const directionToYellow = Math.atan2(targetBall.y - ball.y, targetBall.x - ball.x);
-  const distanceToOther = Math.hypot(otherBall.x - ball.x, otherBall.y - ball.y);
-  const distanceToYellow = Math.hypot(targetBall.x - ball.x, targetBall.y - ball.y);
-  let vectorX;
-  let vectorY;
-
-  if (ball.role === "blue") {
-    const fleeWeight = clamp((260 - distanceToOther) / 260, 0, 1) * 2.2;
-    const awayFromRed = normalizeAngle(directionToOther + Math.PI);
-    vectorX = Math.cos(directionToYellow) * 1.5 + Math.cos(awayFromRed) * fleeWeight;
-    vectorY = Math.sin(directionToYellow) * 1.5 + Math.sin(awayFromRed) * fleeWeight;
-  } else {
-    const yellowDanger = touchedYellow
-      ? 4
-      : clamp((220 - distanceToYellow) / 220, 0, 1) * 2.5;
-    const awayFromYellow = normalizeAngle(directionToYellow + Math.PI);
-    vectorX = Math.cos(directionToOther) + Math.cos(awayFromYellow) * yellowDanger;
-    vectorY = Math.sin(directionToOther) + Math.sin(awayFromYellow) * yellowDanger;
-  }
-
-  return Math.atan2(vectorY, vectorX);
-}
-
-function learningTarget(ball, otherBall, targetBall, wallHits, touchedYellow) {
-  const current = ball.lastCache ? ball.lastCache.rawOutput : [1, 0.5, 0];
-  const accelerationTarget = 1;
-  let targetDirection;
-  let boostTarget = 0;
-
-  if (wallHits > 0) {
-    targetDirection = directionToCenter(ball);
-  } else {
-    targetDirection = weightedGoalDirection(ball, otherBall, targetBall, touchedYellow);
-
-    const distanceToOther = Math.hypot(otherBall.x - ball.x, otherBall.y - ball.y);
-    const distanceToYellow = Math.hypot(targetBall.x - ball.x, targetBall.y - ball.y);
-    const hasStartCharge = ball.boostActive || (ball.boostCooldown === 0 && ball.boostCharge > BOOST_START_THRESHOLD);
-
-    if (ball.role === "blue") {
-      boostTarget = hasStartCharge && (distanceToYellow > 180 || distanceToOther < 170) ? 1 : 0;
-    } else {
-      boostTarget = hasStartCharge && (distanceToOther > 200 || distanceToYellow < 110) ? 1 : 0;
-    }
-  }
-
-  return [
-    accelerationTarget,
-    angleToOutput(targetDirection, current[1]),
-    boostTarget
-  ];
-}
-
-function applyLearning(ball, otherBall, targetBall, reward, wallHits, touchedYellow) {
-  const target = learningTarget(ball, otherBall, targetBall, wallHits, touchedYellow);
-  const strength = Math.abs(reward) + (wallHits > 0 ? 2 : 0);
-
-  trainBrain(ball.brain, ball.lastCache, target, strength);
-}
-
 function recordBallCollisionInterval(ball) {
   const collisionFreeFrames = Math.max(1, frameNumber - ball.lastBallCollisionFrame);
   ball.ballCollisionIntervals.push(collisionFreeFrames);
@@ -947,45 +805,6 @@ function updateRewards(redWallHits, blueWallHits, ballCollisionRewarded, redTouc
   recordReward(blueBall, blueBall.rewardNow);
 }
 
-function updateGeneticTraining(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow) {
-  const redIndividual = currentGeneticIndividual("red");
-  const blueIndividual = currentGeneticIndividual("blue");
-  let redFrameScore = 0;
-  let blueFrameScore = 1;
-
-  if (ballCollisionRewarded) {
-    redFrameScore += GENETIC_SCORE_BONUS;
-    recordBallCollisionInterval(redBall);
-    recordBallCollisionInterval(blueBall);
-  }
-
-  if (blueTouchedYellow) {
-    blueFrameScore += GENETIC_SCORE_BONUS;
-  }
-
-  if (blueWallHits > 0) {
-    redFrameScore += GENETIC_BLUE_WALL_BONUS;
-  }
-
-  redIndividual.score += redFrameScore;
-  blueIndividual.score += blueFrameScore;
-  redBall.rewardNow = redFrameScore;
-  blueBall.rewardNow = blueFrameScore;
-  recordReward(redBall, redFrameScore);
-  recordReward(blueBall, blueFrameScore);
-
-  const redDied = redWallHits > 0 || redTouchedYellow || blueTouchedYellow;
-  const blueDied = blueWallHits > 0;
-
-  if (redDied) {
-    killGeneticIndividual("red");
-  }
-
-  if (blueDied) {
-    killGeneticIndividual("blue");
-  }
-}
-
 function touchesYellow(ball) {
   return Math.hypot(ball.x - yellowBall.x, ball.y - yellowBall.y) <= BALL_RADIUS + YELLOW_RADIUS;
 }
@@ -1009,13 +828,11 @@ function update() {
   const redTouchedYellow = touchesYellow(redBall);
   const blueTouchedYellow = touchesYellow(blueBall);
 
-  if (trainingAlgorithm === "genetic") {
-    updateGeneticTraining(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow);
-  } else {
-    updateRewards(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow);
-    applyLearning(redBall, blueBall, yellowBall, redBall.rewardNow, redWallHits, redTouchedYellow);
-    applyLearning(blueBall, redBall, yellowBall, blueBall.rewardNow, blueWallHits, blueTouchedYellow);
-  }
+  updateRewards(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow);
+  recordTemporalReward(redBall, redBall.rewardNow);
+  recordTemporalReward(blueBall, blueBall.rewardNow);
+  processTemporalLearning(redBall);
+  processTemporalLearning(blueBall);
 
   const yellowExpired = frameNumber - yellowBall.lastMovedFrame >= YELLOW_RESPAWN_FRAMES;
   if (redTouchedYellow || blueTouchedYellow || yellowExpired) {
@@ -1103,10 +920,7 @@ function formatMetricValue(value) {
   return value == null ? "0.000" : String(value);
 }
 
-function getMetricValues(ball, averages, role) {
-  const geneticController = trainingAlgorithm === "genetic" && geneticState ? geneticState[role] : null;
-  const geneticIndividual = geneticController ? geneticController.population[geneticController.currentIndex] : null;
-
+function getMetricValues(ball, averages) {
   return {
     ...ball.sensors,
     velocidade: getSpeed(ball),
@@ -1116,10 +930,7 @@ function getMetricValues(ball, averages, role) {
     recompensa_recente: averages.recentRewardAverage,
     recompensa_media: averages.rewardAverage,
     media_sem_parede: averages.averageWallFreeFrames,
-    media_entre_bolas: averages.averageBallCollisionFrames,
-    score_genetico: geneticIndividual ? geneticIndividual.score : 0,
-    geracao_genetica: geneticController ? geneticController.generation : 0,
-    individuo_genetico: geneticController ? `${geneticController.currentIndex + 1}/${GENETIC_POPULATION_SIZE}` : "-"
+    media_entre_bolas: averages.averageBallCollisionFrames
   };
 }
 
@@ -1181,13 +992,10 @@ function renderMetricCell(row, value, color, ball) {
 function renderMetricsTable() {
   updateTableAverageSnapshot(!tableAverageSnapshot);
 
-  const redValues = getMetricValues(redBall, tableAverageSnapshot.red, "red");
-  const blueValues = getMetricValues(blueBall, tableAverageSnapshot.blue, "blue");
-  const activeRows = trainingAlgorithm === "genetic"
-    ? [...metricRows.slice(0, 3), ...geneticMetricRows, ...metricRows.slice(3)]
-    : metricRows;
+  const redValues = getMetricValues(redBall, tableAverageSnapshot.red);
+  const blueValues = getMetricValues(blueBall, tableAverageSnapshot.blue);
 
-  metricsTableBody.innerHTML = activeRows.map((row) => {
+  metricsTableBody.innerHTML = metricRows.map((row) => {
     return `<tr><td>${renderMetricCell(row, redValues[row.key], "red", redBall)}</td><td>${row.label}</td><td>${renderMetricCell(row, blueValues[row.key], "blue", blueBall)}</td></tr>`;
   }).join("");
 }
@@ -1195,21 +1003,11 @@ function renderMetricsTable() {
 function getSimulationState() {
   return {
     frameNumber,
-    trainingAlgorithm,
-    genetic: geneticState ? {
-      red: {
-        generation: geneticState.red.generation,
-        currentIndex: geneticState.red.currentIndex,
-        currentScore: geneticState.red.population[geneticState.red.currentIndex].score,
-        lastBestScore: geneticState.red.lastBestScore
-      },
-      blue: {
-        generation: geneticState.blue.generation,
-        currentIndex: geneticState.blue.currentIndex,
-        currentScore: geneticState.blue.population[geneticState.blue.currentIndex].score,
-        lastBestScore: geneticState.blue.lastBestScore
-      }
-    } : null,
+    learning: {
+      type: "discounted-policy-buffer",
+      bufferFrames: TEMPORAL_BUFFER_FRAMES,
+      discount: REWARD_DISCOUNT
+    },
     constants: {
       ballRadius: BALL_RADIUS,
       maxSpeed: MAX_SPEED,
@@ -1226,6 +1024,9 @@ function getSimulationState() {
       rewardNow: redBall.rewardNow,
       rewardAverage: redBall.rewardAverage,
       recentRewardAverage: redBall.recentRewardAverage,
+      experienceBufferSize: redBall.experienceBuffer.length,
+      lastDiscountedReturn: redBall.lastDiscountedReturn,
+      lastAdvantage: redBall.lastAdvantage,
       boostCharge: redBall.boostCharge,
       boostActive: redBall.boostActive,
       boostCooldown: redBall.boostCooldown,
@@ -1245,6 +1046,9 @@ function getSimulationState() {
       rewardNow: blueBall.rewardNow,
       rewardAverage: blueBall.rewardAverage,
       recentRewardAverage: blueBall.recentRewardAverage,
+      experienceBufferSize: blueBall.experienceBuffer.length,
+      lastDiscountedReturn: blueBall.lastDiscountedReturn,
+      lastAdvantage: blueBall.lastAdvantage,
       boostCharge: blueBall.boostCharge,
       boostActive: blueBall.boostActive,
       boostCooldown: blueBall.boostCooldown,
@@ -1362,40 +1166,6 @@ function toggleSimulationMode() {
   setSimulationMode(simulationMode === "visualization" ? "training" : "visualization");
 }
 
-function setTrainingAlgorithm(algorithm) {
-  if (algorithm !== "backprop" && algorithm !== "genetic") {
-    return;
-  }
-
-  if (algorithm === trainingAlgorithm && (algorithm !== "genetic" || geneticState)) {
-    updateAlgorithmControls();
-    return;
-  }
-
-  trainingAlgorithm = algorithm;
-
-  if (trainingAlgorithm === "genetic") {
-    if (!geneticState) {
-      initializeGeneticTraining();
-    } else {
-      synchronizeCurrentBrainsToGenetic();
-    }
-  }
-
-  tableAverageSnapshot = null;
-  updateAlgorithmControls();
-  renderPanel();
-}
-
-function updateAlgorithmControls() {
-  const genetic = trainingAlgorithm === "genetic";
-  backpropButton.classList.toggle("active", !genetic);
-  geneticButton.classList.toggle("active", genetic);
-  backpropButton.setAttribute("aria-pressed", String(!genetic));
-  geneticButton.setAttribute("aria-pressed", String(genetic));
-  algorithmValue.textContent = genetic ? "Genetico" : "Backprop";
-}
-
 function performFullReset() {
   cancelResetConfirmation();
 
@@ -1405,14 +1175,7 @@ function performFullReset() {
     console.warn("Nao foi possivel apagar o treinamento salvo.", error);
   }
 
-  geneticState = null;
   resetSimulation();
-
-  if (trainingAlgorithm === "genetic") {
-    initializeGeneticTraining();
-  }
-
-  updateAlgorithmControls();
   draw();
   renderPanel();
 }
@@ -1446,20 +1209,16 @@ window.bolinhaIA = {
   getState: getSimulationState,
   reset: performFullReset,
   saveTraining,
-  setMode: setSimulationMode,
-  setAlgorithm: setTrainingAlgorithm
+  setMode: setSimulationMode
 };
 
 modeToggle.addEventListener("click", toggleSimulationMode);
 resetButton.addEventListener("click", handleResetButtonClick);
-backpropButton.addEventListener("click", () => setTrainingAlgorithm("backprop"));
-geneticButton.addEventListener("click", () => setTrainingAlgorithm("genetic"));
 window.addEventListener("pagehide", saveTraining);
 setInterval(saveTraining, SAVE_INTERVAL_MS);
 
 resetSimulation();
 loadTraining();
-updateAlgorithmControls();
 draw();
 renderPanel();
 setSimulationMode("visualization");
