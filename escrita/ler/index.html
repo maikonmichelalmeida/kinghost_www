@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leitura</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="reader-panel" aria-live="polite">
+      <div class="status-row">
+        <span class="status-dot" data-status-dot></span>
+        <span data-status-text>Carregando leitura...</span>
+      </div>
+
+      <h1 data-title>Leitura</h1>
+
+      <dl class="meta-grid">
+        <div>
+          <dt>Parte</dt>
+          <dd data-part>-</dd>
+        </div>
+        <div>
+          <dt>Blocos</dt>
+          <dd data-blocks>-</dd>
+        </div>
+        <div>
+          <dt>Fonte</dt>
+          <dd data-source>-</dd>
+        </div>
+      </dl>
+
+      <pre class="json-preview" data-json-preview>{}</pre>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
