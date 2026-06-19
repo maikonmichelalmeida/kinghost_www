@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolinha IA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <section class="simulation">
+      <canvas id="world" width="720" height="720" aria-label="Simulacao de duas bolinhas com rede neural em treinamento"></canvas>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-header">
+        <h1>Bolinha IA</h1>
+        <div class="panel-actions">
+          <button id="modeToggle" class="mode-toggle" type="button" role="switch" aria-checked="false">
+            <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+            <span id="modeLabel">Visualizacao</span>
+          </button>
+          <button id="resetButton" type="button">Reiniciar</button>
+        </div>
+      </div>
+
+      <div class="algorithm-control" role="group" aria-label="Metodo de treinamento">
+        <button id="backpropButton" class="algorithm-button active" type="button" aria-pressed="true">Backpropagation</button>
+        <button id="geneticButton" class="algorithm-button" type="button" aria-pressed="false">Genetico</button>
+      </div>
+
+      <div class="stats">
+        <div>
+          <span id="rateLabel">FPS</span>
+          <strong id="fpsValue">30</strong>
+        </div>
+        <div>
+          <span>Passo visual</span>
+          <strong>1/30s</strong>
+        </div>
+        <div>
+          <span>V max</span>
+          <strong>6 / 12 boost</strong>
+        </div>
+        <div>
+          <span>Acel.</span>
+          <strong>0.1 / 0.2</strong>
+        </div>
+        <div>
+          <span>Treino</span>
+          <strong id="algorithmValue">Backprop</strong>
+        </div>
+        <div>
+          <span>Colisao</span>
+          <strong>Elastica</strong>
+        </div>
+      </div>
+
+      <div class="metrics-wrap">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th class="red-heading" scope="col">Vermelha</th>
+              <th scope="col">Metrica</th>
+              <th class="blue-heading" scope="col">Azul</th>
+            </tr>
+          </thead>
+          <tbody id="metricsTableBody"></tbody>
+        </table>
+      </div>
+    </aside>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
