@@ -16,10 +16,8 @@ const WORLD_SIZE = 720;
 const BALL_RADIUS = 14;
 const BALL_DIAMETER = BALL_RADIUS * 2;
 const YELLOW_RADIUS = 9;
-const MAX_ACCELERATION = 0.1;
-const MAX_SPEED = 6;
-const BOOST_ACCELERATION = 0.2;
-const BOOST_MAX_SPEED = 12;
+const MAX_SPEED = 5;
+const BOOST_MAX_SPEED = 10;
 const BOOST_MAX_CHARGE = 150;
 const BOOST_START_THRESHOLD = 30;
 const BOOST_REUSE_COOLDOWN = 60;
@@ -29,25 +27,40 @@ const WALL_BOUNCE = 0.94;
 const BALL_BOUNCE = 0.98;
 const BALL_SEPARATION_KICK = 2.8;
 const BALL_EXTRA_SEPARATION = 4;
-const LEARNING_RATE = 0.004;
-const TEMPORAL_BUFFER_FRAMES = FPS * 8;
+const ACTOR_LEARNING_RATE = 0.0003;
+const CRITIC_LEARNING_RATE = 0.001;
+const PPO_ROLLOUT_FRAMES = FPS * 8;
 const REWARD_DISCOUNT = 0.99;
-const RETURN_BASELINE_RATE = 0.01;
-const RETURN_STRENGTH_SCALE = 0.25;
-const MAX_POLICY_STRENGTH = 8;
-const ACCELERATION_EXPLORATION = 0.08;
-const DIRECTION_EXPLORATION = 0.18;
+const GAE_LAMBDA = 0.97;
+const PPO_CLIP_RANGE = 0.2;
+const PPO_VALUE_CLIP_RANGE = 0.2;
+const PPO_EPOCHS = 4;
+const PPO_TARGET_KL = 0.03;
+const ENTROPY_COEFFICIENT = 0.02;
+const GRADIENT_CLIP_NORM = 0.5;
+const POLICY_MINIBATCH_SIZE = 64;
+const MIN_PROBABILITY = 1e-8;
+const DIRECTION_BINS = 8;
+const DIRECTION_OUTPUT_OFFSET = 0;
+const BOOST_OUTPUT_INDEX = DIRECTION_BINS;
+const VALUE_OUTPUT_INDEX = BOOST_OUTPUT_INDEX + 1;
+const NETWORK_OUTPUT_SIZE = VALUE_OUTPUT_INDEX + 1;
 const WALL_PENALTY = -8;
+const WALL_SAFE_CLEARANCE = 90;
+const WALL_PROXIMITY_PENALTY = 0.02;
+const WALL_SAFE_REWARD = 0.001;
+const WALL_PROGRESS_REWARD = 0.004;
 const RED_HIT_REWARD = 12;
 const BLUE_HIT_PENALTY = -4;
-const RED_SLOW_PENALTY = -0.006;
-const BLUE_SLOW_REWARD = 0.005;
 const BLUE_YELLOW_REWARD = 18;
 const RED_YELLOW_PENALTY = -12;
 const RED_BLUE_GOT_YELLOW_PENALTY = -32;
+const RED_CHASE_PROGRESS_REWARD = 0.0015;
+const BLUE_FLEE_PROGRESS_REWARD = 0.001;
+const BLUE_TARGET_PROGRESS_REWARD = 0.0015;
 const BALL_COLLISION_COOLDOWN = 10;
 const YELLOW_RESPAWN_FRAMES = FPS * 30;
-const TRAINING_BATCH_STEPS = 1000;
+const TRAINING_BATCH_STEPS = 50;
 const TRAINING_RENDER_EVERY = 12000;
 const STORAGE_KEY = "bolinhaIA.training.v3";
 const SAVE_INTERVAL_MS = 30000;
@@ -56,10 +69,16 @@ const WALL_REPULSION_SPEED_THRESHOLD = 1.25;
 const WALL_REPULSION_FORCE = 1.5;
 const WALL_REPULSION_WINDOW = 20;
 const RESET_CONFIRMATION_MS = 4000;
+const SENSOR_COUNT = 7;
+const SENSOR_HISTORY_MAX_AGE = 120;
+const SENSOR_HISTORY_AGES = [
+  0, 1,
+  ...Array.from({ length: 24 }, (_, index) => 5 + index * 5)
+];
+const TEMPORAL_INPUT_SIZE = SENSOR_HISTORY_AGES.length * SENSOR_COUNT;
 
 const metricRows = [
   { key: "velocidade", label: "Velocidade", type: "bar", max: MAX_SPEED, boostEffect: true },
-  { key: "aceleracao_saida", label: "Aceleracao", type: "bar", max: MAX_ACCELERATION, boostEffect: true },
   { key: "carga_boost", label: "Boost", type: "bar", max: BOOST_MAX_CHARGE },
   { key: "direcao", label: "Direcao movimento" },
   { key: "diferenca_direcao_amarela", label: "Angulo amarela" },
@@ -87,38 +106,22 @@ function signedAngleDifference(targetAngle, currentAngle) {
   return Math.atan2(Math.sin(difference), Math.cos(difference));
 }
 
-function angleToOutput(angle, currentOutput) {
-  const target = normalizeAngle(angle) / TWO_PI;
-  const options = [target, target - 1, target + 1];
-  const closest = options.reduce((best, option) => {
-    return Math.abs(option - currentOutput) < Math.abs(best - currentOutput) ? option : best;
-  }, target);
-
-  return clamp(closest, 0.001, 0.999);
-}
-
 function createLayer(inputSize, outputSize) {
+  const limit = Math.sqrt(6 / (inputSize + outputSize));
   return {
     weights: Array.from({ length: outputSize }, () =>
-      Array.from({ length: inputSize }, () => randomBetween(-1, 1))
+      Array.from({ length: inputSize }, () => randomBetween(-limit, limit))
     ),
-    biases: Array.from({ length: outputSize }, () => randomBetween(-1, 1))
+    biases: Array(outputSize).fill(0)
   };
 }
 
 function createBrain() {
   return [
-    createLayer(12, 10),
-    createLayer(10, 8),
-    createLayer(8, 5),
-    createLayer(5, 3)
+    createLayer(TEMPORAL_INPUT_SIZE, 48),
+    createLayer(48, 24),
+    createLayer(24, NETWORK_OUTPUT_SIZE)
   ];
-}
-
-function randomGaussian() {
-  const first = Math.max(Number.EPSILON, Math.random());
-  const second = Math.random();
-  return Math.sqrt(-2 * Math.log(first)) * Math.cos(TWO_PI * second);
 }
 
 function activate(value) {
@@ -127,6 +130,27 @@ function activate(value) {
 
 function sigmoid(value) {
   return 1 / (1 + Math.exp(-value));
+}
+
+function softmax(values) {
+  const maximum = Math.max(...values);
+  const exponentials = values.map((value) => Math.exp(value - maximum));
+  const total = exponentials.reduce((sum, value) => sum + value, 0);
+  return exponentials.map((value) => value / total);
+}
+
+function sampleCategorical(probabilities) {
+  const choice = Math.random();
+  let cumulative = 0;
+
+  for (let index = 0; index < probabilities.length; index += 1) {
+    cumulative += probabilities[index];
+    if (choice <= cumulative) {
+      return index;
+    }
+  }
+
+  return probabilities.length - 1;
 }
 
 function forwardBrain(brain, inputs) {
@@ -140,51 +164,36 @@ function forwardBrain(brain, inputs) {
         return sum + weight * previous[inputIndex];
       }, layer.biases[outputIndex]);
 
-      return isOutputLayer ? sigmoid(total) : activate(total);
+      return isOutputLayer ? total : activate(total);
     });
 
     activations.push(next);
   });
 
   const output = activations[activations.length - 1];
+  const directionProbabilities = softmax(
+    output.slice(DIRECTION_OUTPUT_OFFSET, DIRECTION_OUTPUT_OFFSET + DIRECTION_BINS)
+  );
+  const boostProbability = sigmoid(output[BOOST_OUTPUT_INDEX]);
 
   return {
     activations,
-    rawOutput: output,
-    action: {
-      acceleration: output[0] * MAX_ACCELERATION,
-      direction: output[1] * TWO_PI,
-      boost: output[2] >= 0.5
-    }
+    logits: output,
+    policy: { directionProbabilities, boostProbability },
+    value: output[VALUE_OUTPUT_INDEX]
   };
 }
 
-function trainBrainFromExperience(brain, experience, advantage) {
-  if (!experience || !Number.isFinite(advantage)) {
-    return;
-  }
+function createZeroGradients(brain) {
+  return brain.map((layer) => ({
+    weights: layer.weights.map((row) => row.map(() => 0)),
+    biases: layer.biases.map(() => 0)
+  }));
+}
 
-  const cache = forwardBrain(brain, experience.inputs);
+function accumulateExperienceGradients(brain, gradients, cache, outputDeltas) {
   const deltas = Array.from({ length: brain.length });
-  const output = cache.activations[cache.activations.length - 1];
-  const signedStrength = clamp(
-    advantage * RETURN_STRENGTH_SCALE,
-    -MAX_POLICY_STRENGTH,
-    MAX_POLICY_STRENGTH
-  );
-  const target = [
-    experience.action.acceleration,
-    angleToOutput(experience.action.direction * TWO_PI, output[1]),
-    experience.action.boost
-  ];
-
-  if (Math.abs(signedStrength) < 0.00001) {
-    return;
-  }
-
-  deltas[brain.length - 1] = output.map((value, index) => {
-    return (value - target[index]) * value * (1 - value) * signedStrength;
-  });
+  deltas[brain.length - 1] = outputDeltas;
 
   for (let layerIndex = brain.length - 2; layerIndex >= 0; layerIndex -= 1) {
     const layerOutput = cache.activations[layerIndex + 1];
@@ -195,34 +204,163 @@ function trainBrainFromExperience(brain, experience, advantage) {
       const downstream = nextLayer.weights.reduce((sum, weights, nextIndex) => {
         return sum + weights[neuronIndex] * nextDeltas[nextIndex];
       }, 0);
-
       return downstream * (1 - value * value);
     });
   }
 
   brain.forEach((layer, layerIndex) => {
     const previous = cache.activations[layerIndex];
-
     layer.weights.forEach((row, outputIndex) => {
-      row.forEach((weight, inputIndex) => {
-        row[inputIndex] = weight - LEARNING_RATE * deltas[layerIndex][outputIndex] * previous[inputIndex];
+      row.forEach((unused, inputIndex) => {
+        gradients[layerIndex].weights[outputIndex][inputIndex] +=
+          deltas[layerIndex][outputIndex] * previous[inputIndex];
       });
-
-      layer.biases[outputIndex] -= LEARNING_RATE * deltas[layerIndex][outputIndex];
+      gradients[layerIndex].biases[outputIndex] += deltas[layerIndex][outputIndex];
     });
   });
 }
 
-function discountedReturn(experience, futureExperiences) {
-  let total = experience.reward;
-  let discount = REWARD_DISCOUNT;
+function entropyGradient(probabilities, index) {
+  const averageLog = probabilities.reduce((sum, probability) => {
+    return sum + probability * Math.log(Math.max(probability, MIN_PROBABILITY));
+  }, 0);
+  const probability = probabilities[index];
+  return ENTROPY_COEFFICIENT * probability *
+    (Math.log(Math.max(probability, MIN_PROBABILITY)) - averageLog);
+}
 
-  for (const future of futureExperiences) {
-    total += future.reward * discount;
-    discount *= REWARD_DISCOUNT;
+function categoricalEntropy(probabilities) {
+  return -probabilities.reduce((sum, probability) => {
+    return sum + probability * Math.log(Math.max(probability, MIN_PROBABILITY));
+  }, 0);
+}
+
+function policyEntropy(policy) {
+  const boostProbability = policy.boostProbability;
+  const boostEntropy = -boostProbability * Math.log(Math.max(boostProbability, MIN_PROBABILITY)) -
+    (1 - boostProbability) * Math.log(Math.max(1 - boostProbability, MIN_PROBABILITY));
+  return categoricalEntropy(policy.directionProbabilities) + boostEntropy;
+}
+
+function policyLogProbability(policy, action) {
+  const boostProbability = action.boost === 1
+    ? policy.boostProbability
+    : 1 - policy.boostProbability;
+  return Math.log(Math.max(policy.directionProbabilities[action.directionIndex], MIN_PROBABILITY)) +
+    Math.log(Math.max(boostProbability, MIN_PROBABILITY));
+}
+
+function buildActorOutputDeltas(cache, action, policyWeight) {
+  const deltas = Array(NETWORK_OUTPUT_SIZE).fill(0);
+  const direction = cache.policy.directionProbabilities;
+
+  direction.forEach((probability, index) => {
+    deltas[DIRECTION_OUTPUT_OFFSET + index] =
+      (probability - (index === action.directionIndex ? 1 : 0)) * policyWeight +
+      entropyGradient(direction, index);
+  });
+
+  const boostProbability = cache.policy.boostProbability;
+  deltas[BOOST_OUTPUT_INDEX] =
+    (boostProbability - action.boost) * policyWeight +
+    ENTROPY_COEFFICIENT * boostProbability * (1 - boostProbability) *
+      (Math.log(Math.max(boostProbability, MIN_PROBABILITY)) -
+       Math.log(Math.max(1 - boostProbability, MIN_PROBABILITY)));
+  return deltas;
+}
+
+function applyAccumulatedGradients(brain, gradients, sampleCount, learningRate) {
+  let squaredNorm = 0;
+
+  gradients.forEach((layer) => {
+    layer.weights.forEach((row) => row.forEach((value) => {
+      squaredNorm += (value / sampleCount) ** 2;
+    }));
+    layer.biases.forEach((value) => {
+      squaredNorm += (value / sampleCount) ** 2;
+    });
+  });
+
+  const norm = Math.sqrt(squaredNorm);
+  const clipScale = norm > GRADIENT_CLIP_NORM ? GRADIENT_CLIP_NORM / norm : 1;
+
+  brain.forEach((layer, layerIndex) => {
+    layer.weights.forEach((row, outputIndex) => {
+      row.forEach((weight, inputIndex) => {
+        const gradient = gradients[layerIndex].weights[outputIndex][inputIndex] / sampleCount;
+        row[inputIndex] = weight - learningRate * gradient * clipScale;
+      });
+      const biasGradient = gradients[layerIndex].biases[outputIndex] / sampleCount;
+      layer.biases[outputIndex] -= learningRate * biasGradient * clipScale;
+    });
+  });
+
+  return norm;
+}
+
+function calculateGAE(rollout, bootstrapValue) {
+  const advantages = Array(rollout.length);
+  const returns = Array(rollout.length);
+  let nextValue = bootstrapValue;
+  let gae = 0;
+
+  for (let index = rollout.length - 1; index >= 0; index -= 1) {
+    const delta = rollout[index].reward + REWARD_DISCOUNT * nextValue - rollout[index].value;
+    gae = delta + REWARD_DISCOUNT * GAE_LAMBDA * gae;
+    advantages[index] = gae;
+    returns[index] = gae + rollout[index].value;
+    nextValue = rollout[index].value;
   }
+  return { advantages, returns };
+}
 
-  return total;
+function ppoPolicyWeight(advantage, ratio) {
+  const isClipped = (advantage >= 0 && ratio > 1 + PPO_CLIP_RANGE) ||
+    (advantage < 0 && ratio < 1 - PPO_CLIP_RANGE);
+  return isClipped ? 0 : advantage * ratio;
+}
+
+function ppoPolicyLoss(advantage, ratio) {
+  const unclipped = advantage * ratio;
+  const clipped = advantage * clamp(ratio, 1 - PPO_CLIP_RANGE, 1 + PPO_CLIP_RANGE);
+  return -Math.min(unclipped, clipped);
+}
+
+function clippedValueDelta(value, oldValue, targetReturn) {
+  const clippedValue = oldValue + clamp(value - oldValue, -PPO_VALUE_CLIP_RANGE, PPO_VALUE_CLIP_RANGE);
+  const regularError = value - targetReturn;
+  const clippedError = clippedValue - targetReturn;
+
+  if (clippedError ** 2 > regularError ** 2) {
+    return Math.abs(value - oldValue) < PPO_VALUE_CLIP_RANGE ? clippedError : 0;
+  }
+  return regularError;
+}
+
+function applyCriticHeadGradients(brain, weightGradients, biasGradient, sampleCount) {
+  const outputLayer = brain[brain.length - 1];
+  const averageWeights = weightGradients.map((value) => value / sampleCount);
+  const averageBias = biasGradient / sampleCount;
+  const norm = Math.sqrt(
+    averageWeights.reduce((sum, value) => sum + value ** 2, averageBias ** 2)
+  );
+  const clipScale = norm > GRADIENT_CLIP_NORM ? GRADIENT_CLIP_NORM / norm : 1;
+
+  outputLayer.weights[VALUE_OUTPUT_INDEX].forEach((weight, index) => {
+    outputLayer.weights[VALUE_OUTPUT_INDEX][index] =
+      weight - CRITIC_LEARNING_RATE * averageWeights[index] * clipScale;
+  });
+  outputLayer.biases[VALUE_OUTPUT_INDEX] -= CRITIC_LEARNING_RATE * averageBias * clipScale;
+  return norm;
+}
+
+function shuffledIndexes(length) {
+  const indexes = Array.from({ length }, (_, index) => index);
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [indexes[index], indexes[swapIndex]] = [indexes[swapIndex], indexes[index]];
+  }
+  return indexes;
 }
 
 function recordTemporalReward(ball, reward) {
@@ -232,20 +370,94 @@ function recordTemporalReward(ball, reward) {
   }
 }
 
-function processTemporalLearning(ball) {
-  if (ball.experienceBuffer.length <= TEMPORAL_BUFFER_FRAMES) {
+function processPolicyRollout(ball, bootstrapInputs) {
+  if (ball.experienceBuffer.length < PPO_ROLLOUT_FRAMES) {
     return false;
   }
 
-  const experience = ball.experienceBuffer.shift();
-  const totalReturn = discountedReturn(experience, ball.experienceBuffer);
-  const previousBaseline = ball.returnBaseline;
-  const advantage = totalReturn - previousBaseline;
+  const rollout = ball.experienceBuffer.splice(0, PPO_ROLLOUT_FRAMES);
+  const bootstrapValue = forwardBrain(ball.brain, bootstrapInputs).value;
+  const { advantages: rawAdvantages, returns } = calculateGAE(rollout, bootstrapValue);
+  const advantageMean = rawAdvantages.reduce((sum, value) => sum + value, 0) / rawAdvantages.length;
+  const advantageVariance = rawAdvantages.reduce((sum, value) => {
+    return sum + (value - advantageMean) ** 2;
+  }, 0) / rawAdvantages.length;
+  const advantageDeviation = Math.sqrt(advantageVariance + 1e-8);
+  let policyLossSum = 0;
+  let valueLossSum = 0;
+  let entropySum = 0;
+  let approximateKLSum = 0;
+  let clippedSamples = 0;
+  let trainedSamples = 0;
+  let completedEpochs = 0;
+  let lastActorGradientNorm = 0;
+  let lastCriticGradientNorm = 0;
 
-  ball.returnBaseline += (totalReturn - ball.returnBaseline) * RETURN_BASELINE_RATE;
-  trainBrainFromExperience(ball.brain, experience, advantage);
-  ball.lastDiscountedReturn = totalReturn;
-  ball.lastAdvantage = advantage;
+  for (let epoch = 0; epoch < PPO_EPOCHS; epoch += 1) {
+    const sampleIndexes = shuffledIndexes(rollout.length).slice(0, POLICY_MINIBATCH_SIZE);
+    const actorGradients = createZeroGradients(ball.brain);
+    const criticWeightGradients = Array(ball.brain[ball.brain.length - 1].weights[VALUE_OUTPUT_INDEX].length).fill(0);
+    let criticBiasGradient = 0;
+    let epochKLSum = 0;
+
+    sampleIndexes.forEach((index) => {
+      const experience = rollout[index];
+      const normalizedAdvantage = (rawAdvantages[index] - advantageMean) / advantageDeviation;
+      const cache = forwardBrain(ball.brain, experience.inputs);
+      const newLogProbability = policyLogProbability(cache.policy, experience.action);
+      const ratio = Math.exp(clamp(newLogProbability - experience.logProbability, -20, 20));
+      const policyWeight = ppoPolicyWeight(normalizedAdvantage, ratio);
+      const valueDelta = clippedValueDelta(cache.value, experience.value, returns[index]);
+      const hiddenOutput = cache.activations[cache.activations.length - 2];
+
+      policyLossSum += ppoPolicyLoss(normalizedAdvantage, ratio);
+      valueLossSum += 0.5 * Math.max(
+        (cache.value - returns[index]) ** 2,
+        (experience.value + clamp(cache.value - experience.value, -PPO_VALUE_CLIP_RANGE, PPO_VALUE_CLIP_RANGE) - returns[index]) ** 2
+      );
+      entropySum += policyEntropy(cache.policy);
+      approximateKLSum += experience.logProbability - newLogProbability;
+      epochKLSum += experience.logProbability - newLogProbability;
+      clippedSamples += policyWeight === 0 ? 1 : 0;
+      trainedSamples += 1;
+
+      const actorDeltas = buildActorOutputDeltas(cache, experience.action, policyWeight);
+      accumulateExperienceGradients(ball.brain, actorGradients, cache, actorDeltas);
+      hiddenOutput.forEach((value, hiddenIndex) => {
+        criticWeightGradients[hiddenIndex] += valueDelta * value;
+      });
+      criticBiasGradient += valueDelta;
+    });
+
+    lastActorGradientNorm = applyAccumulatedGradients(
+      ball.brain,
+      actorGradients,
+      sampleIndexes.length,
+      ACTOR_LEARNING_RATE
+    );
+    lastCriticGradientNorm = applyCriticHeadGradients(
+      ball.brain,
+      criticWeightGradients,
+      criticBiasGradient,
+      sampleIndexes.length
+    );
+    completedEpochs += 1;
+
+    if (Math.abs(epochKLSum / sampleIndexes.length) > PPO_TARGET_KL) {
+      break;
+    }
+  }
+
+  ball.lastGradientNorm = lastActorGradientNorm;
+  ball.lastCriticGradientNorm = lastCriticGradientNorm;
+  ball.lastDiscountedReturn = returns[0];
+  ball.lastAdvantage = rawAdvantages[0];
+  ball.lastPolicyLoss = policyLossSum / trainedSamples;
+  ball.lastValueLoss = valueLossSum / trainedSamples;
+  ball.lastEntropy = entropySum / trainedSamples;
+  ball.lastApproximateKL = approximateKLSum / trainedSamples;
+  ball.lastClipFraction = clippedSamples / trainedSamples;
+  ball.lastPPOEpochs = completedEpochs;
   return true;
 }
 
@@ -262,8 +474,8 @@ function createBall(role, color, x, y) {
     vspeed: Math.sin(direction) * speed,
     brain: createBrain(),
     sensors: {},
+    sensorHistory: [],
     output: {
-      acceleration: 0,
       direction: 0,
       boost: false
     },
@@ -273,9 +485,21 @@ function createBall(role, color, x, y) {
     boostCooldown: 0,
     lastCache: null,
     experienceBuffer: [],
-    returnBaseline: 0,
     lastDiscountedReturn: 0,
     lastAdvantage: 0,
+    lastGradientNorm: 0,
+    lastCriticGradientNorm: 0,
+    lastPolicyLoss: 0,
+    lastValueLoss: 0,
+    lastEntropy: 0,
+    lastApproximateKL: 0,
+    lastClipFraction: 0,
+    lastPPOEpochs: 0,
+    previousWallClearance: null,
+    previousOtherDistance: null,
+    previousYellowDistance: null,
+    lastWallShapingReward: 0,
+    lastGoalProgressReward: 0,
     rewardNow: 0,
     rewardSum: 0,
     rewardFrames: 0,
@@ -347,10 +571,15 @@ function relocateYellowBall() {
     radius: YELLOW_RADIUS,
     lastMovedFrame: frameNumber
   };
+
+  if (redBall && blueBall) {
+    redBall.previousYellowDistance = Math.hypot(yellowBall.x - redBall.x, yellowBall.y - redBall.y);
+    blueBall.previousYellowDistance = Math.hypot(yellowBall.x - blueBall.x, yellowBall.y - blueBall.y);
+  }
 }
 
 function isValidBrain(brain) {
-  const shapes = [[10, 12], [8, 10], [5, 8], [3, 5]];
+  const shapes = [[48, TEMPORAL_INPUT_SIZE], [24, 48], [NETWORK_OUTPUT_SIZE, 24]];
 
   return Array.isArray(brain) && brain.length === shapes.length && brain.every((layer, index) => {
     const [outputs, inputs] = shapes[index];
@@ -369,7 +598,7 @@ function saveTraining() {
   }
 
   const training = {
-    version: 4,
+    version: 8,
     savedAt: Date.now(),
     frameNumber,
     redBrain: redBall.brain,
@@ -385,8 +614,7 @@ function saveTraining() {
       averageWallFreeFrames: redBall.averageWallFreeFrames,
       ballCollisionIntervals: redBall.ballCollisionIntervals,
       lastBallCollisionFrame: redBall.lastBallCollisionFrame,
-      averageBallCollisionFrames: redBall.averageBallCollisionFrames,
-      returnBaseline: redBall.returnBaseline
+      averageBallCollisionFrames: redBall.averageBallCollisionFrames
     },
     blueStats: {
       rewardSum: blueBall.rewardSum,
@@ -399,8 +627,7 @@ function saveTraining() {
       averageWallFreeFrames: blueBall.averageWallFreeFrames,
       ballCollisionIntervals: blueBall.ballCollisionIntervals,
       lastBallCollisionFrame: blueBall.lastBallCollisionFrame,
-      averageBallCollisionFrames: blueBall.averageBallCollisionFrames,
-      returnBaseline: blueBall.returnBaseline
+      averageBallCollisionFrames: blueBall.averageBallCollisionFrames
     }
   };
 
@@ -419,7 +646,7 @@ function loadTraining() {
     }
 
     const training = JSON.parse(stored);
-    if (![3, 4].includes(training.version) || !isValidBrain(training.redBrain) || !isValidBrain(training.blueBrain)) {
+    if (training.version !== 8 || !isValidBrain(training.redBrain) || !isValidBrain(training.blueBrain)) {
       return false;
     }
 
@@ -474,7 +701,6 @@ function restoreBallStats(ball, stats) {
   ball.lastBallCollisionFrame = Number.isFinite(stats.lastBallCollisionFrame)
     ? stats.lastBallCollisionFrame
     : frameNumber;
-  ball.returnBaseline = Number.isFinite(stats.returnBaseline) ? stats.returnBaseline : 0;
 }
 
 function getSpeed(ball) {
@@ -508,39 +734,55 @@ function buildSensors(ball, otherBall, targetBall) {
   const dy = otherBall.y - ball.y;
   const targetDx = targetBall.x - ball.x;
   const targetDy = targetBall.y - ball.y;
+  const currentDirection = getDirection(ball);
+  const otherDirection = Math.atan2(dy, dx);
   const targetDirection = Math.atan2(targetDy, targetDx);
 
   return {
-    distancia_parede_esquerda: ball.x - BALL_RADIUS,
-    distancia_parede_direita: WORLD_SIZE - BALL_RADIUS - ball.x,
-    distancia_parede_teto: WORLD_SIZE - BALL_RADIUS - ball.y,
-    distancia_parede_chao: ball.y - BALL_RADIUS,
-    velocidade: getSpeed(ball),
-    direcao: getDirection(ball),
+    posicao_x: ball.x,
+    posicao_y: ball.y,
     distancia_da_outra_bolinha: Math.hypot(dx, dy),
-    direcao_da_outra_bolinha: normalizeAngle(Math.atan2(dy, dx)),
-    velocidade_da_outra_bolinha: getSpeed(otherBall),
+    diferenca_direcao_outra: signedAngleDifference(otherDirection, currentDirection),
     distancia_bolinha_amarela: Math.hypot(targetDx, targetDy),
-    diferenca_direcao_amarela: signedAngleDifference(targetDirection, getDirection(ball)),
+    diferenca_direcao_amarela: signedAngleDifference(targetDirection, currentDirection),
     carga_boost: ball.boostCharge
   };
 }
 
 function normalizeSensors(sensors) {
   return [
-    sensors.distancia_parede_esquerda / WORLD_SIZE,
-    sensors.distancia_parede_direita / WORLD_SIZE,
-    sensors.distancia_parede_teto / WORLD_SIZE,
-    sensors.distancia_parede_chao / WORLD_SIZE,
-    sensors.velocidade / BOOST_MAX_SPEED,
-    sensors.direcao / TWO_PI,
+    sensors.posicao_x / WORLD_SIZE,
+    sensors.posicao_y / WORLD_SIZE,
     sensors.distancia_da_outra_bolinha / (Math.SQRT2 * WORLD_SIZE),
-    sensors.direcao_da_outra_bolinha / TWO_PI,
-    sensors.velocidade_da_outra_bolinha / BOOST_MAX_SPEED,
+    sensors.diferenca_direcao_outra / Math.PI,
     sensors.distancia_bolinha_amarela / (Math.SQRT2 * WORLD_SIZE),
     sensors.diferenca_direcao_amarela / Math.PI,
     sensors.carga_boost / BOOST_MAX_CHARGE
   ];
+}
+
+function updateSensorHistory(ball, currentInputs) {
+  ball.sensorHistory.unshift([...currentInputs]);
+  if (ball.sensorHistory.length > SENSOR_HISTORY_MAX_AGE + 1) {
+    ball.sensorHistory.length = SENSOR_HISTORY_MAX_AGE + 1;
+  }
+}
+
+function buildTemporalInputs(sensorHistory) {
+  if (sensorHistory.length === 0) {
+    return Array(TEMPORAL_INPUT_SIZE).fill(0);
+  }
+
+  return SENSOR_HISTORY_AGES.flatMap((age) => {
+    const snapshot = sensorHistory[Math.min(age, sensorHistory.length - 1)];
+    return [...snapshot];
+  });
+}
+
+function buildBootstrapInputs(ball, currentInputs) {
+  const previewHistory = [[...currentInputs], ...ball.sensorHistory]
+    .slice(0, SENSOR_HISTORY_MAX_AGE + 1);
+  return buildTemporalInputs(previewHistory);
 }
 
 function updateBoost(ball) {
@@ -574,47 +816,41 @@ function updateBoost(ball) {
   return usedBoost;
 }
 
-function samplePolicyAction(rawOutput) {
-  const acceleration = clamp(
-    rawOutput[0] + randomGaussian() * ACCELERATION_EXPLORATION,
-    0,
-    1
-  );
-  const direction = normalizeAngle(
-    rawOutput[1] * TWO_PI + randomGaussian() * DIRECTION_EXPLORATION
-  ) / TWO_PI;
-  const boost = Math.random() < rawOutput[2] ? 1 : 0;
+function samplePolicyAction(cache) {
+  return {
+    directionIndex: sampleCategorical(cache.policy.directionProbabilities),
+    boost: Math.random() < cache.policy.boostProbability ? 1 : 0
+  };
+}
 
-  return { acceleration, direction, boost };
+function applyFixedVelocity(ball, boosted) {
+  const movementSpeed = boosted ? BOOST_MAX_SPEED : MAX_SPEED;
+  ball.hspeed = Math.cos(ball.output.direction) * movementSpeed;
+  ball.vspeed = Math.sin(ball.output.direction) * movementSpeed;
 }
 
 function applyBrain(ball, otherBall, targetBall) {
   ball.sensors = buildSensors(ball, otherBall, targetBall);
-  const inputs = normalizeSensors(ball.sensors);
+  const currentInputs = normalizeSensors(ball.sensors);
+  updateSensorHistory(ball, currentInputs);
+  const inputs = buildTemporalInputs(ball.sensorHistory);
   ball.lastCache = forwardBrain(ball.brain, inputs);
-  const sampledAction = samplePolicyAction(ball.lastCache.rawOutput);
+  const sampledAction = samplePolicyAction(ball.lastCache);
   ball.output = {
-    acceleration: sampledAction.acceleration * MAX_ACCELERATION,
-    direction: sampledAction.direction * TWO_PI,
+    direction: sampledAction.directionIndex / DIRECTION_BINS * TWO_PI,
     boost: sampledAction.boost === 1
   };
   ball.experienceBuffer.push({
     inputs: [...inputs],
     action: sampledAction,
-    reward: 0
+    reward: 0,
+    value: ball.lastCache.value,
+    logProbability: policyLogProbability(ball.lastCache.policy, sampledAction)
   });
 
   const usedBoost = updateBoost(ball);
   ball.boostUsedThisFrame = usedBoost;
-
-  if (usedBoost) {
-    ball.output.acceleration = sampledAction.acceleration * BOOST_ACCELERATION;
-  }
-
-  ball.hspeed += Math.cos(ball.output.direction) * ball.output.acceleration;
-  ball.vspeed += Math.sin(ball.output.direction) * ball.output.acceleration;
-
-  limitSpeed(ball);
+  applyFixedVelocity(ball, usedBoost);
 }
 
 function moveBall(ball) {
@@ -778,18 +1014,73 @@ function recordReward(ball, reward) {
   ball.recentRewardAverage = ball.recentRewardSum / ball.recentRewards.length;
 }
 
+function getWallClearance(ball) {
+  return Math.min(
+    ball.x - BALL_RADIUS,
+    WORLD_SIZE - BALL_RADIUS - ball.x,
+    ball.y - BALL_RADIUS,
+    WORLD_SIZE - BALL_RADIUS - ball.y
+  );
+}
+
+function calculateWallShapingReward(ball) {
+  const clearance = getWallClearance(ball);
+  const previousClearance = ball.previousWallClearance;
+  const proximity = clamp((WALL_SAFE_CLEARANCE - clearance) / WALL_SAFE_CLEARANCE, 0, 1);
+  const positionReward = proximity > 0
+    ? -WALL_PROXIMITY_PENALTY * proximity ** 2
+    : WALL_SAFE_REWARD;
+  const clearanceChange = previousClearance == null
+    ? 0
+    : clamp(clearance - previousClearance, -MAX_SPEED, MAX_SPEED) / MAX_SPEED;
+  const progressReward = clearanceChange * WALL_PROGRESS_REWARD;
+
+  ball.previousWallClearance = clearance;
+  ball.lastWallShapingReward = positionReward + progressReward;
+  return ball.lastWallShapingReward;
+}
+
+function calculateGoalProgressReward(ball, otherBall, targetBall) {
+  const otherDistance = Math.hypot(otherBall.x - ball.x, otherBall.y - ball.y);
+  const yellowDistance = Math.hypot(targetBall.x - ball.x, targetBall.y - ball.y);
+  let reward = 0;
+
+  if (ball.previousOtherDistance != null && ball.previousYellowDistance != null) {
+    const otherChange = clamp(
+      otherDistance - ball.previousOtherDistance,
+      -BOOST_MAX_SPEED * 2,
+      BOOST_MAX_SPEED * 2
+    );
+    const yellowChange = clamp(
+      yellowDistance - ball.previousYellowDistance,
+      -BOOST_MAX_SPEED,
+      BOOST_MAX_SPEED
+    );
+
+    reward = ball.role === "red"
+      ? -otherChange * RED_CHASE_PROGRESS_REWARD
+      : otherChange * BLUE_FLEE_PROGRESS_REWARD - yellowChange * BLUE_TARGET_PROGRESS_REWARD;
+  }
+
+  ball.previousOtherDistance = otherDistance;
+  ball.previousYellowDistance = yellowDistance;
+  ball.lastGoalProgressReward = reward;
+  return reward;
+}
+
 function updateRewards(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow) {
-  redBall.rewardNow = redWallHits * WALL_PENALTY;
-  blueBall.rewardNow = blueWallHits * WALL_PENALTY;
+  redBall.rewardNow = redWallHits * WALL_PENALTY +
+    calculateWallShapingReward(redBall) +
+    calculateGoalProgressReward(redBall, blueBall, yellowBall);
+  blueBall.rewardNow = blueWallHits * WALL_PENALTY +
+    calculateWallShapingReward(blueBall) +
+    calculateGoalProgressReward(blueBall, redBall, yellowBall);
 
   if (ballCollisionRewarded) {
     redBall.rewardNow += RED_HIT_REWARD;
     blueBall.rewardNow += BLUE_HIT_PENALTY;
     recordBallCollisionInterval(redBall);
     recordBallCollisionInterval(blueBall);
-  } else {
-    redBall.rewardNow += RED_SLOW_PENALTY;
-    blueBall.rewardNow += BLUE_SLOW_REWARD;
   }
 
   if (blueTouchedYellow) {
@@ -831,8 +1122,6 @@ function update() {
   updateRewards(redWallHits, blueWallHits, ballCollisionRewarded, redTouchedYellow, blueTouchedYellow);
   recordTemporalReward(redBall, redBall.rewardNow);
   recordTemporalReward(blueBall, blueBall.rewardNow);
-  processTemporalLearning(redBall);
-  processTemporalLearning(blueBall);
 
   const yellowExpired = frameNumber - yellowBall.lastMovedFrame >= YELLOW_RESPAWN_FRAMES;
   if (redTouchedYellow || blueTouchedYellow || yellowExpired) {
@@ -841,6 +1130,10 @@ function update() {
 
   redBall.sensors = buildSensors(redBall, blueBall, yellowBall);
   blueBall.sensors = buildSensors(blueBall, redBall, yellowBall);
+  const redBootstrapInputs = buildBootstrapInputs(redBall, normalizeSensors(redBall.sensors));
+  const blueBootstrapInputs = buildBootstrapInputs(blueBall, normalizeSensors(blueBall.sensors));
+  processPolicyRollout(redBall, redBootstrapInputs);
+  processPolicyRollout(blueBall, blueBootstrapInputs);
   updateTableAverageSnapshot();
 }
 
@@ -926,7 +1219,6 @@ function getMetricValues(ball, averages) {
     velocidade: getSpeed(ball),
     direcao: getDirection(ball),
     carga_boost: ball.boostCharge,
-    aceleracao_saida: ball.output.acceleration,
     recompensa_recente: averages.recentRewardAverage,
     recompensa_media: averages.rewardAverage,
     media_sem_parede: averages.averageWallFreeFrames,
@@ -1004,9 +1296,16 @@ function getSimulationState() {
   return {
     frameNumber,
     learning: {
-      type: "discounted-policy-buffer",
-      bufferFrames: TEMPORAL_BUFFER_FRAMES,
-      discount: REWARD_DISCOUNT
+      type: "ppo-actor-critic",
+      rolloutFrames: PPO_ROLLOUT_FRAMES,
+      discount: REWARD_DISCOUNT,
+      gaeLambda: GAE_LAMBDA,
+      clipRange: PPO_CLIP_RANGE,
+      epochs: PPO_EPOCHS,
+      directionBins: DIRECTION_BINS,
+      minibatchSize: POLICY_MINIBATCH_SIZE,
+      sensorHistoryAges: SENSOR_HISTORY_AGES,
+      temporalInputSize: TEMPORAL_INPUT_SIZE
     },
     constants: {
       ballRadius: BALL_RADIUS,
@@ -1027,6 +1326,16 @@ function getSimulationState() {
       experienceBufferSize: redBall.experienceBuffer.length,
       lastDiscountedReturn: redBall.lastDiscountedReturn,
       lastAdvantage: redBall.lastAdvantage,
+      lastGradientNorm: redBall.lastGradientNorm,
+      lastCriticGradientNorm: redBall.lastCriticGradientNorm,
+      lastPolicyLoss: redBall.lastPolicyLoss,
+      lastValueLoss: redBall.lastValueLoss,
+      lastEntropy: redBall.lastEntropy,
+      lastApproximateKL: redBall.lastApproximateKL,
+      lastClipFraction: redBall.lastClipFraction,
+      lastPPOEpochs: redBall.lastPPOEpochs,
+      wallShapingReward: redBall.lastWallShapingReward,
+      goalProgressReward: redBall.lastGoalProgressReward,
       boostCharge: redBall.boostCharge,
       boostActive: redBall.boostActive,
       boostCooldown: redBall.boostCooldown,
@@ -1049,6 +1358,16 @@ function getSimulationState() {
       experienceBufferSize: blueBall.experienceBuffer.length,
       lastDiscountedReturn: blueBall.lastDiscountedReturn,
       lastAdvantage: blueBall.lastAdvantage,
+      lastGradientNorm: blueBall.lastGradientNorm,
+      lastCriticGradientNorm: blueBall.lastCriticGradientNorm,
+      lastPolicyLoss: blueBall.lastPolicyLoss,
+      lastValueLoss: blueBall.lastValueLoss,
+      lastEntropy: blueBall.lastEntropy,
+      lastApproximateKL: blueBall.lastApproximateKL,
+      lastClipFraction: blueBall.lastClipFraction,
+      lastPPOEpochs: blueBall.lastPPOEpochs,
+      wallShapingReward: blueBall.lastWallShapingReward,
+      goalProgressReward: blueBall.lastGoalProgressReward,
       boostCharge: blueBall.boostCharge,
       boostActive: blueBall.boostActive,
       boostCooldown: blueBall.boostCooldown,
