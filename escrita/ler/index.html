@@ -24,13 +24,20 @@
           <div class="typing-progress" aria-hidden="true">
             <span data-progress-bar></span>
           </div>
-          <div
+          <textarea
             id="english-input"
+            class="typing-capture"
+            data-typing-capture
+            aria-label="Entrada de digitacao em ingles"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+          ></textarea>
+          <div
             class="smart-input"
             data-smart-input
-            role="textbox"
-            aria-multiline="true"
-            tabindex="0"
+            aria-hidden="true"
           ></div>
           <div class="stall-meter" data-stall-meter aria-hidden="true">
             <span data-stall-bar></span>

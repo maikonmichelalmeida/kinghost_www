@@ -22,6 +22,11 @@ body {
   height: 100%;
 }
 
+.auth-pending .app-shell,
+.auth-pending .result-overlay {
+  visibility: hidden;
+}
+
 body {
   margin: 0;
   background:

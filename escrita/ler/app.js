@@ -1,4 +1,4 @@
-const READING_TITLE = "As a Man Thinketh - Part 001";
+const READING_TITLE = "Strength Training and the Mind - Part 001";
 const REMOTE_API_HOST = "uergs2024.kinghost.net";
 const REMOTE_API_PORT = "21106";
 
@@ -11,6 +11,7 @@ const elements = {
   blockPosition: document.querySelector("[data-block-position]"),
   blockTitle: document.querySelector("[data-block-title]"),
   portuguese: document.querySelector("[data-portuguese]"),
+  typingCapture: document.querySelector("[data-typing-capture]"),
   smartInput: document.querySelector("[data-smart-input]"),
   typingShell: document.querySelector("[data-typing-shell]"),
   progressBar: document.querySelector("[data-progress-bar]"),
@@ -89,6 +90,7 @@ function renderCurrentBlock() {
 
   if (!typingBox) {
     typingBox = new SmartTypingBox({
+      capture: elements.typingCapture,
       input: elements.smartInput,
       shell: elements.typingShell,
       progressBar: elements.progressBar,
@@ -100,7 +102,7 @@ function renderCurrentBlock() {
   }
 
   typingBox.setTarget(block.en || block.English || "");
-  elements.smartInput.focus();
+  typingBox.focus();
 }
 
 function navigateBlock(direction) {
@@ -141,9 +143,16 @@ class SmartTypingBox {
     this.lastKeyAt = Date.now();
     this.keyIntervals = [];
 
-    this.nodes.input.addEventListener("keydown", (event) => this.handleKeydown(event));
-    this.nodes.input.addEventListener("paste", (event) => this.handlePaste(event));
-    this.nodes.input.addEventListener("click", () => this.nodes.input.focus());
+    this.nodes.capture.addEventListener("input", (event) => this.handleNativeInput(event));
+    this.nodes.capture.addEventListener("keydown", (event) => this.handleCaptureKeydown(event));
+    this.nodes.capture.addEventListener("focus", () => this.setFocused(true));
+    this.nodes.capture.addEventListener("blur", () => this.setFocused(false));
+    this.nodes.input.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      this.focus();
+    });
+    this.nodes.shell.addEventListener("click", () => this.focus());
+    this.syncCapture();
   }
 
   setTarget(target) {
@@ -162,14 +171,12 @@ class SmartTypingBox {
     this.scheduleStallHint();
   }
 
-  handleKeydown(event) {
-    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+  handleCaptureKeydown(event) {
+    if (event.key === "Enter") {
       event.preventDefault();
-      showCurrentAnswer();
+      if (event.ctrlKey || event.metaKey) showCurrentAnswer();
       return;
     }
-
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     if (event.key === "Backspace") {
       event.preventDefault();
@@ -177,21 +184,53 @@ class SmartTypingBox {
       return;
     }
 
-    if (["Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+    if (["Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) {
       event.preventDefault();
-      return;
-    }
-
-    if (event.key.length === 1) {
-      event.preventDefault();
-      this.typeText(event.key);
+      this.syncCapture();
     }
   }
 
-  handlePaste(event) {
-    event.preventDefault();
-    const text = event.clipboardData ? event.clipboardData.getData("text") : "";
-    this.typeText(text);
+  handleNativeInput(event) {
+    if (String(event.inputType || "").startsWith("delete")) {
+      this.backspace();
+      return;
+    }
+
+    const accepted = this.acceptedText();
+    const buffered = this.nodes.capture.value.startsWith(accepted)
+      ? this.nodes.capture.value.slice(accepted.length)
+      : this.nodes.capture.value;
+    const inserted = event.data == null ? buffered : event.data;
+
+    if (inserted) {
+      this.typeText(inserted);
+    } else {
+      this.syncCapture();
+    }
+  }
+
+  focus() {
+    this.nodes.capture.focus({ preventScroll: true });
+    this.syncCapture();
+  }
+
+  setFocused(focused) {
+    this.nodes.input.classList.toggle("is-focused", focused);
+    this.nodes.shell.classList.toggle("is-focused", focused);
+  }
+
+  acceptedText() {
+    return this.tokens.map((token) => token.char).join("");
+  }
+
+  syncCapture() {
+    const value = this.acceptedText();
+    if (this.nodes.capture.value !== value) this.nodes.capture.value = value;
+    try {
+      this.nodes.capture.setSelectionRange(value.length, value.length);
+    } catch {
+      // Some mobile browsers delay selection support until focus settles.
+    }
   }
 
   typeText(text) {
@@ -403,6 +442,7 @@ class SmartTypingBox {
     this.nodes.shell.classList.toggle("is-good", this.tokens.length > 0 && this.errorRatio() <= 0.08 && this.tokens.length < this.targetChars.length);
     this.nodes.shell.classList.toggle("is-typo", this.errorRatio() > 0.2);
     this.nodes.shell.classList.toggle("is-complete", this.tokens.length >= this.targetChars.length && this.errorRatio() <= 0.08);
+    this.syncCapture();
   }
 
   renderHint() {

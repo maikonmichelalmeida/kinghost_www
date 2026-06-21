@@ -29,6 +29,8 @@ let pendingPlayerSeekSeconds = null;
 let contextSaveTimer = null;
 let isRestoringLessonContext = false;
 
+const USER_TOKEN_KEY = "shadowing_user_token";
+
 const STORAGE_KEYS = {
   questionMode: "shadowingQuestionMode",
   activeLessonId: "shadowingActiveLessonId",
@@ -88,7 +90,7 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
 };
 
 loadSavedQuizPreferences();
-loadAvailableLessons();
+bootAuthenticatedApp();
 
 elements.lessonSelect.addEventListener("change", () => {
   elements.loadLessonButton.disabled = !elements.lessonSelect.value;
@@ -186,6 +188,40 @@ elements.speedRange.addEventListener("change", () => {
 window.addEventListener("resize", debounce(fitCaptionToStage, 120));
 window.addEventListener("beforeunload", saveLessonContextNow);
 setControlsEnabled(false);
+
+async function bootAuthenticatedApp() {
+  if (location.protocol === "file:") {
+    document.body.classList.remove("auth-pending");
+    setStatus("Abra o projeto pelo arquivo iniciar-local.bat para usar o login.", true);
+    return;
+  }
+
+  const token = storageGet(USER_TOKEN_KEY);
+  if (!token) {
+    redirectToLogin();
+    return;
+  }
+
+  try {
+    await requestJson("/api/user/session", { requireAuth: true });
+    document.body.classList.remove("auth-pending");
+    await loadAvailableLessons();
+  } catch (error) {
+    if (error.status === 401) {
+      storageRemove(USER_TOKEN_KEY);
+      redirectToLogin();
+      return;
+    }
+    document.body.classList.remove("auth-pending");
+    setStatus(error.message || "Nao foi possivel validar sua sessao.", true);
+  }
+}
+
+function redirectToLogin() {
+  const pageName = location.pathname.split("/").pop() || "index.htm";
+  const returnTo = ["index.htm", "index.html"].includes(pageName) ? pageName : "index.htm";
+  location.replace(`login.htm?return=${encodeURIComponent(returnTo)}`);
+}
 
 async function loadAvailableLessons() {
   elements.lessonSelect.disabled = true;
@@ -2418,13 +2454,22 @@ function setControlsEnabled(enabled) {
 
 async function requestJson(url, options = {}) {
   let lastError = null;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+  const token = storageGet(USER_TOKEN_KEY);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const { requireAuth, ...fetchOptions } = options;
 
   for (let index = 0; index < API_BASES.length; index += 1) {
     const apiBase = API_BASES[index];
     try {
       const response = await fetch(`${apiBase}${url}`, {
-        headers: { "Content-Type": "application/json" },
-        ...options
+        ...fetchOptions,
+        headers
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
@@ -2452,8 +2497,18 @@ async function requestJson(url, options = {}) {
 function getApiBases() {
   const localHosts = ["localhost", "127.0.0.1", ""];
   const isLocalPage = location.protocol === "file:" || localHosts.includes(location.hostname);
+  if (location.port === "8087") {
+    return [
+      `http://${REMOTE_API_HOST}`,
+      `http://${REMOTE_API_HOST}:${REMOTE_API_PORT}`
+    ];
+  }
   if (isLocalPage && location.port !== "21106") {
-    return ["http://127.0.0.1:21106"];
+    return [
+      "http://127.0.0.1:21106",
+      `http://${REMOTE_API_HOST}:${REMOTE_API_PORT}`,
+      `http://${REMOTE_API_HOST}`
+    ];
   }
   if (location.hostname === REMOTE_API_HOST && location.port !== REMOTE_API_PORT) {
     return [`http://${REMOTE_API_HOST}:${REMOTE_API_PORT}`, ""];

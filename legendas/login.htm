@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:,">
+    <title>Entrar | Shadowing</title>
+    <link rel="stylesheet" href="login.css?v=20260621-user-login">
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-panel" aria-labelledby="loginTitle">
+        <header class="brand-block">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <div>
+            <p class="eyebrow">Pratica de ingles</p>
+            <h1 id="loginTitle">Shadowing</h1>
+          </div>
+        </header>
+
+        <p class="welcome-copy">Entre para continuar sua aula.</p>
+
+        <form id="loginForm" class="login-form" novalidate>
+          <label class="field-group" for="nickInput">
+            <span>Usuario</span>
+            <input
+              id="nickInput"
+              name="nick"
+              type="text"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              required
+            >
+          </label>
+
+          <label class="field-group" for="passwordInput">
+            <span>Senha</span>
+            <span class="password-field">
+              <input
+                id="passwordInput"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              >
+              <button
+                id="togglePasswordButton"
+                class="icon-button"
+                type="button"
+                title="Mostrar senha"
+                aria-label="Mostrar senha"
+                aria-pressed="false"
+              >
+                <i data-lucide="eye" aria-hidden="true"></i>
+              </button>
+            </span>
+          </label>
+
+          <button id="submitButton" class="submit-button" type="submit">
+            <span>Entrar</span>
+            <i data-lucide="arrow-right" aria-hidden="true"></i>
+          </button>
+        </form>
+
+        <p id="loginStatus" class="login-status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="login.js?v=20260621-local-http"></script>
+  </body>
+</html>
