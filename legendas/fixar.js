@@ -18,8 +18,11 @@ const elements = {
   translationText: document.getElementById("translationText"),
   answerForm: document.getElementById("answerForm"),
   answerInstruction: document.getElementById("answerInstruction"),
+  revealedAnswer: document.getElementById("revealedAnswer"),
+  revealedAnswerText: document.getElementById("revealedAnswerText"),
   answerInput: document.getElementById("answerInput"),
   submitButton: document.getElementById("submitButton"),
+  unknownButton: document.getElementById("unknownButton"),
   statusText: document.getElementById("statusText"),
   refreshButton: document.getElementById("refreshButton"),
   feedbackToast: document.getElementById("feedbackToast"),
@@ -38,12 +41,14 @@ const elements = {
 let training = null;
 let submitting = false;
 let meaningFitFrame = 0;
+let neutralPendingTraining = null;
 
 elements.answerForm.addEventListener("submit", submitAnswer);
 elements.answerInput.addEventListener("input", updateSubmitState);
 elements.refreshButton.addEventListener("click", loadTraining);
 elements.settingsForm.addEventListener("submit", saveSettings);
 elements.feedbackContinueButton.addEventListener("click", continueAfterFeedback);
+elements.unknownButton.addEventListener("click", handleUnknownAnswer);
 window.addEventListener("resize", scheduleMeaningFit);
 boot();
 
@@ -154,6 +159,13 @@ function renderTraining() {
   elements.answerInstruction.textContent = isMeaning && exercise.translation
     ? `(${exercise.translation})`
     : "";
+  elements.revealedAnswer.classList.add("is-hidden");
+  elements.revealedAnswerText.textContent = "--";
+  elements.unknownButton.classList.toggle("is-hidden", !isMeaning);
+  elements.unknownButton.disabled = false;
+  elements.unknownButton.dataset.state = "reveal";
+  elements.unknownButton.textContent = "Nao sei, conferir";
+  neutralPendingTraining = null;
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
   elements.submitButton.disabled = true;
@@ -162,6 +174,44 @@ function renderTraining() {
     if (isMeaning) fitMeaningPrompt();
     elements.answerInput.focus();
   });
+}
+
+async function handleUnknownAnswer() {
+  if (elements.unknownButton.dataset.state === "continue") {
+    if (neutralPendingTraining) training = neutralPendingTraining;
+    neutralPendingTraining = null;
+    renderTraining();
+    return;
+  }
+
+  const exercise = training?.exercises?.[training.currentIndex];
+  if (!exercise || exercise.type !== "meaning" || submitting) return;
+  submitting = true;
+  elements.unknownButton.disabled = true;
+  elements.answerInput.disabled = true;
+  elements.submitButton.disabled = true;
+  setStatus("Consultando a palavra sem alterar o score...");
+  try {
+    const data = await requestJson("/api/user/vocabulary-training/reveal", {
+      method: "POST",
+      body: JSON.stringify({ exerciseId: exercise.id })
+    });
+    neutralPendingTraining = data.training;
+    elements.revealedAnswerText.textContent = data.result.correctAnswer;
+    elements.revealedAnswer.classList.remove("is-hidden");
+    elements.unknownButton.dataset.state = "continue";
+    elements.unknownButton.textContent = "Continuar treino";
+    elements.unknownButton.disabled = false;
+    setStatus(`Score mantido em ${data.result.wordScore}. Analise a resposta antes de continuar.`);
+    requestAnimationFrame(() => elements.unknownButton.focus());
+  } catch (error) {
+    setStatus(error.message, true);
+    elements.answerInput.disabled = false;
+    elements.unknownButton.disabled = false;
+    updateSubmitState();
+  } finally {
+    submitting = false;
+  }
 }
 
 function renderPromptParts(parts, fallbackText) {

@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Fixar vocabulario</title>
-    <link rel="stylesheet" href="fixar.css?v=20260622-06">
+    <link rel="stylesheet" href="fixar.css?v=20260622-07">
   </head>
   <body class="is-loading">
     <div class="page-decor" aria-hidden="true">
       <span class="decor-sticker decor-sticker-a">Aa</span>
       <span class="decor-sticker decor-sticker-quote">&ldquo;&rdquo;</span>
-      <span class="decor-sticker decor-sticker-check">✓</span>
+      <span class="decor-sticker decor-sticker-check">&#10003;</span>
       <span class="decor-sticker decor-sticker-lines">ABC</span>
     </div>
     <main class="training-shell">
       <header class="training-header">
-        <div>
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <div>
           <p class="eyebrow">Treino de vocabulario</p>
           <h1>Fixar</h1>
+          </div>
         </div>
         <div class="header-actions">
           <form id="settingsForm" class="daily-settings" autocomplete="off">
@@ -52,9 +55,17 @@
             <span>Sua resposta</span>
             <small id="answerInstruction"></small>
           </label>
+          <div id="revealedAnswer" class="revealed-answer is-hidden" aria-live="polite">
+            <span>Palavra ou expressao</span>
+            <strong id="revealedAnswerText">--</strong>
+            <em>Score preservado</em>
+          </div>
           <div class="answer-row">
             <input id="answerInput" type="text" spellcheck="false" autocapitalize="none" disabled>
             <button id="submitButton" type="submit" disabled>Confirmar</button>
+          </div>
+          <div class="answer-secondary-actions">
+            <button id="unknownButton" class="unknown-button is-hidden" type="button">Nao sei, conferir</button>
           </div>
           <p id="statusText" class="status-text" role="status"></p>
         </form>
@@ -78,6 +89,6 @@
       <p id="feedbackMessage" class="feedback-message"></p>
       <button id="feedbackContinueButton" type="button">Proximo exercicio</button>
     </section>
-    <script src="fixar.js?v=20260622-06"></script>
+    <script src="fixar.js?v=20260622-07"></script>
   </body>
 </html>
