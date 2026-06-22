@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Shadowing Player</title>
-    <link rel="stylesheet" href="style.css?v=20260621-vocabulary-study">
+    <link rel="stylesheet" href="style.css?v=20260621-vocabulary-queue">
   </head>
   <body class="auth-pending">
     <main class="app-shell">
@@ -180,7 +180,21 @@
       </div>
     </div>
 
+    <div id="vocabularyQueueOverlay" class="vocabulary-queue-overlay is-hidden" role="status" aria-live="polite">
+      <section class="vocabulary-queue-card" aria-label="Fila de estudo de vocabulario">
+        <header class="vocabulary-queue-header">
+          <div>
+            <span class="vocabulary-queue-eyebrow">Treino em montagem</span>
+            <strong>Fila de vocabulario</strong>
+            <p id="vocabularyQueueSummary">0 palavras para estudar</p>
+          </div>
+          <button id="vocabularyQueueCloseButton" class="vocabulary-queue-close" type="button" title="Fechar" aria-label="Fechar">&times;</button>
+        </header>
+        <div id="vocabularyQueueList" class="vocabulary-queue-list" role="list"></div>
+      </section>
+    </div>
+
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260621-vocabulary-study"></script>
+    <script src="app.js?v=20260621-vocabulary-queue"></script>
   </body>
 </html>

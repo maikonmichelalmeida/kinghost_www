@@ -23,6 +23,7 @@ let quizItems = [];
 let currentQuizItemIndex = 0;
 let quizOptionOrders = {};
 let resultOverlayTimer = null;
+let vocabularyQueueOverlayTimer = null;
 let availableLessons = [];
 let currentLessonStorageId = "";
 let pendingPlayerSeekSeconds = null;
@@ -84,7 +85,11 @@ const elements = {
   questionModeButton: document.getElementById("questionModeButton"),
   resultOverlay: document.getElementById("resultOverlay"),
   resultTitle: document.getElementById("resultTitle"),
-  resultText: document.getElementById("resultText")
+  resultText: document.getElementById("resultText"),
+  vocabularyQueueOverlay: document.getElementById("vocabularyQueueOverlay"),
+  vocabularyQueueSummary: document.getElementById("vocabularyQueueSummary"),
+  vocabularyQueueList: document.getElementById("vocabularyQueueList"),
+  vocabularyQueueCloseButton: document.getElementById("vocabularyQueueCloseButton")
 };
 
 window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
@@ -156,6 +161,8 @@ elements.questionModeButton.addEventListener("click", () => {
 elements.confirmQuizButton.addEventListener("click", confirmQuizAnswer);
 
 elements.resultOverlay.addEventListener("click", hideResultOverlay);
+elements.vocabularyQueueOverlay.addEventListener("click", hideVocabularyStudyQueue);
+elements.vocabularyQueueCloseButton.addEventListener("click", hideVocabularyStudyQueue);
 
 elements.autoPauseToggle.addEventListener("change", (event) => {
   autoPauseEnabled = event.target.checked;
@@ -1977,6 +1984,7 @@ async function prepareVocabularyStudy() {
     } else {
       setStatus(`"${result.vocabulary.writing}" ja esta na sua lista de estudo.`);
     }
+    showVocabularyStudyQueue(result.studyQueue, result.vocabulary.id, result.linked);
     elements.vocabularyInput.value = "";
   } catch (error) {
     console.error(error);
@@ -2057,6 +2065,62 @@ function finishStudyAndStartQuiz() {
   setStatus("Voce chegou ao fim dos trechos. Iniciando o quiz.");
   setAppMode("quiz", { autoSelect: true, startAtFirst: true });
   updatePlayPauseLabel();
+}
+
+function showVocabularyStudyQueue(queue, selectedVocabularyId, isNewToUser) {
+  clearTimeout(vocabularyQueueOverlayTimer);
+  const items = Array.isArray(queue) ? queue : [];
+  elements.vocabularyQueueList.replaceChildren();
+  elements.vocabularyQueueSummary.textContent = `${items.length} ${items.length === 1 ? "palavra" : "palavras"} para estudar`;
+  let selectedItem = null;
+
+  items.forEach((entry, index) => {
+    const item = document.createElement("div");
+    const isSelected = Number(entry.id) === Number(selectedVocabularyId);
+    item.className = "vocabulary-queue-item";
+    item.setAttribute("role", "listitem");
+    if (isSelected) {
+      item.classList.add(isNewToUser ? "is-new" : "is-current");
+      selectedItem = item;
+    }
+
+    const position = document.createElement("span");
+    position.className = "vocabulary-queue-position";
+    position.textContent = String(index + 1);
+
+    const content = document.createElement("div");
+    content.className = "vocabulary-queue-content";
+    const writing = document.createElement("strong");
+    writing.textContent = entry.writing;
+    const metadata = document.createElement("span");
+    metadata.textContent = `Nivel ${entry.level} · Score ${entry.score}`;
+    content.append(writing, metadata);
+
+    item.append(position, content);
+    if (isSelected) {
+      const badge = document.createElement("span");
+      badge.className = "vocabulary-queue-badge";
+      badge.textContent = isNewToUser ? "nova" : "na fila";
+      item.append(badge);
+    }
+    elements.vocabularyQueueList.append(item);
+  });
+
+  elements.vocabularyQueueOverlay.classList.remove("is-hidden");
+  requestAnimationFrame(() => {
+    if (selectedItem) {
+      elements.vocabularyQueueList.scrollTop = Math.max(
+        0,
+        selectedItem.offsetTop - elements.vocabularyQueueList.clientHeight / 2 + selectedItem.clientHeight / 2
+      );
+    }
+  });
+  vocabularyQueueOverlayTimer = setTimeout(hideVocabularyStudyQueue, 8500);
+}
+
+function hideVocabularyStudyQueue() {
+  clearTimeout(vocabularyQueueOverlayTimer);
+  elements.vocabularyQueueOverlay.classList.add("is-hidden");
 }
 
 function updateCurrentBlockByTime(currentTime) {
@@ -2254,9 +2318,16 @@ function togglePlayPause() {
 function playFromCurrentButtonState() {
   const block = lessonData.blocks[currentBlockIndex];
   const currentTime = getEstimatedCurrentTime();
+  const isLastStudyBlock = appMode === "study" &&
+    currentBlockIndex === lessonData.blocks.length - 1;
 
   lastExplicitBlockIndex = currentBlockIndex;
   shouldPlayOnBlockSelect = true;
+
+  if (isLastStudyBlock && currentTime >= block.end) {
+    repeatCurrentBlock();
+    return;
+  }
 
   if (!isAutoPauseActive()) {
     player.playVideo();
@@ -2301,7 +2372,20 @@ function startSyncLoop() {
     }
 
     if (appMode === "study" && block === lastBlock && currentTime >= lastBlock.end) {
-      finishStudyAndStartQuiz();
+      if (!autoPausedForCurrentBlock || isCachedPlaying()) {
+        player.pauseVideo();
+        if (typeof player.seekTo === "function") {
+          player.seekTo(lastBlock.end, true);
+        }
+        cachedPlayerState = YT.PlayerState.PAUSED;
+        setTimeAnchor(lastBlock.end);
+        autoPausedForCurrentBlock = true;
+        lastExplicitBlockIndex = currentBlockIndex;
+        setStatus("Modo estudo concluido. Clique em Continuar ou Proximo para iniciar o quiz.");
+        scheduleLessonContextSave();
+      }
+      updateBlockProgress(lastBlock.end);
+      updatePlayPauseLabel();
       return;
     }
 

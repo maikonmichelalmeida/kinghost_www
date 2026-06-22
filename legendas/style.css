@@ -23,7 +23,8 @@ body {
 }
 
 .auth-pending .app-shell,
-.auth-pending .result-overlay {
+.auth-pending .result-overlay,
+.auth-pending .vocabulary-queue-overlay {
   visibility: hidden;
 }
 
@@ -1016,6 +1017,160 @@ h1 {
 
 .result-overlay.is-hidden {
   display: none;
+}
+
+.vocabulary-queue-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7, 9, 12, 0.72);
+  backdrop-filter: blur(7px);
+}
+
+.vocabulary-queue-overlay.is-hidden {
+  display: none;
+}
+
+.vocabulary-queue-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  width: min(560px, calc(100vw - 28px));
+  max-height: min(680px, calc(100vh - 36px));
+  overflow: hidden;
+  border: 1px solid rgba(82, 214, 181, 0.4);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(82, 214, 181, 0.09), transparent 42%),
+    #171a1f;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62);
+  padding: 18px;
+}
+
+.vocabulary-queue-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vocabulary-queue-eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--accent-2);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.vocabulary-queue-header strong {
+  display: block;
+  color: var(--text);
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  line-height: 1.12;
+}
+
+.vocabulary-queue-header p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.vocabulary-queue-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.vocabulary-queue-list {
+  display: grid;
+  gap: 7px;
+  min-height: 72px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-color: var(--accent-2) rgba(255, 255, 255, 0.06);
+}
+
+.vocabulary-queue-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 9px 11px;
+}
+
+.vocabulary-queue-item.is-new {
+  border-color: rgba(255, 118, 109, 0.88);
+  background: rgba(255, 118, 109, 0.14);
+  box-shadow: inset 3px 0 0 var(--danger), 0 0 24px rgba(255, 118, 109, 0.12);
+}
+
+.vocabulary-queue-item.is-current {
+  border-color: rgba(244, 201, 93, 0.72);
+  background: rgba(244, 201, 93, 0.11);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.vocabulary-queue-position {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(82, 214, 181, 0.12);
+  color: var(--accent-2);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.vocabulary-queue-content {
+  min-width: 0;
+}
+
+.vocabulary-queue-content strong,
+.vocabulary-queue-content span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.vocabulary-queue-content strong {
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.vocabulary-queue-content span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.vocabulary-queue-badge {
+  border-radius: 999px;
+  background: rgba(244, 201, 93, 0.14);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+
+.vocabulary-queue-item.is-new .vocabulary-queue-badge {
+  background: rgba(255, 118, 109, 0.2);
+  color: #ff9b94;
 }
 
 .result-card {
