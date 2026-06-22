@@ -35,13 +35,16 @@ const elements = {
   feedbackContinueButton: document.getElementById("feedbackContinueButton"),
   settingsForm: document.getElementById("settingsForm"),
   wordsPerDayInput: document.getElementById("wordsPerDayInput"),
-  saveSettingsButton: document.getElementById("saveSettingsButton")
+  narrationCheckbox: document.getElementById("narrationCheckbox"),
+  saveSettingsButton: document.getElementById("saveSettingsButton"),
+  feedbackRepeatButton: document.getElementById("feedbackRepeatButton")
 };
 
 let training = null;
 let submitting = false;
 let meaningFitFrame = 0;
 let neutralPendingTraining = null;
+let lastSpokenText = "";
 
 elements.answerForm.addEventListener("submit", submitAnswer);
 elements.answerInput.addEventListener("input", updateSubmitState);
@@ -49,6 +52,8 @@ elements.refreshButton.addEventListener("click", loadTraining);
 elements.settingsForm.addEventListener("submit", saveSettings);
 elements.feedbackContinueButton.addEventListener("click", continueAfterFeedback);
 elements.unknownButton.addEventListener("click", handleUnknownAnswer);
+elements.narrationCheckbox.addEventListener("change", saveNarrationPreference);
+elements.feedbackRepeatButton.addEventListener("click", () => speakFeedback(lastSpokenText));
 window.addEventListener("resize", scheduleMeaningFit);
 boot();
 
@@ -95,6 +100,7 @@ async function loadTraining() {
 async function loadSettings() {
   const data = await requestJson("/api/user/vocabulary-settings");
   elements.wordsPerDayInput.value = String(data.wordsPerDay || 5);
+  elements.narrationCheckbox.checked = data.narrationEnabled !== false;
 }
 
 async function saveSettings(event) {
@@ -111,7 +117,10 @@ async function saveSettings(event) {
   try {
     await requestJson("/api/user/vocabulary-settings", {
       method: "PUT",
-      body: JSON.stringify({ wordsPerDay })
+      body: JSON.stringify({
+        wordsPerDay,
+        narrationEnabled: elements.narrationCheckbox.checked
+      })
     });
     setStatus("Preferencia salva. O treino foi remontado.");
     await loadTraining();
@@ -119,6 +128,23 @@ async function saveSettings(event) {
     setStatus(error.message, true);
   } finally {
     elements.saveSettingsButton.disabled = false;
+  }
+}
+
+async function saveNarrationPreference() {
+  elements.narrationCheckbox.disabled = true;
+  try {
+    const data = await requestJson("/api/user/vocabulary-settings", {
+      method: "PUT",
+      body: JSON.stringify({ narrationEnabled: elements.narrationCheckbox.checked })
+    });
+    elements.narrationCheckbox.checked = data.narrationEnabled;
+    setStatus(data.narrationEnabled ? "Narracao automatica ativada." : "Narracao automatica desativada.");
+  } catch (error) {
+    elements.narrationCheckbox.checked = !elements.narrationCheckbox.checked;
+    setStatus(error.message, true);
+  } finally {
+    elements.narrationCheckbox.disabled = false;
   }
 }
 
@@ -314,12 +340,37 @@ function showDetailedFeedback(result) {
       : `Score atualizado de ${result.writing}.`;
   elements.feedbackToast.classList.toggle("is-wrong", accuracy < 50);
   elements.feedbackToast.classList.add("is-visible");
+  lastSpokenText = String(result.spokenText || "").trim();
+  const canNarrate = elements.narrationCheckbox.checked && supportsNarration() && Boolean(lastSpokenText);
+  elements.feedbackRepeatButton.classList.toggle("is-hidden", !canNarrate);
+  if (canNarrate) speakFeedback(lastSpokenText);
   requestAnimationFrame(() => elements.feedbackContinueButton.focus());
 }
 
 function continueAfterFeedback() {
+  window.speechSynthesis?.cancel();
   elements.feedbackToast.classList.remove("is-visible");
   renderTraining();
+}
+
+function supportsNarration() {
+  return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+}
+
+function speakFeedback(text) {
+  const content = String(text || "").trim();
+  if (!content || !elements.narrationCheckbox.checked || !supportsNarration()) return;
+  const utterance = new SpeechSynthesisUtterance(content);
+  utterance.lang = "en-US";
+  utterance.rate = 0.9;
+  utterance.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find((voice) => voice.lang === "en-US" && /google/i.test(voice.name)) ||
+    voices.find((voice) => voice.lang === "en-US") ||
+    voices.find((voice) => /^en[-_]/i.test(voice.lang)) ||
+    null;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
 }
 
 function showState(title, message) {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Fixar vocabulario</title>
-    <link rel="stylesheet" href="fixar.css?v=20260622-07">
+    <link rel="stylesheet" href="fixar.css?v=20260622-08">
   </head>
   <body class="is-loading">
     <div class="page-decor" aria-hidden="true">
@@ -27,6 +27,10 @@
           <form id="settingsForm" class="daily-settings" autocomplete="off">
             <label for="wordsPerDayInput">Palavras por nivel</label>
             <input id="wordsPerDayInput" type="number" min="1" max="50" step="1" value="5">
+            <label class="narration-option" for="narrationCheckbox">
+              <input id="narrationCheckbox" type="checkbox" checked>
+              <span>Narrar respostas</span>
+            </label>
             <button id="saveSettingsButton" type="submit">Salvar</button>
           </form>
           <a href="./index.htm" class="quiet-link">Voltar para legendas</a>
@@ -87,8 +91,14 @@
         <div><dt>Score atual</dt><dd id="feedbackScore">--</dd></div>
       </dl>
       <p id="feedbackMessage" class="feedback-message"></p>
-      <button id="feedbackContinueButton" type="button">Proximo exercicio</button>
+      <div class="feedback-buttons">
+        <button id="feedbackRepeatButton" class="feedback-repeat-button is-hidden" type="button">
+          <span aria-hidden="true">&#128266;</span>
+          Repetir
+        </button>
+        <button id="feedbackContinueButton" type="button">Proximo exercicio</button>
+      </div>
     </section>
-    <script src="fixar.js?v=20260622-07"></script>
+    <script src="fixar.js?v=20260622-08"></script>
   </body>
 </html>
