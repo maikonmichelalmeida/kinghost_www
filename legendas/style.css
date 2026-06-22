@@ -1038,8 +1038,8 @@ h1 {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
-  width: min(560px, calc(100vw - 28px));
-  max-height: min(680px, calc(100vh - 36px));
+  width: min(760px, calc(100vw - 28px));
+  max-height: min(720px, calc(100vh - 36px));
   overflow: hidden;
   border: 1px solid rgba(82, 214, 181, 0.4);
   border-radius: 8px;
@@ -1092,7 +1092,9 @@ h1 {
 }
 
 .vocabulary-queue-list {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
   gap: 7px;
   min-height: 72px;
   overflow-x: hidden;
@@ -1102,15 +1104,16 @@ h1 {
 }
 
 .vocabulary-queue-item {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  display: inline-flex;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.035);
-  padding: 9px 11px;
+  padding: 6px 8px;
 }
 
 .vocabulary-queue-item.is-new {
@@ -1128,8 +1131,9 @@ h1 {
 .vocabulary-queue-position {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 23px;
+  width: 23px;
+  height: 23px;
   border-radius: 50%;
   background: rgba(82, 214, 181, 0.12);
   color: var(--accent-2);
@@ -1139,6 +1143,7 @@ h1 {
 
 .vocabulary-queue-content {
   min-width: 0;
+  max-width: min(210px, 55vw);
 }
 
 .vocabulary-queue-content strong,
@@ -1149,13 +1154,13 @@ h1 {
 
 .vocabulary-queue-content strong {
   color: var(--text);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
 }
 
 .vocabulary-queue-content span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .vocabulary-queue-badge {
