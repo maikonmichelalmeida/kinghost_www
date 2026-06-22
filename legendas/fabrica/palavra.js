@@ -11,13 +11,18 @@ const elements = {
   copyButton: document.getElementById("copyButton"),
   pendingWordsOutput: document.getElementById("pendingWordsOutput"),
   queueSummary: document.getElementById("queueSummary"),
-  copyStatus: document.getElementById("copyStatus")
+  copyStatus: document.getElementById("copyStatus"),
+  processedJsonInput: document.getElementById("processedJsonInput"),
+  processButton: document.getElementById("processButton"),
+  processingStatus: document.getElementById("processingStatus"),
+  processingErrors: document.getElementById("processingErrors")
 };
 
 let pendingWords = [];
 
 elements.refreshButton.addEventListener("click", loadPendingWords);
 elements.copyButton.addEventListener("click", copyPendingWords);
+elements.processButton.addEventListener("click", processVocabularyJson);
 elements.copyLimitInput.addEventListener("input", saveCopyLimit);
 elements.copyLimitInput.addEventListener("change", normalizeCopyLimit);
 elements.logoutButton.addEventListener("click", () => {
@@ -52,10 +57,7 @@ async function loadPendingWords() {
     elements.refreshButton.disabled = true;
     elements.queueSummary.textContent = "Carregando fila...";
     const data = await requestJson("/api/vocabulary/pending");
-    pendingWords = Array.isArray(data.items) ? data.items : [];
-    elements.pendingWordsOutput.value = pendingWords.map((item) => item.writing).join("\n");
-    elements.queueSummary.textContent = `${pendingWords.length} ${pendingWords.length === 1 ? "item" : "itens"}, mais antigos primeiro`;
-    elements.copyButton.disabled = pendingWords.length === 0;
+    applyPendingWords(data.items);
     setStatus(pendingWords.length ? "Fila pronta para copiar." : "A fila esta vazia.");
   } catch (error) {
     if (error.status === 401) {
@@ -68,6 +70,73 @@ async function loadPendingWords() {
   } finally {
     elements.refreshButton.disabled = false;
   }
+}
+
+async function processVocabularyJson() {
+  const jsonContent = elements.processedJsonInput.value.trim();
+  if (!jsonContent) {
+    setProcessingStatus("Cole o JSON antes de processar.", true);
+    return;
+  }
+
+  try {
+    elements.processButton.disabled = true;
+    elements.processButton.textContent = "Processando...";
+    elements.processingErrors.replaceChildren();
+    setProcessingStatus("Validando e atualizando o vocabulario...");
+    const result = await requestJson("/api/vocabulary/process", {
+      method: "POST",
+      body: JSON.stringify({ jsonContent })
+    });
+
+    applyPendingWords(result.pendingItems);
+    renderProcessingErrors(result.errors);
+    const processed = result.processed || {};
+    const total = Number(processed.valid || 0) +
+      Number(processed.derivatives || 0) +
+      Number(processed.invalid || 0);
+    const errorCount = Array.isArray(result.errors) ? result.errors.length : 0;
+    setProcessingStatus(
+      `${total} item(ns) processado(s): ${processed.valid || 0} valido(s), ` +
+      `${processed.derivatives || 0} derivado(s), ${processed.invalid || 0} invalido(s). ` +
+      `${errorCount} erro(s).`,
+      errorCount > 0
+    );
+    if (!errorCount) {
+      elements.processedJsonInput.value = "";
+    }
+  } catch (error) {
+    if (error.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      redirectToLogin();
+      return;
+    }
+    setProcessingStatus(error.message, true);
+  } finally {
+    elements.processButton.disabled = false;
+    elements.processButton.textContent = "Processar JSON";
+  }
+}
+
+function applyPendingWords(items) {
+  pendingWords = Array.isArray(items) ? items : [];
+  elements.pendingWordsOutput.value = pendingWords.map((item) => item.writing).join("\n");
+  elements.queueSummary.textContent = `${pendingWords.length} ${pendingWords.length === 1 ? "item" : "itens"}, mais antigos primeiro`;
+  elements.copyButton.disabled = pendingWords.length === 0;
+}
+
+function renderProcessingErrors(errors) {
+  elements.processingErrors.replaceChildren();
+  (Array.isArray(errors) ? errors : []).forEach((error) => {
+    const item = document.createElement("div");
+    item.className = "processing-error-item";
+    const writing = document.createElement("strong");
+    writing.textContent = error.writing || "Item desconhecido";
+    const message = document.createElement("span");
+    message.textContent = error.message || "Erro nao informado.";
+    item.append(writing, message);
+    elements.processingErrors.append(item);
+  });
 }
 
 async function copyPendingWords() {
@@ -139,7 +208,8 @@ async function requestJson(url, options = {}) {
     try {
       const response = await fetch(`${API_BASES[index]}${url}`, {
         headers,
-        method: options.method || "GET"
+        method: options.method || "GET",
+        body: options.body
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
@@ -196,4 +266,9 @@ function redirectToLogin() {
 function setStatus(message, isError = false) {
   elements.copyStatus.textContent = message;
   elements.copyStatus.classList.toggle("error", isError);
+}
+
+function setProcessingStatus(message, isError = false) {
+  elements.processingStatus.textContent = message;
+  elements.processingStatus.classList.toggle("error", isError);
 }

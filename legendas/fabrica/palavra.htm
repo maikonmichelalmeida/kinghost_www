@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <title>Processar vocabulario</title>
-    <link rel="stylesheet" href="palavra.css?v=20260622-pending-vocabulary">
+    <link rel="stylesheet" href="palavra.css?v=20260622-vocabulary-processing">
   </head>
   <body>
     <main class="word-factory-shell">
@@ -51,14 +51,15 @@
       </section>
 
       <section class="workspace-section response-section" aria-labelledby="responseTitle">
-        <div class="section-heading simple-heading">
+        <div class="section-heading">
           <div>
             <span class="section-index">02</span>
             <div>
               <h2 id="responseTitle">JSON processado</h2>
-              <p>Area reservada para a proxima etapa.</p>
+              <p>Cole o retorno do processamento para atualizar o banco.</p>
             </div>
           </div>
+          <button id="processButton" class="process-button" type="button">Processar JSON</button>
         </div>
 
         <textarea
@@ -67,9 +68,11 @@
           spellcheck="false"
           placeholder="Cole futuramente aqui o JSON devolvido pelo processamento."
         ></textarea>
+        <p id="processingStatus" class="status-message" role="status" aria-live="polite"></p>
+        <div id="processingErrors" class="processing-errors" aria-label="Erros do processamento"></div>
       </section>
     </main>
 
-    <script src="palavra.js?v=20260622-pending-vocabulary"></script>
+    <script src="palavra.js?v=20260622-vocabulary-processing"></script>
   </body>
 </html>

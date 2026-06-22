@@ -1976,7 +1976,11 @@ async function prepareVocabularyStudy() {
       requireAuth: true
     });
 
-    if (result.created) {
+    if (result.resolvedFromDerivative) {
+      setStatus(`"${result.requestedWriting}" foi reconhecida como derivacao de "${result.vocabulary.writing}". O estudo foi reiniciado.`);
+    } else if (result.restarted) {
+      setStatus(`"${result.vocabulary.writing}" voltou ao inicio do estudo.`);
+    } else if (result.created) {
       setStatus(`"${result.vocabulary.writing}" foi incluida no vocabulario e na fila de processamento.`);
     } else if (result.linked) {
       const queueNote = result.vocabulary.ready ? "" : " Ela aguarda processamento.";
@@ -1984,7 +1988,7 @@ async function prepareVocabularyStudy() {
     } else {
       setStatus(`"${result.vocabulary.writing}" ja esta na sua lista de estudo.`);
     }
-    showVocabularyStudyQueue(result.studyQueue, result.vocabulary.id, result.linked);
+    showVocabularyStudyQueue(result.studyQueue, result.vocabulary.id, result.linked || result.restarted);
     elements.vocabularyInput.value = "";
   } catch (error) {
     console.error(error);
