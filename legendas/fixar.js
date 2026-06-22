@@ -17,6 +17,7 @@ const elements = {
   promptText: document.getElementById("promptText"),
   translationText: document.getElementById("translationText"),
   answerForm: document.getElementById("answerForm"),
+  answerInstruction: document.getElementById("answerInstruction"),
   answerInput: document.getElementById("answerInput"),
   submitButton: document.getElementById("submitButton"),
   statusText: document.getElementById("statusText"),
@@ -141,19 +142,24 @@ function renderTraining() {
   elements.levelBadge.textContent = `Nivel ${Number(exercise.level)}`;
   elements.wordCounter.textContent = `${training.words?.length || 0} palavra(s)`;
   elements.progressFill.style.width = `${Math.min(100, answered / total * 100)}%`;
-  elements.exerciseKind.textContent = exercise.type === "meaning" ? "Descubra pela definicao" : "Complete a frase em ingles";
-  elements.exerciseContent.classList.toggle("is-meaning", exercise.type === "meaning");
-  elements.promptText.classList.toggle("is-meaning", exercise.type === "meaning");
+  const isMeaning = exercise.type === "meaning";
+  elements.exerciseKind.textContent = isMeaning ? "Descubra pela definicao" : "Complete a frase em ingles";
+  elements.exerciseContent.classList.toggle("is-meaning", isMeaning);
+  elements.promptText.classList.toggle("is-meaning", isMeaning);
   elements.promptText.style.fontSize = "";
   renderPromptParts(exercise.promptParts, exercise.prompt);
-  elements.promptText.title = exercise.type === "meaning" ? exercise.prompt : "";
-  elements.translationText.textContent = exercise.translation || "";
+  elements.promptText.title = isMeaning ? exercise.prompt : "";
+  elements.translationText.textContent = isMeaning ? "" : exercise.translation || "";
+  elements.translationText.classList.toggle("is-hidden", isMeaning);
+  elements.answerInstruction.textContent = isMeaning && exercise.translation
+    ? `(${exercise.translation})`
+    : "";
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
   elements.submitButton.disabled = true;
   setStatus("A pontuacao considera cada caractere da resposta.");
   requestAnimationFrame(() => {
-    if (exercise.type === "meaning") fitMeaningPrompt();
+    if (isMeaning) fitMeaningPrompt();
     elements.answerInput.focus();
   });
 }
