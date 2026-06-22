@@ -16,8 +16,6 @@ const elements = {
   exerciseKind: document.getElementById("exerciseKind"),
   promptText: document.getElementById("promptText"),
   translationText: document.getElementById("translationText"),
-  hintBox: document.getElementById("hintBox"),
-  hintText: document.getElementById("hintText"),
   answerForm: document.getElementById("answerForm"),
   answerInput: document.getElementById("answerInput"),
   submitButton: document.getElementById("submitButton"),
@@ -147,11 +145,9 @@ function renderTraining() {
   elements.exerciseContent.classList.toggle("is-meaning", exercise.type === "meaning");
   elements.promptText.classList.toggle("is-meaning", exercise.type === "meaning");
   elements.promptText.style.fontSize = "";
-  elements.promptText.textContent = exercise.prompt;
+  renderPromptParts(exercise.promptParts, exercise.prompt);
   elements.promptText.title = exercise.type === "meaning" ? exercise.prompt : "";
   elements.translationText.textContent = exercise.translation || "";
-  elements.hintBox.classList.toggle("is-hidden", !exercise.hint);
-  elements.hintText.textContent = exercise.hint || "";
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
   elements.submitButton.disabled = true;
@@ -159,6 +155,21 @@ function renderTraining() {
   requestAnimationFrame(() => {
     if (exercise.type === "meaning") fitMeaningPrompt();
     elements.answerInput.focus();
+  });
+}
+
+function renderPromptParts(parts, fallbackText) {
+  elements.promptText.replaceChildren();
+  const safeParts = Array.isArray(parts) && parts.length ? parts : [{ text: fallbackText || "", hint: false }];
+  safeParts.forEach((part) => {
+    if (!part?.hint) {
+      elements.promptText.append(document.createTextNode(String(part?.text || "")));
+      return;
+    }
+    const character = document.createElement("span");
+    character.className = "prompt-hint-character";
+    character.textContent = String(part.text || "");
+    elements.promptText.append(character);
   });
 }
 
