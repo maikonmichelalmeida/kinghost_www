@@ -167,6 +167,8 @@ function renderTraining() {
 
   elements.emptyPanel.classList.add("is-hidden");
   elements.trainingPanel.classList.remove("is-hidden");
+  elements.trainingPanel.classList.remove("is-feedback");
+  elements.feedbackToast.classList.remove("is-visible");
   const answered = Number(training.answeredExercises || 0);
   const total = Math.max(1, Number(training.totalExercises || training.exercises.length));
   elements.exerciseCounter.textContent = `Exercicio ${Math.min(answered + 1, total)} de ${total}`;
@@ -338,17 +340,22 @@ function showDetailedFeedback(result) {
     : result.promoted
       ? `A palavra subiu para o nivel ${result.wordLevel}.`
       : `Score atualizado de ${result.writing}.`;
+  const currentExercise = training?.exercises?.[training.currentIndex];
+  renderPromptParts(result.completedPromptParts, currentExercise?.prompt || "");
+  elements.trainingPanel.classList.add("is-feedback");
   elements.feedbackToast.classList.toggle("is-wrong", accuracy < 50);
   elements.feedbackToast.classList.add("is-visible");
   lastSpokenText = String(result.spokenText || "").trim();
   const canNarrate = elements.narrationCheckbox.checked && supportsNarration() && Boolean(lastSpokenText);
   elements.feedbackRepeatButton.classList.toggle("is-hidden", !canNarrate);
   if (canNarrate) speakFeedback(lastSpokenText);
+  if (currentExercise?.type === "meaning") requestAnimationFrame(fitMeaningPrompt);
   requestAnimationFrame(() => elements.feedbackContinueButton.focus());
 }
 
 function continueAfterFeedback() {
   window.speechSynthesis?.cancel();
+  elements.trainingPanel.classList.remove("is-feedback");
   elements.feedbackToast.classList.remove("is-visible");
   renderTraining();
 }
