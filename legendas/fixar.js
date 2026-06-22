@@ -16,6 +16,7 @@ const elements = {
   exerciseKind: document.getElementById("exerciseKind"),
   promptText: document.getElementById("promptText"),
   translationText: document.getElementById("translationText"),
+  hintBox: document.getElementById("hintBox"),
   hintText: document.getElementById("hintText"),
   answerForm: document.getElementById("answerForm"),
   answerInput: document.getElementById("answerInput"),
@@ -37,12 +38,14 @@ const elements = {
 
 let training = null;
 let submitting = false;
+let meaningFitFrame = 0;
 
 elements.answerForm.addEventListener("submit", submitAnswer);
 elements.answerInput.addEventListener("input", updateSubmitState);
 elements.refreshButton.addEventListener("click", loadTraining);
 elements.settingsForm.addEventListener("submit", saveSettings);
 elements.feedbackContinueButton.addEventListener("click", continueAfterFeedback);
+window.addEventListener("resize", scheduleMeaningFit);
 boot();
 
 async function boot() {
@@ -143,15 +146,47 @@ function renderTraining() {
   elements.exerciseKind.textContent = exercise.type === "meaning" ? "Descubra pela definicao" : "Complete a frase em ingles";
   elements.exerciseContent.classList.toggle("is-meaning", exercise.type === "meaning");
   elements.promptText.classList.toggle("is-meaning", exercise.type === "meaning");
+  elements.promptText.style.fontSize = "";
   elements.promptText.textContent = exercise.prompt;
   elements.promptText.title = exercise.type === "meaning" ? exercise.prompt : "";
   elements.translationText.textContent = exercise.translation || "";
-  elements.hintText.textContent = exercise.hint || "Sem dica";
+  elements.hintBox.classList.toggle("is-hidden", !exercise.hint);
+  elements.hintText.textContent = exercise.hint || "";
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
   elements.submitButton.disabled = true;
   setStatus("A pontuacao considera cada caractere da resposta.");
-  requestAnimationFrame(() => elements.answerInput.focus());
+  requestAnimationFrame(() => {
+    if (exercise.type === "meaning") fitMeaningPrompt();
+    elements.answerInput.focus();
+  });
+}
+
+function scheduleMeaningFit() {
+  cancelAnimationFrame(meaningFitFrame);
+  meaningFitFrame = requestAnimationFrame(fitMeaningPrompt);
+}
+
+function fitMeaningPrompt() {
+  const prompt = elements.promptText;
+  if (!prompt.classList.contains("is-meaning") || !prompt.clientWidth || !prompt.clientHeight) return;
+
+  let minimum = 9;
+  let maximum = 24;
+  let best = minimum;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const size = (minimum + maximum) / 2;
+    prompt.style.fontSize = `${size}px`;
+    const fits = prompt.scrollHeight <= prompt.clientHeight + 1 &&
+      prompt.scrollWidth <= prompt.clientWidth + 1;
+    if (fits) {
+      best = size;
+      minimum = size;
+    } else {
+      maximum = size;
+    }
+  }
+  prompt.style.fontSize = `${best}px`;
 }
 
 async function submitAnswer(event) {

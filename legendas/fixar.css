@@ -136,7 +136,10 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vh, 2.5rem); letter-spacing: 0; }
 }
 
 .exercise-content.is-meaning {
-  justify-content: center;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+  overflow: hidden;
   padding-top: 22px;
   padding-bottom: 22px;
 }
@@ -151,18 +154,19 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vh, 2.5rem); letter-spacing: 0; }
 }
 .prompt-text.is-meaning {
   width: 100%;
+  height: 100%;
+  min-height: 0;
   max-width: 100%;
   padding: 15px 17px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #10151a;
-  font-size: clamp(0.86rem, 1.8vh, 1.05rem);
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.25;
-  white-space: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
+  white-space: normal;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .translation-text {
   margin: 0;
@@ -232,15 +236,16 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vh, 2.5rem); letter-spacing: 0; }
 
 .feedback-toast {
   position: fixed;
-  left: 50%;
-  top: 50%;
+  left: auto;
+  right: 22px;
+  top: 86px;
   z-index: 20;
-  width: min(520px, calc(100% - 32px));
+  width: min(460px, calc(100% - 44px));
   padding: 22px;
-  transform: translate(-50%, -50%) scale(0.96);
+  transform: translateY(-8px) scale(0.98);
   border: 1px solid var(--mint);
   border-radius: 8px;
-  background: rgba(12, 17, 21, 0.97);
+  background: rgba(12, 17, 21, 0.9);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
   text-align: left;
   font-size: 1.12rem;
@@ -249,7 +254,7 @@ h1 { margin: 0; font-size: clamp(1.6rem, 4vh, 2.5rem); letter-spacing: 0; }
   pointer-events: none;
   transition: opacity 160ms ease, transform 160ms ease;
 }
-.feedback-toast.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+.feedback-toast.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 .feedback-toast.is-wrong { border-color: var(--danger); }
 .feedback-title { margin: 0 0 15px; color: var(--mint); font-size: 1.35rem; text-align: center; }
 .feedback-toast.is-wrong .feedback-title { color: var(--danger); }
@@ -289,4 +294,5 @@ body.is-loading .training-panel { opacity: 0.75; }
   .answer-row { grid-template-columns: 1fr; }
   .answer-row button { width: 100%; }
   .feedback-details { grid-template-columns: 1fr; }
+  .feedback-toast { top: 70px; right: 9px; width: calc(100% - 18px); padding: 16px; }
 }
