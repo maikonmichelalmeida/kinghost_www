@@ -160,8 +160,23 @@ function renderTraining() {
 
 function renderPromptParts(parts, fallbackText) {
   elements.promptText.replaceChildren();
-  const safeParts = Array.isArray(parts) && parts.length ? parts : [{ text: fallbackText || "", hint: false }];
+  const safeParts = Array.isArray(parts) && parts.length ? parts : [{ type: "text", text: fallbackText || "" }];
   safeParts.forEach((part) => {
+    if (part?.type === "slot" && Array.isArray(part.characters)) {
+      const slot = document.createElement("span");
+      slot.className = "prompt-answer-slot";
+      slot.setAttribute("aria-label", `lacuna de ${part.expectedLength || part.characters.length} caracteres`);
+      part.characters.forEach((item) => {
+        const character = document.createElement("span");
+        character.className = item?.hint
+          ? "prompt-slot-character prompt-hint-character"
+          : "prompt-slot-character";
+        character.textContent = String(item?.text || "_");
+        slot.append(character);
+      });
+      elements.promptText.append(slot);
+      return;
+    }
     if (!part?.hint) {
       elements.promptText.append(document.createTextNode(String(part?.text || "")));
       return;
