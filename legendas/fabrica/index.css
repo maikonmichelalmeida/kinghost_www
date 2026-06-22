@@ -77,6 +77,17 @@ button:hover {
   background: rgba(82, 214, 181, 0.16);
 }
 
+.header-link.back-link {
+  border-color: rgba(164, 178, 198, 0.22);
+  background: rgba(164, 178, 198, 0.06);
+  color: #c5cfdd;
+}
+
+.header-link.back-link:hover {
+  border-color: rgba(164, 178, 198, 0.45);
+  background: rgba(164, 178, 198, 0.11);
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.48;

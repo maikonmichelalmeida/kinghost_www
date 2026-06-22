@@ -58,6 +58,12 @@ button:hover,
   background: #303641;
 }
 
+.page-actions .back-link {
+  border-color: rgba(164, 178, 198, 0.24);
+  background: rgba(164, 178, 198, 0.07);
+  color: #c7d0dd;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
