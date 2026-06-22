@@ -46,6 +46,22 @@ body::before {
 
 button, input { font: inherit; }
 
+.factory-vocabulary-link {
+  position: fixed;
+  left: 50%;
+  bottom: 3px;
+  z-index: 40;
+  transform: translateX(-50%);
+  color: rgba(190, 201, 214, 0.4);
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 150ms ease;
+}
+.factory-vocabulary-link:hover,
+.factory-vocabulary-link:focus-visible { color: var(--mint); outline: none; }
+
 .training-shell {
   width: min(1180px, calc(100% - 32px));
   height: 100vh;
