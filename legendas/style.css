@@ -203,6 +203,105 @@ h1 {
   color: var(--danger);
 }
 
+.vocabulary-composer {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid rgba(82, 214, 181, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(82, 214, 181, 0.1), rgba(244, 201, 93, 0.04));
+  padding: 10px;
+}
+
+.vocabulary-composer label {
+  color: var(--accent-2);
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.vocabulary-input-row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 7px;
+  min-width: 0;
+}
+
+.vocabulary-input-row input {
+  grid-column: 1 / -1;
+  min-width: 0;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(7, 9, 12, 0.8);
+  color: var(--text);
+  padding: 0 11px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.vocabulary-input-row input::placeholder {
+  color: var(--soft);
+}
+
+.vocabulary-input-row input:focus {
+  border-color: rgba(82, 214, 181, 0.72);
+  box-shadow: 0 0 0 3px rgba(82, 214, 181, 0.12);
+}
+
+.vocabulary-input-row button {
+  min-height: 42px;
+  padding-inline: 12px;
+}
+
+.wildcard-button {
+  grid-column: 1;
+  color: var(--accent);
+  font-size: 1.28rem;
+  font-weight: 900;
+}
+
+.study-vocabulary-button:not(:disabled) {
+  border-color: rgba(82, 214, 181, 0.42);
+  background: rgba(82, 214, 181, 0.16);
+  color: var(--accent-2);
+  font-weight: 850;
+}
+
+.study-vocabulary-button {
+  grid-column: 2;
+}
+
+.vocabulary-composer[aria-busy="true"] {
+  border-color: rgba(244, 201, 93, 0.42);
+}
+
+.caption-word {
+  display: inline;
+  min-height: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-shadow: inherit;
+  vertical-align: baseline;
+}
+
+.caption-word:hover,
+.caption-word:focus-visible {
+  background: rgba(82, 214, 181, 0.14);
+  color: var(--accent-2);
+  outline: 2px solid rgba(82, 214, 181, 0.34);
+  outline-offset: 1px;
+}
+
+.caption-word:active {
+  transform: none;
+}
+
 .study-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto auto;
@@ -961,13 +1060,14 @@ h1 {
 
   .brand-row,
   .lesson-picker,
+  .vocabulary-composer,
   .status-message {
     grid-column: 1;
   }
 
   .player-frame {
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1 / span 4;
   }
 
   .study-panel {

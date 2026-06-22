@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Shadowing Player</title>
-    <link rel="stylesheet" href="style.css?v=20260621-user-login">
+    <link rel="stylesheet" href="style.css?v=20260621-vocabulary-study">
   </head>
   <body class="auth-pending">
     <main class="app-shell">
@@ -32,6 +32,27 @@
           <div class="player-frame">
             <div id="player"></div>
             <div id="playerPlaceholder" class="player-placeholder">YouTube</div>
+          </div>
+
+          <div id="vocabularyComposer" class="vocabulary-composer" aria-label="Montar palavra ou expressao para estudar">
+            <label for="vocabularyInput">Palavra ou expressao</label>
+            <div class="vocabulary-input-row">
+              <input
+                id="vocabularyInput"
+                type="text"
+                autocomplete="off"
+                placeholder="Clique nas palavras da legenda"
+              >
+              <button
+                id="wildcardButton"
+                class="wildcard-button"
+                type="button"
+                title="Inserir coringa (Espaco)"
+                aria-label="Inserir coringa"
+                disabled
+              >*</button>
+              <button id="studyVocabularyButton" class="study-vocabulary-button" type="button" disabled>Estudar</button>
+            </div>
           </div>
 
           <p id="statusMessage" class="status-message" role="status">
@@ -160,6 +181,6 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260621-db-context"></script>
+    <script src="app.js?v=20260621-vocabulary-study"></script>
   </body>
 </html>

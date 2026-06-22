@@ -30,6 +30,7 @@ let contextSaveTimer = null;
 let isRestoringLessonContext = false;
 let remoteUserContext = null;
 let contextSavePromise = Promise.resolve();
+let isSubmittingVocabulary = false;
 
 const USER_TOKEN_KEY = "shadowing_user_token";
 const LEGACY_CONTEXT_PREFIX = "shadowingLessonContext:";
@@ -61,6 +62,10 @@ const elements = {
   quizFeedback: document.getElementById("quizFeedback"),
   statusMessage: document.getElementById("statusMessage"),
   playerFrame: document.querySelector(".player-frame"),
+  vocabularyComposer: document.getElementById("vocabularyComposer"),
+  vocabularyInput: document.getElementById("vocabularyInput"),
+  wildcardButton: document.getElementById("wildcardButton"),
+  studyVocabularyButton: document.getElementById("studyVocabularyButton"),
   blockList: document.getElementById("blockList"),
   blockCount: document.getElementById("blockCount"),
   blockProgressRange: document.getElementById("blockProgressRange"),
@@ -98,6 +103,23 @@ elements.loadLessonButton.addEventListener("click", () => {
   }
 });
 elements.refreshLessonsButton.addEventListener("click", loadAvailableLessons);
+
+elements.originalText.addEventListener("click", (event) => {
+  const wordButton = event.target.closest(".caption-word");
+  if (wordButton && appMode === "study") {
+    appendVocabularyPart(wordButton.dataset.word || wordButton.textContent);
+  }
+});
+elements.vocabularyInput.addEventListener("input", updateVocabularyComposer);
+elements.vocabularyInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !elements.studyVocabularyButton.disabled) {
+    event.preventDefault();
+    prepareVocabularyStudy();
+  }
+});
+elements.wildcardButton.addEventListener("click", insertVocabularyWildcard);
+elements.studyVocabularyButton.addEventListener("click", prepareVocabularyStudy);
+document.addEventListener("keydown", handleVocabularyShortcut);
 
 elements.playPauseButton.addEventListener("click", togglePlayPause);
 elements.repeatButton.addEventListener("click", repeatCurrentBlock);
@@ -317,6 +339,7 @@ async function loadLessonText(text, label = "aula", options = {}) {
   quizDraftAnswers = {};
   quizOptionOrders = {};
   pendingPlayerSeekSeconds = null;
+  clearVocabularyComposer();
   elements.autoPauseToggle.checked = true;
   elements.translationToggle.checked = true;
   elements.notesToggle.checked = true;
@@ -986,6 +1009,7 @@ function renderModeShell() {
   elements.translationToggle.classList.toggle("is-hidden", isQuiz);
   elements.translationToggle.closest("label").classList.toggle("is-hidden", isQuiz);
   elements.notesToggle.closest("label").classList.toggle("is-hidden", isQuiz);
+  elements.vocabularyComposer.classList.toggle("is-hidden", isQuiz);
 }
 
 function updateModeControls() {
@@ -1812,7 +1836,7 @@ function showBlock(index) {
   elements.previousOriginalText.textContent = previousBlock
     ? makeContextSnippet(previousBlock.original, "tail")
     : "";
-  elements.originalText.textContent = block.original;
+  renderClickableOriginalText(block.original);
   elements.nextOriginalText.textContent = nextBlock ? makeContextSnippet(nextBlock.original, "head") : "";
   elements.translationText.textContent = block.translation;
   elements.notesText.innerHTML = formatNotesHtml(block.notes);
@@ -1827,6 +1851,143 @@ function showBlock(index) {
   }
   requestAnimationFrame(fitCaptionToStage);
   scheduleLessonContextSave();
+}
+
+function renderClickableOriginalText(text) {
+  elements.originalText.replaceChildren();
+  const source = String(text || "");
+  const wordPattern = /[\p{L}\p{N}]+(?:['\u2019-][\p{L}\p{N}]+)*/gu;
+  let cursor = 0;
+
+  for (const match of source.matchAll(wordPattern)) {
+    if (match.index > cursor) {
+      elements.originalText.append(document.createTextNode(source.slice(cursor, match.index)));
+    }
+
+    const word = match[0];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "caption-word";
+    button.dataset.word = word;
+    button.textContent = word;
+    button.title = `Adicionar "${word}"`;
+    elements.originalText.append(button);
+    cursor = match.index + word.length;
+  }
+
+  if (cursor < source.length) {
+    elements.originalText.append(document.createTextNode(source.slice(cursor)));
+  }
+}
+
+function appendVocabularyPart(part) {
+  const normalizedPart = String(part || "").trim();
+  if (!normalizedPart || appMode !== "study") {
+    return;
+  }
+
+  const current = elements.vocabularyInput.value.trim();
+  elements.vocabularyInput.value = current ? `${current} ${normalizedPart}` : normalizedPart;
+  moveVocabularyCursorToEnd();
+  updateVocabularyComposer();
+}
+
+function insertVocabularyWildcard() {
+  if (elements.wildcardButton.disabled || appMode !== "study") {
+    return;
+  }
+
+  const input = elements.vocabularyInput;
+  const start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length;
+  const end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : start;
+  const before = input.value.slice(0, start).trimEnd();
+  const after = input.value.slice(end).trimStart();
+  input.value = [before, "*", after].filter(Boolean).join(" ");
+  const wildcardPosition = input.value.indexOf("*", Math.max(0, before.length));
+  input.focus({ preventScroll: true });
+  input.setSelectionRange(wildcardPosition + 1, wildcardPosition + 1);
+  updateVocabularyComposer();
+}
+
+function updateVocabularyComposer() {
+  const hasContent = Boolean(elements.vocabularyInput.value.trim());
+  const disabled = !hasContent || appMode !== "study" || isSubmittingVocabulary;
+  elements.vocabularyInput.disabled = isSubmittingVocabulary;
+  elements.wildcardButton.disabled = disabled;
+  elements.studyVocabularyButton.disabled = disabled;
+}
+
+function clearVocabularyComposer() {
+  elements.vocabularyInput.value = "";
+  updateVocabularyComposer();
+}
+
+function moveVocabularyCursorToEnd() {
+  elements.vocabularyInput.focus({ preventScroll: true });
+  const end = elements.vocabularyInput.value.length;
+  elements.vocabularyInput.setSelectionRange(end, end);
+}
+
+function handleVocabularyShortcut(event) {
+  if (appMode !== "study" || event.defaultPrevented || event.repeat) {
+    return;
+  }
+
+  const target = event.target;
+  const isEditable = target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable;
+  if (isEditable) {
+    return;
+  }
+
+  if (event.code === "Space" && !elements.wildcardButton.disabled) {
+    event.preventDefault();
+    insertVocabularyWildcard();
+  } else if (event.key === "Enter" && !elements.studyVocabularyButton.disabled) {
+    event.preventDefault();
+    prepareVocabularyStudy();
+  }
+}
+
+async function prepareVocabularyStudy() {
+  const expression = elements.vocabularyInput.value.trim();
+  if (!expression || appMode !== "study" || isSubmittingVocabulary) {
+    return;
+  }
+
+  isSubmittingVocabulary = true;
+  elements.vocabularyComposer.setAttribute("aria-busy", "true");
+  elements.studyVocabularyButton.textContent = "Salvando...";
+  updateVocabularyComposer();
+
+  try {
+    const result = await requestJson("/api/user/vocabulary", {
+      method: "POST",
+      body: JSON.stringify({ writing: expression }),
+      requireAuth: true
+    });
+
+    if (result.created) {
+      setStatus(`"${result.vocabulary.writing}" foi incluida no vocabulario e na fila de processamento.`);
+    } else if (result.linked) {
+      const queueNote = result.vocabulary.ready ? "" : " Ela aguarda processamento.";
+      setStatus(`"${result.vocabulary.writing}" foi adicionada à sua lista de estudo.${queueNote}`);
+    } else {
+      setStatus(`"${result.vocabulary.writing}" ja esta na sua lista de estudo.`);
+    }
+    elements.vocabularyInput.value = "";
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Nao foi possivel adicionar a palavra ao estudo.", true);
+  } finally {
+    isSubmittingVocabulary = false;
+    elements.vocabularyComposer.removeAttribute("aria-busy");
+    elements.studyVocabularyButton.textContent = "Estudar";
+    updateVocabularyComposer();
+    elements.vocabularyInput.focus({ preventScroll: true });
+  }
 }
 
 function playBlock(index) {
