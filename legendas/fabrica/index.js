@@ -81,6 +81,9 @@ async function boot() {
 
   try {
     await requestJson("/api/session");
+    if (redirectToRequestedPage()) {
+      return;
+    }
     showFactory();
     await loadLessons();
   } catch {
@@ -105,6 +108,9 @@ async function login() {
     });
     localStorage.setItem(TOKEN_KEY, data.token);
     elements.passwordInput.value = "";
+    if (redirectToRequestedPage()) {
+      return;
+    }
     showFactory();
     await loadLessons();
   } catch (error) {
@@ -302,6 +308,15 @@ function updateEditorState(title = "") {
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+function redirectToRequestedPage() {
+  const requestedPage = new URLSearchParams(location.search).get("return");
+  if (requestedPage === "palavra.htm") {
+    location.replace("palavra.htm");
+    return true;
+  }
+  return false;
 }
 
 function setStatus(message, isError = false) {

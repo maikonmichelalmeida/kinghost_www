@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Processar vocabulario</title>
+    <link rel="stylesheet" href="palavra.css?v=20260622-pending-vocabulary">
+  </head>
+  <body>
+    <main class="word-factory-shell">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Shadowing · Fabrica</p>
+          <h1>Processar vocabulario</h1>
+          <p class="page-description">Prepare lotes da fila para processamento.</p>
+        </div>
+        <nav class="page-actions" aria-label="Navegacao da fabrica">
+          <a href="index.htm">Aulas</a>
+          <button id="refreshButton" type="button">Atualizar fila</button>
+          <button id="logoutButton" type="button">Sair</button>
+        </nav>
+      </header>
+
+      <section class="workspace-section pending-section" aria-labelledby="pendingTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-index">01</span>
+            <div>
+              <h2 id="pendingTitle">Palavras nao processadas</h2>
+              <p id="queueSummary">Carregando fila...</p>
+            </div>
+          </div>
+
+          <div class="copy-controls" aria-label="Copiar lote">
+            <label for="copyLimitInput">Quantidade</label>
+            <input id="copyLimitInput" type="number" min="1" max="1000" step="1" value="20" inputmode="numeric">
+            <button id="copyButton" class="primary-button" type="button" disabled>Copiar</button>
+          </div>
+        </div>
+
+        <textarea
+          id="pendingWordsOutput"
+          class="pending-output"
+          readonly
+          spellcheck="false"
+          aria-label="Palavras aguardando processamento"
+          placeholder="Nenhuma palavra aguardando processamento."
+        ></textarea>
+        <p id="copyStatus" class="status-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="workspace-section response-section" aria-labelledby="responseTitle">
+        <div class="section-heading simple-heading">
+          <div>
+            <span class="section-index">02</span>
+            <div>
+              <h2 id="responseTitle">JSON processado</h2>
+              <p>Area reservada para a proxima etapa.</p>
+            </div>
+          </div>
+        </div>
+
+        <textarea
+          id="processedJsonInput"
+          class="json-input"
+          spellcheck="false"
+          placeholder="Cole futuramente aqui o JSON devolvido pelo processamento."
+        ></textarea>
+      </section>
+    </main>
+
+    <script src="palavra.js?v=20260622-pending-vocabulary"></script>
+  </body>
+</html>
