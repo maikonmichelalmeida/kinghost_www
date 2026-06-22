@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const port = 8087;
+const port = Number(process.argv[2] || 8087);
 const root = __dirname;
 const contentTypes = {
   ".htm": "text/html; charset=utf-8",

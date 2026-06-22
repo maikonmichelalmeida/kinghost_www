@@ -28,14 +28,11 @@ let currentLessonStorageId = "";
 let pendingPlayerSeekSeconds = null;
 let contextSaveTimer = null;
 let isRestoringLessonContext = false;
+let remoteUserContext = null;
+let contextSavePromise = Promise.resolve();
 
 const USER_TOKEN_KEY = "shadowing_user_token";
-
-const STORAGE_KEYS = {
-  questionMode: "shadowingQuestionMode",
-  activeLessonId: "shadowingActiveLessonId",
-  lessonContextPrefix: "shadowingLessonContext:"
-};
+const LEGACY_CONTEXT_PREFIX = "shadowingLessonContext:";
 
 const REMOTE_API_HOST = "uergs2024.kinghost.net";
 const REMOTE_API_PORT = "21106";
@@ -89,7 +86,7 @@ window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
   setStatus("API do YouTube pronta. Escolha uma aula para comecar.");
 };
 
-loadSavedQuizPreferences();
+updateModeControls();
 bootAuthenticatedApp();
 
 elements.lessonSelect.addEventListener("change", () => {
@@ -126,7 +123,6 @@ elements.modeToggleButton.addEventListener("click", () => {
 
 elements.questionModeButton.addEventListener("click", () => {
   questionMode = questionMode === "en" ? "pt" : "en";
-  storageSet(STORAGE_KEYS.questionMode, questionMode);
   updateModeControls();
   if (appMode === "quiz") {
     renderQuizForCurrentBlock();
@@ -186,7 +182,7 @@ elements.speedRange.addEventListener("change", () => {
 });
 
 window.addEventListener("resize", debounce(fitCaptionToStage, 120));
-window.addEventListener("beforeunload", saveLessonContextNow);
+window.addEventListener("pagehide", saveLessonContextOnUnload);
 setControlsEnabled(false);
 
 async function bootAuthenticatedApp() {
@@ -204,6 +200,8 @@ async function bootAuthenticatedApp() {
 
   try {
     await requestJson("/api/user/session", { requireAuth: true });
+    await loadRemoteUserContext();
+    clearLegacyLessonContext();
     document.body.classList.remove("auth-pending");
     await loadAvailableLessons();
   } catch (error) {
@@ -221,6 +219,11 @@ function redirectToLogin() {
   const pageName = location.pathname.split("/").pop() || "index.htm";
   const returnTo = ["index.htm", "index.html"].includes(pageName) ? pageName : "index.htm";
   location.replace(`login.htm?return=${encodeURIComponent(returnTo)}`);
+}
+
+async function loadRemoteUserContext() {
+  const data = await requestJson("/api/user/context", { requireAuth: true });
+  remoteUserContext = data.context && typeof data.context === "object" ? data.context : null;
 }
 
 async function loadAvailableLessons() {
@@ -263,6 +266,10 @@ async function loadLessonFromDatabase(id) {
   const nextLessonId = String(id);
   const selected = availableLessons.find((lesson) => String(lesson.id) === String(id));
   const isSwitchingLesson = Boolean(currentLessonStorageId && currentLessonStorageId !== nextLessonId);
+  const contextToRestore =
+    !isSwitchingLesson && String(remoteUserContext?.activeLessonId || "") === nextLessonId
+      ? remoteUserContext.lessonContext
+      : null;
   elements.lessonSelect.value = nextLessonId;
   setStatus(`Carregando ${selected ? selected.title : "aula"}...`);
   elements.loadLessonButton.disabled = true;
@@ -270,10 +277,12 @@ async function loadLessonFromDatabase(id) {
   try {
     const lesson = await requestJson(`/api/public/lessons/${encodeURIComponent(id)}`);
     if (isSwitchingLesson) {
-      clearAllLessonContexts();
+      remoteUserContext = null;
     }
-    await loadLessonText(lesson.json_content, lesson.title || `Aula ${id}`, { lessonId: id });
-    storageSet(STORAGE_KEYS.activeLessonId, nextLessonId);
+    await loadLessonText(lesson.json_content, lesson.title || `Aula ${id}`, {
+      lessonId: id,
+      context: contextToRestore
+    });
   } catch (error) {
     console.error(error);
     setControlsEnabled(false);
@@ -313,7 +322,7 @@ async function loadLessonText(text, label = "aula", options = {}) {
   elements.notesToggle.checked = true;
   setTimeAnchor(0);
   rebuildQuizItems();
-  applyLessonContext(readLessonContext(currentLessonStorageId));
+  applyLessonContext(options.context);
   setAppMode(appMode);
   setPlaybackSpeed(currentPlaybackRate);
 
@@ -328,7 +337,7 @@ async function loadLessonText(text, label = "aula", options = {}) {
   showBlock(currentBlockIndex);
   setControlsEnabled(true);
   setStatus(`Aula carregada com ${lessonData.blocks.length} blocos.`);
-  saveLessonContextNow();
+  await saveLessonContextNow();
 }
 
 function parseLessonText(text) {
@@ -1347,7 +1356,7 @@ function confirmQuizAnswer() {
       isCorrect: isTypedQuestionCorrect(question, typedAnswers)
     };
     delete quizDraftAnswers[key];
-    scheduleLessonContextSave();
+    saveLessonContextNow().catch((error) => console.error("Falha ao salvar resposta:", error));
     renderQuizForCurrentBlock();
     maybeShowQuizResult();
     return;
@@ -1364,7 +1373,7 @@ function confirmQuizAnswer() {
     selectedOptionIndex,
     isCorrect: selectedOptionIndex === question.correctOptionIndex
   };
-  scheduleLessonContextSave();
+  saveLessonContextNow().catch((error) => console.error("Falha ao salvar resposta:", error));
   renderQuizForCurrentBlock();
   maybeShowQuizResult();
 }
@@ -1384,7 +1393,7 @@ function saveTypedDraft(key) {
     return;
   }
   quizDraftAnswers[key] = getTypedInputValues();
-  scheduleLessonContextSave();
+  scheduleLessonContextSave(5000);
 }
 
 function hasAllTypedInputsFilled() {
@@ -1529,14 +1538,8 @@ function moveToQuizItem(index, options = {}) {
   }
 }
 
-function loadSavedQuizPreferences() {
-  const savedQuestionMode = storageGet(STORAGE_KEYS.questionMode);
-  questionMode = savedQuestionMode === "pt" ? "pt" : "en";
-  updateModeControls();
-}
-
 async function restoreActiveLessonSelection() {
-  const activeLessonId = storageGet(STORAGE_KEYS.activeLessonId);
+  const activeLessonId = String(remoteUserContext?.activeLessonId || "");
   if (!activeLessonId || !availableLessons.some((lesson) => String(lesson.id) === activeLessonId)) {
     return false;
   }
@@ -1557,46 +1560,65 @@ function makeLessonStorageId(data, label) {
   return `local:${videoId || title || "sem-video"}`;
 }
 
-function getLessonStorageKey(lessonId) {
-  return `${STORAGE_KEYS.lessonContextPrefix}${lessonId}`;
-}
-
-function readLessonContext(lessonId) {
-  if (!lessonId) {
-    return null;
-  }
-
-  const raw = storageGet(getLessonStorageKey(lessonId));
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function scheduleLessonContextSave() {
+function scheduleLessonContextSave(delay = 2000) {
   if (isRestoringLessonContext || !lessonData || !currentLessonStorageId) {
     return;
   }
 
   clearTimeout(contextSaveTimer);
-  contextSaveTimer = setTimeout(saveLessonContextNow, 250);
+  contextSaveTimer = setTimeout(() => {
+    saveLessonContextNow().catch((error) => console.error("Falha ao salvar contexto:", error));
+  }, delay);
 }
 
-function saveLessonContextNow() {
+async function saveLessonContextNow() {
   if (!lessonData || !currentLessonStorageId) {
     return;
   }
 
   clearTimeout(contextSaveTimer);
-  const context = createLessonContextSnapshot();
-  removeOtherLessonContexts(currentLessonStorageId);
-  storageSet(getLessonStorageKey(currentLessonStorageId), JSON.stringify(context));
-  storageSet(STORAGE_KEYS.activeLessonId, currentLessonStorageId);
+  const context = createRemoteUserContext();
+  remoteUserContext = context;
+  contextSavePromise = contextSavePromise
+    .catch(() => undefined)
+    .then(() =>
+      requestJson("/api/user/context", {
+        method: "PUT",
+        body: JSON.stringify({ context }),
+        requireAuth: true
+      })
+    );
+  await contextSavePromise;
+}
+
+function saveLessonContextOnUnload() {
+  if (!lessonData || !currentLessonStorageId) {
+    return;
+  }
+
+  const token = storageGet(USER_TOKEN_KEY);
+  if (!token) {
+    return;
+  }
+
+  const apiBase = API_BASES[0] || "";
+  fetch(`${apiBase}/api/user/context`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ context: createRemoteUserContext() }),
+    keepalive: true
+  }).catch(() => undefined);
+}
+
+function createRemoteUserContext() {
+  return {
+    version: 1,
+    activeLessonId: currentLessonStorageId,
+    lessonContext: createLessonContextSnapshot()
+  };
 }
 
 function createLessonContextSnapshot() {
@@ -1739,16 +1761,6 @@ function storageGet(key) {
   }
 }
 
-function storageSet(key, value) {
-  try {
-    if (window.localStorage) {
-      window.localStorage.setItem(key, value);
-    }
-  } catch {
-    // Prefer keeping the app usable even if storage is unavailable.
-  }
-}
-
 function storageRemove(key) {
   try {
     if (window.localStorage) {
@@ -1759,12 +1771,7 @@ function storageRemove(key) {
   }
 }
 
-function clearAllLessonContexts() {
-  removeOtherLessonContexts("");
-  storageRemove(STORAGE_KEYS.activeLessonId);
-}
-
-function removeOtherLessonContexts(lessonIdToKeep) {
+function clearLegacyLessonContext() {
   try {
     if (!window.localStorage) {
       return;
@@ -1775,8 +1782,9 @@ function removeOtherLessonContexts(lessonIdToKeep) {
       const key = window.localStorage.key(index);
       if (
         key &&
-        key.startsWith(STORAGE_KEYS.lessonContextPrefix) &&
-        key !== getLessonStorageKey(lessonIdToKeep)
+        (key.startsWith(LEGACY_CONTEXT_PREFIX) ||
+          key === "shadowingActiveLessonId" ||
+          key === "shadowingQuestionMode")
       ) {
         keysToRemove.push(key);
       }
@@ -1927,7 +1935,6 @@ function setPlaybackSpeed(rate) {
 
   elements.speedRange.value = String(normalizedRate);
   elements.speedValue.textContent = `${formatRate(normalizedRate)}x`;
-  scheduleLessonContextSave();
 }
 
 function setTimeAnchor(seconds) {
