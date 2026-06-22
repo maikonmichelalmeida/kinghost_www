@@ -102,7 +102,7 @@ function setStatus(message, isError = false) {
 
 function redirectToApp() {
   const returnTarget = new URLSearchParams(location.search).get("return");
-  const safeTarget = ["index.htm", "index.html"].includes(returnTarget) ? returnTarget : "index.htm";
+  const safeTarget = ["index.htm", "index.html", "fixar.htm"].includes(returnTarget) ? returnTarget : "index.htm";
   location.replace(safeTarget);
 }
 

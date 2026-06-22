@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <title>Fixar vocabulario</title>
+    <link rel="stylesheet" href="fixar.css?v=20260622-01">
+  </head>
+  <body class="is-loading">
+    <main class="training-shell">
+      <header class="training-header">
+        <div>
+          <p class="eyebrow">Treino de vocabulario</p>
+          <h1>Fixar</h1>
+        </div>
+        <div class="header-actions">
+          <a href="index.htm" class="quiet-link">Voltar ao estudo</a>
+          <button id="refreshButton" class="icon-button" type="button" title="Atualizar treino" aria-label="Atualizar treino">&#8635;</button>
+        </div>
+      </header>
+
+      <section id="trainingPanel" class="training-panel" aria-live="polite">
+        <div class="progress-row">
+          <div>
+            <span id="exerciseCounter" class="exercise-counter">Preparando treino</span>
+            <span id="levelBadge" class="level-badge">Nivel --</span>
+          </div>
+          <span id="wordCounter" class="word-counter">-- palavras</span>
+        </div>
+        <div class="progress-track" aria-hidden="true"><span id="progressFill"></span></div>
+
+        <div id="exerciseContent" class="exercise-content">
+          <p id="exerciseKind" class="exercise-kind">Carregando</p>
+          <div id="promptText" class="prompt-text">Buscando seu contexto no banco...</div>
+          <p id="translationText" class="translation-text"></p>
+        </div>
+
+        <div id="hintBox" class="hint-box">
+          <span>Dica</span>
+          <strong id="hintText">_ _ _ _</strong>
+        </div>
+
+        <form id="answerForm" class="answer-dock" autocomplete="off">
+          <label for="answerInput">Sua resposta</label>
+          <div class="answer-row">
+            <input id="answerInput" type="text" spellcheck="false" autocapitalize="none" disabled>
+            <button id="submitButton" type="submit" disabled>Confirmar</button>
+          </div>
+          <p id="statusText" class="status-text" role="status"></p>
+        </form>
+      </section>
+
+      <section id="emptyPanel" class="state-panel is-hidden">
+        <h2 id="stateTitle">Nenhum exercicio disponivel</h2>
+        <p id="stateMessage">As palavras precisam estar processadas e dentro do periodo de revisao.</p>
+        <a href="index.htm" class="primary-link">Voltar ao estudo</a>
+      </section>
+    </main>
+
+    <div id="feedbackToast" class="feedback-toast" role="status" aria-live="assertive"></div>
+    <script src="fixar.js?v=20260622-01"></script>
+  </body>
+</html>
