@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Fixar vocabulario</title>
-    <link rel="stylesheet" href="fixar.css?v=20260622-01">
+    <link rel="stylesheet" href="fixar.css?v=20260622-02">
   </head>
   <body class="is-loading">
     <main class="training-shell">
@@ -15,7 +15,12 @@
           <h1>Fixar</h1>
         </div>
         <div class="header-actions">
-          <a href="index.htm" class="quiet-link">Voltar ao estudo</a>
+          <form id="settingsForm" class="daily-settings" autocomplete="off">
+            <label for="wordsPerDayInput">Palavras por nivel</label>
+            <input id="wordsPerDayInput" type="number" min="1" max="50" step="1" value="5">
+            <button id="saveSettingsButton" type="submit">Salvar</button>
+          </form>
+          <a href="./index.htm" class="quiet-link">Voltar para legendas</a>
           <button id="refreshButton" class="icon-button" type="button" title="Atualizar treino" aria-label="Atualizar treino">&#8635;</button>
         </div>
       </header>
@@ -54,11 +59,21 @@
       <section id="emptyPanel" class="state-panel is-hidden">
         <h2 id="stateTitle">Nenhum exercicio disponivel</h2>
         <p id="stateMessage">As palavras precisam estar processadas e dentro do periodo de revisao.</p>
-        <a href="index.htm" class="primary-link">Voltar ao estudo</a>
+        <a href="./index.htm" class="primary-link">Voltar para legendas</a>
       </section>
     </main>
 
-    <div id="feedbackToast" class="feedback-toast" role="status" aria-live="assertive"></div>
-    <script src="fixar.js?v=20260622-01"></script>
+    <section id="feedbackToast" class="feedback-toast" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+      <p id="feedbackTitle" class="feedback-title">Resultado</p>
+      <dl class="feedback-details">
+        <div><dt>Voce digitou</dt><dd id="feedbackTyped">--</dd></div>
+        <div><dt>Resposta</dt><dd id="feedbackCorrect">--</dd></div>
+        <div><dt>Pontos</dt><dd id="feedbackPoints">--</dd></div>
+        <div><dt>Score atual</dt><dd id="feedbackScore">--</dd></div>
+      </dl>
+      <p id="feedbackMessage" class="feedback-message"></p>
+      <button id="feedbackContinueButton" type="button">Proximo exercicio</button>
+    </section>
+    <script src="fixar.js?v=20260622-02"></script>
   </body>
 </html>

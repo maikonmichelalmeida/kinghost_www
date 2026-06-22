@@ -111,6 +111,12 @@ button:disabled {
 
 .fixar-shortcut {
   align-self: flex-start;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(73, 223, 193, 0.38);
+  border-radius: 5px;
   color: var(--accent, #49dfc1);
   text-decoration: none;
   font-size: 0.82rem;

@@ -12,6 +12,7 @@ const elements = {
   levelBadge: document.getElementById("levelBadge"),
   wordCounter: document.getElementById("wordCounter"),
   progressFill: document.getElementById("progressFill"),
+  exerciseContent: document.getElementById("exerciseContent"),
   exerciseKind: document.getElementById("exerciseKind"),
   promptText: document.getElementById("promptText"),
   translationText: document.getElementById("translationText"),
@@ -21,7 +22,17 @@ const elements = {
   submitButton: document.getElementById("submitButton"),
   statusText: document.getElementById("statusText"),
   refreshButton: document.getElementById("refreshButton"),
-  feedbackToast: document.getElementById("feedbackToast")
+  feedbackToast: document.getElementById("feedbackToast"),
+  feedbackTitle: document.getElementById("feedbackTitle"),
+  feedbackTyped: document.getElementById("feedbackTyped"),
+  feedbackCorrect: document.getElementById("feedbackCorrect"),
+  feedbackPoints: document.getElementById("feedbackPoints"),
+  feedbackScore: document.getElementById("feedbackScore"),
+  feedbackMessage: document.getElementById("feedbackMessage"),
+  feedbackContinueButton: document.getElementById("feedbackContinueButton"),
+  settingsForm: document.getElementById("settingsForm"),
+  wordsPerDayInput: document.getElementById("wordsPerDayInput"),
+  saveSettingsButton: document.getElementById("saveSettingsButton")
 };
 
 let training = null;
@@ -30,6 +41,8 @@ let submitting = false;
 elements.answerForm.addEventListener("submit", submitAnswer);
 elements.answerInput.addEventListener("input", updateSubmitState);
 elements.refreshButton.addEventListener("click", loadTraining);
+elements.settingsForm.addEventListener("submit", saveSettings);
+elements.feedbackContinueButton.addEventListener("click", continueAfterFeedback);
 boot();
 
 async function boot() {
@@ -39,6 +52,7 @@ async function boot() {
   }
   try {
     await requestJson("/api/user/session");
+    await loadSettings();
     await loadTraining();
   } catch (error) {
     if (error.status === 401) {
@@ -71,6 +85,36 @@ async function loadTraining() {
   }
 }
 
+async function loadSettings() {
+  const data = await requestJson("/api/user/vocabulary-settings");
+  elements.wordsPerDayInput.value = String(data.wordsPerDay || 5);
+}
+
+async function saveSettings(event) {
+  event.preventDefault();
+  const wordsPerDay = Number(elements.wordsPerDayInput.value);
+  if (!Number.isInteger(wordsPerDay) || wordsPerDay < 1 || wordsPerDay > 50) {
+    setStatus("Escolha entre 1 e 50 palavras por nivel.", true);
+    elements.wordsPerDayInput.focus();
+    return;
+  }
+
+  elements.saveSettingsButton.disabled = true;
+  setStatus("Salvando preferencia...");
+  try {
+    await requestJson("/api/user/vocabulary-settings", {
+      method: "PUT",
+      body: JSON.stringify({ wordsPerDay })
+    });
+    setStatus("Preferencia salva. O treino foi remontado.");
+    await loadTraining();
+  } catch (error) {
+    setStatus(error.message, true);
+  } finally {
+    elements.saveSettingsButton.disabled = false;
+  }
+}
+
 function renderTraining() {
   if (!training || training.status === "empty") {
     showState("Nenhuma revisao disponivel", "As palavras precisam estar processadas e dentro do periodo de revisao.");
@@ -93,11 +137,14 @@ function renderTraining() {
   const answered = Number(training.answeredExercises || 0);
   const total = Math.max(1, Number(training.totalExercises || training.exercises.length));
   elements.exerciseCounter.textContent = `Exercicio ${Math.min(answered + 1, total)} de ${total}`;
-  elements.levelBadge.textContent = `Nivel ${Number(exercise.level) + 1}`;
+  elements.levelBadge.textContent = `Nivel ${Number(exercise.level)}`;
   elements.wordCounter.textContent = `${training.words?.length || 0} palavra(s)`;
   elements.progressFill.style.width = `${Math.min(100, answered / total * 100)}%`;
   elements.exerciseKind.textContent = exercise.type === "meaning" ? "Descubra pela definicao" : "Complete a frase em ingles";
+  elements.exerciseContent.classList.toggle("is-meaning", exercise.type === "meaning");
+  elements.promptText.classList.toggle("is-meaning", exercise.type === "meaning");
   elements.promptText.textContent = exercise.prompt;
+  elements.promptText.title = exercise.type === "meaning" ? exercise.prompt : "";
   elements.translationText.textContent = exercise.translation || "";
   elements.hintText.textContent = exercise.hint || "Sem dica";
   elements.answerInput.value = "";
@@ -122,9 +169,8 @@ async function submitAnswer(event) {
       method: "POST",
       body: JSON.stringify({ exerciseId: exercise.id, answer })
     });
-    showFeedback(data.result);
+    showDetailedFeedback(data.result);
     training = data.training;
-    window.setTimeout(renderTraining, 1050);
   } catch (error) {
     setStatus(error.message, true);
     elements.answerInput.disabled = false;
@@ -135,16 +181,28 @@ async function submitAnswer(event) {
   }
 }
 
-function showFeedback(result) {
+function showDetailedFeedback(result) {
   const accuracy = Math.round(Number(result.accuracy || 0) * 100);
-  const excellent = accuracy === 100;
-  let suffix = `Precisao ${accuracy}% · ${formatSigned(result.delta)} pontos`;
-  if (result.graduated) suffix += " · Palavra concluida";
-  else if (result.promoted) suffix += " · Subiu de nivel";
-  elements.feedbackToast.textContent = excellent ? `Correto. ${suffix}` : `Resposta: ${result.correctAnswer}. ${suffix}`;
+  elements.feedbackTitle.textContent = accuracy === 100 ? "Resposta correta" : `Precisao de ${accuracy}%`;
+  elements.feedbackTyped.textContent = result.response || "(vazio)";
+  elements.feedbackCorrect.textContent = result.correctAnswer || "--";
+  elements.feedbackPoints.textContent = `${formatSigned(result.delta)} pontos`;
+  elements.feedbackScore.textContent = result.graduated
+    ? "Palavra concluida"
+    : `${result.wordScore} no nivel ${result.wordLevel}`;
+  elements.feedbackMessage.textContent = result.graduated
+    ? "Esta palavra saiu da sua lista de revisao."
+    : result.promoted
+      ? `A palavra subiu para o nivel ${result.wordLevel}.`
+      : `Score atualizado de ${result.writing}.`;
   elements.feedbackToast.classList.toggle("is-wrong", accuracy < 50);
   elements.feedbackToast.classList.add("is-visible");
-  window.setTimeout(() => elements.feedbackToast.classList.remove("is-visible"), 900);
+  requestAnimationFrame(() => elements.feedbackContinueButton.focus());
+}
+
+function continueAfterFeedback() {
+  elements.feedbackToast.classList.remove("is-visible");
+  renderTraining();
 }
 
 function showState(title, message) {
