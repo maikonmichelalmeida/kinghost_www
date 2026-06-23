@@ -142,6 +142,10 @@ p,
   margin-left: auto;
 }
 
+.training-preset-control select {
+  min-width: 178px;
+}
+
 .controls label span {
   min-width: 2.4rem;
   color: var(--ink);
@@ -881,10 +885,56 @@ p,
   font-size: 0.82rem;
 }
 
+.learning-diagnosis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.learning-diagnosis > div {
+  border: 1px solid #dce7df;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.learning-diagnosis > div.needs-training {
+  border-color: #f0d0c8;
+  background: #fff7f5;
+}
+
+.learning-diagnosis span,
+.learning-diagnosis em {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.learning-diagnosis strong {
+  display: block;
+  margin: 4px 0;
+  color: var(--ink);
+  font-size: 1.45rem;
+}
+
+.learning-diagnosis p {
+  grid-column: 1 / -1;
+  margin: 0;
+  border-radius: 8px;
+  background: #eef4fb;
+  color: #4b6274;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .belief-card-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .belief-card {
@@ -1016,15 +1066,21 @@ p,
 
 .belief-chart-wrap {
   position: relative;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .belief-chart {
   width: 100%;
-  height: 64px;
+  height: 92px;
   border-radius: 6px;
   background: #f3f7f4;
   border: 1px solid #e1e9e3;
+}
+
+.td-chart {
+  height: 78px;
+  background: #f8f5ef;
+  border-color: #eadfce;
 }
 
 .belief-chart line {
@@ -1038,6 +1094,30 @@ p,
   stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.td-chart polyline {
+  stroke: #b36b2c;
+}
+
+.chart-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.empty-chart-message {
+  display: grid;
+  place-items: center;
+  min-height: 76px;
+  border: 1px dashed #d9c7ba;
+  border-radius: 6px;
+  background: #fffaf5;
+  color: #9a6a47;
+  font-size: 0.76rem;
+  font-weight: 900;
 }
 
 .belief-scale {
@@ -1103,6 +1183,14 @@ p,
 
   .match-analytics-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .learning-diagnosis {
+    grid-template-columns: 1fr;
+  }
+
+  .learning-diagnosis p {
+    grid-column: auto;
   }
 
   .belief-dashboard-header {

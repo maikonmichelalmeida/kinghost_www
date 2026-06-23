@@ -14,6 +14,15 @@
           <button id="reset-results" type="button" class="secondary">Zerar resultados</button>
           <button id="train-start" type="button">Iniciar treino</button>
           <button id="train-stop" type="button" hidden>Parar treino</button>
+          <label class="training-preset-control">
+            Treino
+            <select id="training-preset">
+              <option value="keep">Usar seleção atual</option>
+              <option value="all-lobo">Todos Lobo</option>
+              <option value="lobo-a-carneiro-b">Lobo A x Carneiro B</option>
+              <option value="carneiro-a-lobo-b">Carneiro A x Lobo B</option>
+            </select>
+          </label>
           <label class="speed-control">
             Bots contra humano
             <input id="human-speed" type="range" min="0" max="100" step="1" value="50" />
@@ -160,6 +169,6 @@
       <section class="belief-dashboard" id="belief-dashboard" aria-label="Aprendizado da rede de previsão"></section>
     </main>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260623-lobo-replay-dashboard"></script>
   </body>
 </html>

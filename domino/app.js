@@ -47,6 +47,7 @@ const els = {
   resetResults: document.querySelector("#reset-results"),
   trainStart: document.querySelector("#train-start"),
   trainStop: document.querySelector("#train-stop"),
+  trainingPreset: document.querySelector("#training-preset"),
   brainSelects: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-select-${i}`)),
   newBrainButtons: [...document.querySelectorAll("[data-new-brain]")],
   humanSpeed: document.querySelector("#human-speed"),
@@ -288,7 +289,7 @@ function normalizeBeliefStats(stats = {}) {
   const hasNumberRecall = Object.prototype.hasOwnProperty.call(stats, "numberRecall");
   const hasTileRecall = Object.prototype.hasOwnProperty.call(stats, "tileRecall");
   const hasTilePrecision = Object.prototype.hasOwnProperty.call(stats, "tilePrecision");
-  const positiveMetricsReady = Boolean(stats.positiveMetricsReady || (hasNumberRecall && hasTileRecall && hasTilePrecision));
+  const positiveMetricsReady = Boolean(stats.positiveMetricsReady);
   return {
     ...createBeliefStats(),
     ...stats,
@@ -298,9 +299,9 @@ function normalizeBeliefStats(stats = {}) {
     numberAccuracy,
     tileAccuracy,
     numberPrecision: Number(stats.numberPrecision) || 0,
-    numberRecall: hasNumberRecall ? Number(stats.numberRecall) || 0 : numberAccuracy,
-    tilePrecision: hasTilePrecision ? Number(stats.tilePrecision) || 0 : tileAccuracy,
-    tileRecall: hasTileRecall ? Number(stats.tileRecall) || 0 : tileAccuracy,
+    numberRecall: positiveMetricsReady && hasNumberRecall ? Number(stats.numberRecall) || 0 : numberAccuracy,
+    tilePrecision: positiveMetricsReady && hasTilePrecision ? Number(stats.tilePrecision) || 0 : tileAccuracy,
+    tileRecall: positiveMetricsReady && hasTileRecall ? Number(stats.tileRecall) || 0 : tileAccuracy,
     positiveCloseness: Number(stats.positiveCloseness) || 0,
     positiveMetricsReady,
     closeness,
@@ -1231,12 +1232,31 @@ function restoreAgentModes(modes) {
   });
 }
 
+function applyTrainingPreset() {
+  const preset = els.trainingPreset?.value || "keep";
+  if (preset === "all-lobo") {
+    setAgentModes(["lobo", "lobo", "lobo", "lobo"]);
+  } else if (preset === "lobo-a-carneiro-b") {
+    setAgentModes(["lobo", "carneiro", "lobo", "carneiro"]);
+  } else if (preset === "carneiro-a-lobo-b") {
+    setAgentModes(["carneiro", "lobo", "carneiro", "lobo"]);
+  } else if (agentMode(0) === "human") {
+    els.agentModes[0].value = "lobo";
+  }
+}
+
+function setAgentModes(modes) {
+  modes.forEach((mode, player) => {
+    if (els.agentModes[player]) els.agentModes[player].value = mode;
+  });
+}
+
 function startTrainingMode() {
   state.agentModesBeforeTraining = currentAgentModes();
+  applyTrainingPreset();
   state.training = true;
   state.lastBrainSaveAt = Date.now();
   state.lastBrainTrainingClock = Date.now();
-  if (agentMode(0) === "human") els.agentModes[0].value = "lobo";
   syncHumanSeatFromAgents();
   startMatch();
 }
@@ -2213,6 +2233,7 @@ function render(message = "") {
   els.agentModes.forEach((select) => {
     select.disabled = state.training;
   });
+  if (els.trainingPreset) els.trainingPreset.disabled = state.training;
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
   renderBeliefDashboard();
@@ -2291,6 +2312,7 @@ function renderBeliefDashboard() {
     .sort((a, b) => b.stats.closeness - a.stats.closeness)[0];
   els.beliefDashboard.innerHTML = `
     ${matchAnalyticsHtml()}
+    ${learningDiagnosisHtml()}
     <div class="belief-dashboard-header">
       <div>
         <h2>Rede de previsão</h2>
@@ -2302,6 +2324,36 @@ function renderBeliefDashboard() {
       ${state.brains.map((brain, player) => beliefCardHtml(brain, player)).join("")}
     </div>
   `;
+}
+
+function learningDiagnosisHtml() {
+  const beliefSteps = state.brains.reduce((sum, brain) => sum + (normalizeBeliefStats(brain.beliefStats).trainSteps || 0), 0);
+  const loboSteps = state.brains.reduce((sum, brain) => sum + (normalizeLoboStats(brain.loboStats).trainSteps || 0), 0);
+  const avgCloseness = average(state.brains.map((brain) => normalizeBeliefStats(brain.beliefStats).closeness));
+  const avgTd = average(state.brains.map((brain) => normalizeLoboStats(brain.loboStats).avgTdError));
+  const loboStatus = loboSteps === 0 ? "Lobo ainda sem treino TD salvo" : "Lobo recebendo treino TD";
+  const beliefStatus = beliefSteps === 0 ? "Previsão ainda sem treino" : "Previsão treinando";
+  return `
+    <section class="learning-diagnosis" aria-label="Diagnóstico de aprendizado">
+      <div>
+        <span>${beliefStatus}</span>
+        <strong>${formatPercent(avgCloseness)}</strong>
+        <em>${beliefSteps} ajustes de previsão</em>
+      </div>
+      <div class="${loboSteps === 0 ? "needs-training" : ""}">
+        <span>${loboStatus}</span>
+        <strong>${loboSteps === 0 ? "0" : formatDecimal(avgTd)}</strong>
+        <em>${loboSteps} ajustes TD</em>
+      </div>
+      <p>${loboSteps === 0 ? "Selecione Lobo nos jogadores ou use o preset de treino com Lobo para a value network começar a aprender." : "Erro TD menor e taxa de vitória maior são os sinais principais de evolução do Lobo."}</p>
+    </section>
+  `;
+}
+
+function average(values) {
+  const valid = values.filter((value) => Number.isFinite(Number(value)));
+  if (!valid.length) return 0;
+  return valid.reduce((sum, value) => sum + Number(value), 0) / valid.length;
 }
 
 function matchAnalyticsHtml() {
@@ -2352,7 +2404,9 @@ function beliefCardHtml(brain, player) {
   const history = stats.history.length > 0 ? stats.history : [beliefHistoryPoint(stats)];
   const delta = beliefTrendDelta(stats);
   const trend = beliefTrendLabel(delta);
-  const chart = beliefSparklineData(history, "closeness");
+  const chart = beliefSparklineData(history, "closeness", 320, 92);
+  const loboHistory = Array.isArray(loboStats.history) ? loboStats.history : [];
+  const loboChart = loboHistory.length ? beliefSparklineData(loboHistory, "avgTdError", 320, 78, true) : null;
   return `
     <article class="belief-card belief-card-${player}">
       <div class="belief-card-title">
@@ -2373,17 +2427,33 @@ function beliefCardHtml(brain, player) {
       <div class="lobo-mini">
         <span>Lobo TD</span>
         <strong>erro ${formatDecimal(loboStats.avgTdError)}</strong>
-        <em>${loboStats.trainSteps || 0} ajustes · replay ${loboStats.replaySize || 0}</em>
+        <em>${loboStats.trainSteps || 0} ajustes · replay ${loboStats.replaySize || 0} · target ${loboStats.targetSyncs || 0}</em>
       </div>
       <div class="belief-chart-wrap">
-        <svg class="belief-chart" viewBox="0 0 180 62" role="img" aria-label="Evolução da proximidade J${player + 1}">
-          <line x1="4" y1="55" x2="176" y2="55"></line>
+        <span class="chart-label">Previsão: proximidade com a verdade</span>
+        <svg class="belief-chart" viewBox="0 0 320 92" role="img" aria-label="Evolução da proximidade J${player + 1}">
+          <line x1="6" y1="82" x2="314" y2="82"></line>
           <polyline points="${chart.points}"></polyline>
         </svg>
         <div class="belief-scale">
           <span>${formatPercent(chart.max)}</span>
           <span>${formatPercent(chart.min)}</span>
         </div>
+      </div>
+      <div class="belief-chart-wrap td-chart-wrap ${loboChart ? "" : "empty-chart"}">
+        <span class="chart-label">Lobo TD: estabilidade do erro</span>
+        ${
+          loboChart
+            ? `<svg class="belief-chart td-chart" viewBox="0 0 320 78" role="img" aria-label="Erro TD J${player + 1}">
+                <line x1="6" y1="68" x2="314" y2="68"></line>
+                <polyline points="${loboChart.points}"></polyline>
+              </svg>
+              <div class="belief-scale">
+                <span>${formatDecimal(loboChart.max)}</span>
+                <span>${formatDecimal(loboChart.min)}</span>
+              </div>`
+            : `<div class="empty-chart-message">Sem treino TD do Lobo ainda</div>`
+        }
       </div>
       <div class="belief-foot">
         <span>melhor ${formatPercent(stats.bestCloseness || stats.closeness)}</span>
@@ -2428,24 +2498,36 @@ function beliefTrendLabel(delta) {
   return { label: "estável", className: "belief-trend-flat" };
 }
 
-function beliefSparklineData(history, field) {
-  const values = history.map((entry) => clamp(Number(entry?.[field]) || 0, 0, 1));
+function beliefSparklineData(history, field, width = 180, height = 62, lowerIsBetter = false) {
+  const values = history.map((entry) => {
+    const value = Number(entry?.[field]);
+    if (!Number.isFinite(value)) return 0;
+    return lowerIsBetter ? Math.max(0, value) : clamp(value, 0, 1);
+  });
   const normalized = values.length > 1 ? values : [0, values[0] || 0];
   let min = Math.min(...normalized);
   let max = Math.max(...normalized);
   const padding = 0.015;
-  min = clamp(min - padding, 0, 1);
-  max = clamp(max + padding, 0, 1);
+  min = lowerIsBetter ? Math.max(0, min - padding) : clamp(min - padding, 0, 1);
+  max = lowerIsBetter ? Math.max(min + 0.001, max + padding) : clamp(max + padding, 0, 1);
   if (max - min < 0.04) {
     const middle = (max + min) / 2;
-    min = clamp(middle - 0.02, 0, 1);
-    max = clamp(middle + 0.02, 0, 1);
+    min = lowerIsBetter ? Math.max(0, middle - 0.02) : clamp(middle - 0.02, 0, 1);
+    max = lowerIsBetter ? Math.max(min + 0.04, middle + 0.02) : clamp(middle + 0.02, 0, 1);
   }
   const span = Math.max(max - min, 0.001);
+  const left = 6;
+  const right = width - 6;
+  const bottom = height - 10;
+  const top = 7;
+  const drawableWidth = right - left;
+  const drawableHeight = bottom - top;
   const points = normalized
     .map((value, index) => {
-      const x = (index / (normalized.length - 1)) * 172 + 4;
-      const y = 55 - ((clamp(value, min, max) - min) / span) * 48;
+      const x = (index / (normalized.length - 1)) * drawableWidth + left;
+      const ratio = (clamp(value, min, max) - min) / span;
+      const visualRatio = lowerIsBetter ? 1 - ratio : ratio;
+      const y = bottom - visualRatio * drawableHeight;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
