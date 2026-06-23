@@ -2081,7 +2081,9 @@ function showVocabularyStudyQueue(queue, selectedVocabularyId, isNewToUser) {
   items.forEach((entry, index) => {
     const item = document.createElement("div");
     const isSelected = Number(entry.id) === Number(selectedVocabularyId);
+    const queueLevel = Math.max(0, Math.min(3, Number(entry.level) || 0));
     item.className = "vocabulary-queue-item";
+    item.classList.add(`level-${queueLevel}`);
     item.setAttribute("role", "listitem");
     if (isSelected) {
       item.classList.add(isNewToUser ? "is-new" : "is-current");
