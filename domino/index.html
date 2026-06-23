@@ -9,67 +9,80 @@
   <body>
     <main class="app">
       <section class="controls" aria-label="Controles">
-        <button id="new-game" type="button">Nova partida</button>
-        <button id="reset-results" type="button" class="secondary">Zerar resultados</button>
-        <button id="train-start" type="button">Iniciar treino</button>
-        <button id="train-stop" type="button" hidden>Parar treino</button>
-        <div class="brain-db-controls" aria-label="Cérebros salvos">
-          <label>
-            J1 cérebro
-            <select id="brain-select-0"></select>
+        <div class="global-controls" aria-label="Parâmetros globais">
+          <button id="new-game" type="button">Nova partida</button>
+          <button id="reset-results" type="button" class="secondary">Zerar resultados</button>
+          <button id="train-start" type="button">Iniciar treino</button>
+          <button id="train-stop" type="button" hidden>Parar treino</button>
+          <label class="speed-control">
+            Bots contra humano
+            <input id="human-speed" type="range" min="0" max="100" step="1" value="50" />
+            <span id="human-speed-value">1.0s</span>
           </label>
-          <button type="button" data-new-brain="0">Incluir novo</button>
-          <label>
-            J2 cérebro
-            <select id="brain-select-1"></select>
-          </label>
-          <button type="button" data-new-brain="1">Incluir novo</button>
-          <label>
-            J3 cérebro
-            <select id="brain-select-2"></select>
-          </label>
-          <button type="button" data-new-brain="2">Incluir novo</button>
-          <label>
-            J4 cérebro
-            <select id="brain-select-3"></select>
-          </label>
-          <button type="button" data-new-brain="3">Incluir novo</button>
         </div>
-        <label class="speed-control">
-          Bots contra humano
-          <input id="human-speed" type="range" min="0" max="100" step="1" value="50" />
-          <span id="human-speed-value">1.0s</span>
-        </label>
-        <div class="agent-controls" aria-label="Agentes">
-          <label>
-            J1
-            <select id="agent-0">
-              <option value="trained">Bot treinado</option>
-              <option value="random">Aleatório</option>
-              <option value="human">Humano</option>
-            </select>
-          </label>
-          <label>
-            J2
-            <select id="agent-1">
-              <option value="trained">Bot treinado</option>
-              <option value="random">Aleatório</option>
-            </select>
-          </label>
-          <label>
-            J3
-            <select id="agent-2">
-              <option value="trained">Bot treinado</option>
-              <option value="random">Aleatório</option>
-            </select>
-          </label>
-          <label>
-            J4
-            <select id="agent-3">
-              <option value="trained">Bot treinado</option>
-              <option value="random">Aleatório</option>
-            </select>
-          </label>
+        <div class="player-config" aria-label="Configuração dos jogadores">
+          <table class="player-config-table">
+            <thead>
+              <tr>
+                <th>Jogador</th>
+                <th>Cérebro</th>
+                <th>Novo</th>
+                <th>Agente</th>
+                <th>Treinos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="player-config-row player-config-0">
+                <th scope="row">J1</th>
+                <td><select id="brain-select-0"></select></td>
+                <td><button type="button" data-new-brain="0">Incluir novo</button></td>
+                <td>
+                  <select id="agent-0">
+                    <option value="trained">Bot treinado</option>
+                    <option value="random">Aleatório</option>
+                    <option value="human">Humano</option>
+                  </select>
+                </td>
+                <td><span class="brain-stat" id="brain-stat-0"><strong id="brain-0">0</strong></span></td>
+              </tr>
+              <tr class="player-config-row player-config-1">
+                <th scope="row">J2</th>
+                <td><select id="brain-select-1"></select></td>
+                <td><button type="button" data-new-brain="1">Incluir novo</button></td>
+                <td>
+                  <select id="agent-1">
+                    <option value="trained">Bot treinado</option>
+                    <option value="random">Aleatório</option>
+                  </select>
+                </td>
+                <td><span class="brain-stat" id="brain-stat-1"><strong id="brain-1">0</strong></span></td>
+              </tr>
+              <tr class="player-config-row player-config-2">
+                <th scope="row">J3</th>
+                <td><select id="brain-select-2"></select></td>
+                <td><button type="button" data-new-brain="2">Incluir novo</button></td>
+                <td>
+                  <select id="agent-2">
+                    <option value="trained">Bot treinado</option>
+                    <option value="random">Aleatório</option>
+                  </select>
+                </td>
+                <td><span class="brain-stat" id="brain-stat-2"><strong id="brain-2">0</strong></span></td>
+              </tr>
+              <tr class="player-config-row player-config-3">
+                <th scope="row">J4</th>
+                <td><select id="brain-select-3"></select></td>
+                <td><button type="button" data-new-brain="3">Incluir novo</button></td>
+                <td>
+                  <select id="agent-3">
+                    <option value="trained">Bot treinado</option>
+                    <option value="random">Aleatório</option>
+                  </select>
+                </td>
+                <td><span class="brain-stat" id="brain-stat-3"><strong id="brain-3">0</strong></span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <details class="reward-panel">
           <summary>Ajustes de recompensa</summary>
@@ -112,10 +125,6 @@
 
       <section class="stats" aria-label="Estatísticas">
         <span>Rodadas: <strong id="hands">0</strong></span>
-        <span class="brain-stat" id="brain-stat-0">J1 treino: <strong id="brain-0">0</strong></span>
-        <span class="brain-stat" id="brain-stat-1">J2 treino: <strong id="brain-1">0</strong></span>
-        <span class="brain-stat" id="brain-stat-2">J3 treino: <strong id="brain-2">0</strong></span>
-        <span class="brain-stat" id="brain-stat-3">J4 treino: <strong id="brain-3">0</strong></span>
       </section>
 
       <section class="scoreboard table-scoreboard" aria-label="Placar">

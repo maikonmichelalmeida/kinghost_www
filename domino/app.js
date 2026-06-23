@@ -95,6 +95,7 @@ function createBrain() {
     }),
     games: 0,
     roundsTrained: 0,
+    treinosRealizados: 0,
     generation: 0,
   };
 }
@@ -147,11 +148,13 @@ function saveRewardProfiles() {
 }
 
 function normalizeBrain(brain) {
+  const roundsTrained = Number(brain.roundsTrained ?? brain.treinosRealizados) || 0;
   return {
     ...brain,
-    games: brain.games || 0,
-    roundsTrained: brain.roundsTrained || 0,
-    generation: brain.generation || 0,
+    games: Number(brain.games) || 0,
+    roundsTrained,
+    treinosRealizados: roundsTrained,
+    generation: Number(brain.generation) || 0,
   };
 }
 
@@ -228,6 +231,7 @@ async function saveSelectedBrains(force = false) {
   const now = Date.now();
   accrueTrainingTime(now);
   if (!force && now - state.lastBrainSaveAt < BRAIN_SAVE_INTERVAL_MS) return;
+  syncBrainTrainingCounters();
   state.brainSaveInFlight = true;
   try {
     await fetchJson(DOMINO_BRAIN_API, {
@@ -246,6 +250,13 @@ async function saveSelectedBrains(force = false) {
     console.error(error);
   } finally {
     state.brainSaveInFlight = false;
+  }
+}
+
+function syncBrainTrainingCounters() {
+  for (const brain of state.brains) {
+    brain.roundsTrained = Number(brain.roundsTrained) || 0;
+    brain.treinosRealizados = brain.roundsTrained;
   }
 }
 
@@ -930,6 +941,7 @@ function trainFromHand(winnerTeam) {
   }
   for (const player of trainedPlayers) {
     state.brains[player].roundsTrained = (state.brains[player].roundsTrained || 0) + 1;
+    state.brains[player].treinosRealizados = state.brains[player].roundsTrained;
   }
 }
 
@@ -1208,8 +1220,7 @@ function renderPlayers() {
 
 function renderBrainStats() {
   for (let i = 0; i < PLAYERS; i += 1) {
-    const isTrainedBot = agentMode(i) === "trained";
-    els.brainStats[i].hidden = !isTrainedBot;
+    els.brainStats[i].hidden = false;
     els.brainCounts[i].textContent = state.brains[i].roundsTrained || 0;
   }
 }

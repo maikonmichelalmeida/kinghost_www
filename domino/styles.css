@@ -113,11 +113,11 @@ p,
 }
 
 .controls {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 10px;
-  flex-wrap: wrap;
-  padding: 8px;
+  padding: 10px;
+  background: linear-gradient(180deg, #ffffff, #f7faf7);
+  box-shadow: 0 8px 24px rgba(24, 33, 29, 0.06);
 }
 
 .controls label {
@@ -125,6 +125,17 @@ p,
   align-items: center;
   gap: 8px;
   color: var(--muted);
+}
+
+.global-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f7f4;
 }
 
 .speed-control {
@@ -183,38 +194,98 @@ p,
   font-weight: 700;
 }
 
-.agent-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.player-config {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.player-config-table {
   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 720px;
 }
 
-.brain-db-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.player-config-table th,
+.player-config-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e4ebe6;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.player-config-table thead th {
+  background: #edf4ee;
+  color: var(--muted);
+  font-size: 0.74rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.player-config-table tbody tr:last-child th,
+.player-config-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.player-config-table tbody tr {
+  background: #ffffff;
+}
+
+.player-config-table tbody tr:nth-child(even) {
+  background: #fafcfb;
+}
+
+.player-config-table tbody th[scope="row"] {
+  width: 82px;
+  color: white;
+  font-weight: 900;
+  border-left: 6px solid transparent;
+}
+
+.player-config-0 th[scope="row"] {
+  background: var(--p0);
+  border-left-color: #1d4ed8;
+}
+
+.player-config-1 th[scope="row"] {
+  background: var(--p1);
+  border-left-color: #991b1b;
+}
+
+.player-config-2 th[scope="row"] {
+  background: var(--p2);
+  border-left-color: #15803d;
+}
+
+.player-config-3 th[scope="row"] {
+  background: var(--p3);
+  border-left-color: #6b21a8;
+}
+
+.player-config-table select {
   width: 100%;
+  min-width: 132px;
 }
 
-.agent-controls label {
-  gap: 6px;
+.player-config-table button {
+  width: 100%;
+  white-space: nowrap;
+  padding-inline: 0.65rem;
 }
 
-.agent-controls select {
-  max-width: 132px;
-  padding-inline: 0.5rem;
-}
-
-.brain-db-controls label {
-  gap: 6px;
-}
-
-.brain-db-controls select {
-  max-width: 132px;
-  padding-inline: 0.5rem;
+.brain-stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 72px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f4f7f4;
+  color: var(--ink);
+  font-weight: 900;
+  padding: 0.36rem 0.62rem;
 }
 
 .reward-panel {
@@ -731,6 +802,19 @@ p,
 
   .controls input {
     flex: 1;
+  }
+
+  .global-controls {
+    align-items: stretch;
+  }
+
+  .global-controls button,
+  .speed-control {
+    width: 100%;
+  }
+
+  .speed-control {
+    margin-left: 0;
   }
 
   .reward-grid {
