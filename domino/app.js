@@ -18,7 +18,7 @@ const BELIEF_INPUT_SIZE = 165;
 const BELIEF_OUTPUT_SIZE = PLAYERS * 7 + PLAYERS * TILE_IDS.length;
 const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 96, 64, BELIEF_OUTPUT_SIZE];
 const BELIEF_LEARNING_RATE = 0.008;
-const BELIEF_HISTORY_LIMIT = 40;
+const BELIEF_HISTORY_LIMIT = 120;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
 
@@ -136,7 +136,15 @@ function createBeliefStats() {
     avgLoss: 1,
     numberAccuracy: 0,
     tileAccuracy: 0,
+    numberPrecision: 0,
+    numberRecall: 0,
+    tilePrecision: 0,
+    tileRecall: 0,
+    positiveCloseness: 0,
+    positiveMetricsReady: false,
     closeness: 0,
+    baselineCloseness: null,
+    bestCloseness: 0,
     history: [],
   };
 }
@@ -203,16 +211,62 @@ function normalizeBrain(brain) {
 }
 
 function normalizeBeliefStats(stats = {}) {
+  const normalizedHistory = Array.isArray(stats.history)
+    ? stats.history
+        .map((entry, index) => normalizeBeliefHistoryEntry(entry, index))
+        .filter(Boolean)
+        .slice(-BELIEF_HISTORY_LIMIT)
+    : [];
+  const closeness = Number(stats.closeness) || 0;
+  const historyBaseline = normalizedHistory[0]?.closeness;
+  const bestHistoryCloseness = normalizedHistory.reduce((best, entry) => Math.max(best, entry.closeness || 0), 0);
+  const numberAccuracy = Number(stats.numberAccuracy) || 0;
+  const tileAccuracy = Number(stats.tileAccuracy) || 0;
+  const hasNumberRecall = Object.prototype.hasOwnProperty.call(stats, "numberRecall");
+  const hasTileRecall = Object.prototype.hasOwnProperty.call(stats, "tileRecall");
+  const hasTilePrecision = Object.prototype.hasOwnProperty.call(stats, "tilePrecision");
+  const positiveMetricsReady = Boolean(stats.positiveMetricsReady || (hasNumberRecall && hasTileRecall && hasTilePrecision));
   return {
     ...createBeliefStats(),
     ...stats,
     trainSteps: Number(stats.trainSteps) || 0,
     lastLoss: Number.isFinite(Number(stats.lastLoss)) ? Number(stats.lastLoss) : 1,
     avgLoss: Number.isFinite(Number(stats.avgLoss)) ? Number(stats.avgLoss) : 1,
-    numberAccuracy: Number(stats.numberAccuracy) || 0,
-    tileAccuracy: Number(stats.tileAccuracy) || 0,
-    closeness: Number(stats.closeness) || 0,
-    history: Array.isArray(stats.history) ? stats.history.slice(-BELIEF_HISTORY_LIMIT) : [],
+    numberAccuracy,
+    tileAccuracy,
+    numberPrecision: Number(stats.numberPrecision) || 0,
+    numberRecall: hasNumberRecall ? Number(stats.numberRecall) || 0 : numberAccuracy,
+    tilePrecision: hasTilePrecision ? Number(stats.tilePrecision) || 0 : tileAccuracy,
+    tileRecall: hasTileRecall ? Number(stats.tileRecall) || 0 : tileAccuracy,
+    positiveCloseness: Number(stats.positiveCloseness) || 0,
+    positiveMetricsReady,
+    closeness,
+    baselineCloseness: Number.isFinite(Number(stats.baselineCloseness)) ? Number(stats.baselineCloseness) : historyBaseline ?? null,
+    bestCloseness: Math.max(Number(stats.bestCloseness) || 0, bestHistoryCloseness, closeness),
+    history: normalizedHistory,
+  };
+}
+
+function normalizeBeliefHistoryEntry(entry, index = 0) {
+  if (typeof entry === "number") {
+    return {
+      step: index,
+      closeness: clamp(entry, 0, 1),
+      avgLoss: clamp(1 - entry, 0, 1),
+      numberRecall: 0,
+      tileRecall: 0,
+      positiveCloseness: 0,
+    };
+  }
+  if (!entry || typeof entry !== "object") return null;
+  const closeness = Number(entry.closeness) || 0;
+  return {
+    step: Number(entry.step ?? index) || index,
+    closeness: clamp(closeness, 0, 1),
+    avgLoss: clamp(Number(entry.avgLoss ?? 1 - closeness) || 0, 0, 1),
+    numberRecall: clamp(Number(entry.numberRecall) || 0, 0, 1),
+    tileRecall: clamp(Number(entry.tileRecall) || 0, 0, 1),
+    positiveCloseness: clamp(Number(entry.positiveCloseness) || 0, 0, 1),
   };
 }
 
@@ -1485,21 +1539,50 @@ function beliefMetrics(output, target) {
   let absoluteError = 0;
   let numberCorrect = 0;
   let tileCorrect = 0;
+  let positiveError = 0;
+  let positiveTotal = 0;
+  const counts = {
+    number: { tp: 0, fp: 0, fn: 0 },
+    tile: { tp: 0, fp: 0, fn: 0 },
+  };
   for (let i = 0; i < output.length; i += 1) {
     absoluteError += Math.abs(output[i] - target[i]);
-    const correct = (output[i] >= 0.5) === (target[i] >= 0.5);
+    const predicted = output[i] >= 0.5;
+    const actual = target[i] >= 0.5;
+    const correct = predicted === actual;
+    const group = i < PLAYERS * 7 ? counts.number : counts.tile;
+    if (actual) {
+      positiveError += Math.abs(output[i] - target[i]);
+      positiveTotal += 1;
+    }
+    if (predicted && actual) group.tp += 1;
+    else if (predicted && !actual) group.fp += 1;
+    else if (!predicted && actual) group.fn += 1;
     if (i < PLAYERS * 7) numberCorrect += correct ? 1 : 0;
     else tileCorrect += correct ? 1 : 0;
   }
   const numberTotal = PLAYERS * 7;
   const tileTotal = PLAYERS * TILE_IDS.length;
   const mae = absoluteError / output.length;
+  const numberPrecision = safeRatio(counts.number.tp, counts.number.tp + counts.number.fp);
+  const numberRecall = safeRatio(counts.number.tp, counts.number.tp + counts.number.fn);
+  const tilePrecision = safeRatio(counts.tile.tp, counts.tile.tp + counts.tile.fp);
+  const tileRecall = safeRatio(counts.tile.tp, counts.tile.tp + counts.tile.fn);
   return {
     loss: mae,
     closeness: clamp(1 - mae, 0, 1),
     numberAccuracy: numberCorrect / numberTotal,
     tileAccuracy: tileCorrect / tileTotal,
+    numberPrecision,
+    numberRecall,
+    tilePrecision,
+    tileRecall,
+    positiveCloseness: positiveTotal ? clamp(1 - positiveError / positiveTotal, 0, 1) : 0,
   };
+}
+
+function safeRatio(numerator, denominator) {
+  return denominator > 0 ? numerator / denominator : 0;
 }
 
 function updateBeliefStats(brain, result) {
@@ -1510,9 +1593,34 @@ function updateBeliefStats(brain, result) {
   stats.avgLoss = stats.trainSteps === 1 ? result.loss : stats.avgLoss * 0.985 + result.loss * 0.015;
   stats.numberAccuracy = stats.numberAccuracy * 0.985 + result.numberAccuracy * 0.015;
   stats.tileAccuracy = stats.tileAccuracy * 0.985 + result.tileAccuracy * 0.015;
+  if (!stats.positiveMetricsReady) {
+    stats.numberPrecision = result.numberPrecision;
+    stats.numberRecall = result.numberRecall;
+    stats.tilePrecision = result.tilePrecision;
+    stats.tileRecall = result.tileRecall;
+    stats.positiveCloseness = result.positiveCloseness;
+    stats.positiveMetricsReady = true;
+  } else {
+    stats.numberPrecision = stats.numberPrecision * 0.985 + result.numberPrecision * 0.015;
+    stats.numberRecall = stats.numberRecall * 0.985 + result.numberRecall * 0.015;
+    stats.tilePrecision = stats.tilePrecision * 0.985 + result.tilePrecision * 0.015;
+    stats.tileRecall = stats.tileRecall * 0.985 + result.tileRecall * 0.015;
+    stats.positiveCloseness = stats.positiveCloseness * 0.985 + result.positiveCloseness * 0.015;
+  }
   stats.closeness = stats.closeness * 0.985 + result.closeness * 0.015;
+  if (stats.baselineCloseness === null && stats.trainSteps >= 12) {
+    stats.baselineCloseness = stats.closeness;
+  }
+  stats.bestCloseness = Math.max(stats.bestCloseness || 0, stats.closeness);
   if (stats.trainSteps % 12 === 0) {
-    stats.history.push(Number(stats.closeness.toFixed(4)));
+    stats.history.push({
+      step: stats.trainSteps,
+      closeness: Number(stats.closeness.toFixed(4)),
+      avgLoss: Number(stats.avgLoss.toFixed(4)),
+      numberRecall: Number(stats.numberRecall.toFixed(4)),
+      tileRecall: Number(stats.tileRecall.toFixed(4)),
+      positiveCloseness: Number(stats.positiveCloseness.toFixed(4)),
+    });
     stats.history = stats.history.slice(-BELIEF_HISTORY_LIMIT);
   }
 }
@@ -1804,10 +1912,16 @@ function renderBrainStats() {
 
 function renderBeliefDashboard() {
   if (!els.beliefDashboard) return;
+  const bestPlayer = state.brains
+    .map((brain, player) => ({ player, stats: normalizeBeliefStats(brain.beliefStats) }))
+    .sort((a, b) => b.stats.closeness - a.stats.closeness)[0];
   els.beliefDashboard.innerHTML = `
     <div class="belief-dashboard-header">
-      <h2>Rede de previsão</h2>
-      <span>aproximação entre probabilidade estimada e verdade revelada no fim da rodada</span>
+      <div>
+        <h2>Rede de previsão</h2>
+        <span>mede se cada cérebro está se aproximando da verdade revelada no fim da rodada</span>
+      </div>
+      <strong>${bestPlayer ? `Melhor agora: J${bestPlayer.player + 1} ${formatPercent(bestPlayer.stats.closeness)}` : ""}</strong>
     </div>
     <div class="belief-card-grid">
       ${state.brains.map((brain, player) => beliefCardHtml(brain, player)).join("")}
@@ -1817,49 +1931,112 @@ function renderBeliefDashboard() {
 
 function beliefCardHtml(brain, player) {
   const stats = normalizeBeliefStats(brain.beliefStats);
-  const history = stats.history.length > 0 ? stats.history : [stats.closeness || 0];
+  const history = stats.history.length > 0 ? stats.history : [beliefHistoryPoint(stats)];
+  const delta = beliefTrendDelta(stats);
+  const trend = beliefTrendLabel(delta);
+  const chart = beliefSparklineData(history, "closeness");
   return `
     <article class="belief-card belief-card-${player}">
       <div class="belief-card-title">
         <span class="player-chip">J${player + 1}</span>
         <strong>${escapeHtml(brainBaseName(player))}</strong>
+        <em class="${trend.className}">${trend.label}</em>
+      </div>
+      <div class="belief-headline">
+        <strong>${formatPercent(stats.closeness)}</strong>
+        <span>${formatSignedPercent(delta)} desde a base</span>
       </div>
       <div class="belief-metrics">
-        ${beliefMetricHtml("Proximidade", stats.closeness)}
-        ${beliefMetricHtml("Números", stats.numberAccuracy)}
-        ${beliefMetricHtml("Pedras", stats.tileAccuracy)}
+        ${beliefMetricHtml("Erro médio", 1 - stats.avgLoss, true)}
+        ${beliefMetricHtml("Números achados", stats.numberRecall)}
+        ${beliefMetricHtml("Pedras achadas", stats.tileRecall)}
+        ${beliefMetricHtml("Precisão pedras", stats.tilePrecision)}
       </div>
-      <svg class="belief-chart" viewBox="0 0 160 52" role="img" aria-label="Evolução da proximidade J${player + 1}">
-        <polyline points="${beliefSparklinePoints(history)}"></polyline>
-      </svg>
+      <div class="belief-chart-wrap">
+        <svg class="belief-chart" viewBox="0 0 180 62" role="img" aria-label="Evolução da proximidade J${player + 1}">
+          <line x1="4" y1="55" x2="176" y2="55"></line>
+          <polyline points="${chart.points}"></polyline>
+        </svg>
+        <div class="belief-scale">
+          <span>${formatPercent(chart.max)}</span>
+          <span>${formatPercent(chart.min)}</span>
+        </div>
+      </div>
       <div class="belief-foot">
-        <span>erro ${(stats.avgLoss || 0).toFixed(3)}</span>
+        <span>melhor ${formatPercent(stats.bestCloseness || stats.closeness)}</span>
         <span>${stats.trainSteps || 0} ajustes</span>
       </div>
     </article>
   `;
 }
 
-function beliefMetricHtml(label, value) {
+function beliefMetricHtml(label, value, alreadyCloseness = false) {
   const percent = clamp(value || 0, 0, 1) * 100;
   return `
     <div class="belief-metric">
       <span>${label}</span>
       <strong>${percent.toFixed(1)}%</strong>
-      <i style="--value:${percent}%"></i>
+      <i class="${alreadyCloseness ? "belief-bar-loss" : ""}" style="--value:${percent}%"></i>
     </div>
   `;
 }
 
-function beliefSparklinePoints(values) {
+function beliefHistoryPoint(stats) {
+  return {
+    step: stats.trainSteps || 0,
+    closeness: stats.closeness || 0,
+    avgLoss: stats.avgLoss || 1,
+    numberRecall: stats.numberRecall || 0,
+    tileRecall: stats.tileRecall || 0,
+    positiveCloseness: stats.positiveCloseness || 0,
+  };
+}
+
+function beliefTrendDelta(stats) {
+  const baseline = Number.isFinite(Number(stats.baselineCloseness))
+    ? Number(stats.baselineCloseness)
+    : Number(stats.history[0]?.closeness ?? stats.closeness ?? 0);
+  return (stats.closeness || 0) - baseline;
+}
+
+function beliefTrendLabel(delta) {
+  if (delta > 0.015) return { label: "subindo", className: "belief-trend-up" };
+  if (delta < -0.015) return { label: "caindo", className: "belief-trend-down" };
+  return { label: "estável", className: "belief-trend-flat" };
+}
+
+function beliefSparklineData(history, field) {
+  const values = history.map((entry) => clamp(Number(entry?.[field]) || 0, 0, 1));
   const normalized = values.length > 1 ? values : [0, values[0] || 0];
-  return normalized
+  let min = Math.min(...normalized);
+  let max = Math.max(...normalized);
+  const padding = 0.015;
+  min = clamp(min - padding, 0, 1);
+  max = clamp(max + padding, 0, 1);
+  if (max - min < 0.04) {
+    const middle = (max + min) / 2;
+    min = clamp(middle - 0.02, 0, 1);
+    max = clamp(middle + 0.02, 0, 1);
+  }
+  const span = Math.max(max - min, 0.001);
+  const points = normalized
     .map((value, index) => {
-      const x = (index / (normalized.length - 1)) * 154 + 3;
-      const y = 49 - clamp(value, 0, 1) * 44;
+      const x = (index / (normalized.length - 1)) * 172 + 4;
+      const y = 55 - ((clamp(value, min, max) - min) / span) * 48;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+  return { points, min, max };
+}
+
+function formatPercent(value) {
+  return `${(clamp(value || 0, 0, 1) * 100).toFixed(1)}%`;
+}
+
+function formatSignedPercent(value) {
+  const percent = (value || 0) * 100;
+  const sign = percent > 0 ? "+" : "";
+  return `${sign}${percent.toFixed(1)} p.p.`;
 }
 
 function renderRewardSliders() {
