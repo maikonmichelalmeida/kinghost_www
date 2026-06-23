@@ -1077,12 +1077,6 @@ p,
   border: 1px solid #e1e9e3;
 }
 
-.td-chart {
-  height: 86px;
-  background: #f8f5ef;
-  border-color: #eadfce;
-}
-
 .belief-chart line {
   stroke: #d6e2da;
   stroke-width: 1;
@@ -1096,27 +1090,11 @@ p,
   stroke-linejoin: round;
 }
 
-.td-chart polyline {
-  stroke: #b36b2c;
-}
-
 .chart-label {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
   font-size: 0.68rem;
-  font-weight: 900;
-}
-
-.empty-chart-message {
-  display: grid;
-  place-items: center;
-  min-height: 76px;
-  border: 1px dashed #d9c7ba;
-  border-radius: 6px;
-  background: #fffaf5;
-  color: #9a6a47;
-  font-size: 0.76rem;
   font-weight: 900;
 }
 
