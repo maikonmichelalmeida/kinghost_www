@@ -19,6 +19,8 @@ const BELIEF_INPUT_SIZE = BELIEF_CONTEXT_SIZE + PLAYERS + TILE_IDS.length;
 const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 72, 40, 1];
 const BELIEF_LEARNING_RATE = 0.008;
 const BELIEF_NEGATIVE_SAMPLE_RATIO = 2;
+const BELIEF_TILE_HISTORY_LIMIT = 2000;
+const BELIEF_CHART_WINDOW = 20;
 const MATCH_HISTORY_LIMIT = 300;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
@@ -40,8 +42,10 @@ const els = {
   resetResults: document.querySelector("#reset-results"),
   trainStart: document.querySelector("#train-start"),
   trainStop: document.querySelector("#train-stop"),
+  deleteBrain: document.querySelector("#delete-brain"),
   trainPredictionHistory: document.querySelector("#train-prediction-history"),
   revealAllHands: document.querySelector("#reveal-all-hands"),
+  showPredictionCharts: document.querySelector("#show-prediction-charts"),
   brainSelects: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-select-${i}`)),
   newBrainButtons: [...document.querySelectorAll("[data-new-brain]")],
   humanSpeed: document.querySelector("#human-speed"),
@@ -70,6 +74,8 @@ const state = {
   handsPlayed: 0,
   training: false,
   predictionTrainingEnabled: false,
+  predictionChartEnabled: false,
+  sharedPredictionLoaded: false,
   humanSeat: null,
   selectedTileId: null,
   handFinished: false,
@@ -95,6 +101,8 @@ const state = {
   matchHistory: [],
   publicSignals: createPublicSignals(),
   rewardProfiles: createRewardProfiles(),
+  sharedBelief: createBeliefNetwork(),
+  sharedBeliefStats: createBeliefStats(),
   brains: Array.from({ length: PLAYERS }, createBrain),
   brainNames: Array.from({ length: PLAYERS }, (_, i) => `${DEFAULT_BRAIN_BASE_NAME}J${i + 1}`),
   brainOptions: Array.from({ length: PLAYERS }, () => []),
@@ -144,6 +152,7 @@ function createBeliefStats() {
     tilePrecision: 0,
     tileRecall: 0,
     closeness: 0,
+    tileErrorHistory: Array.from({ length: TILE_IDS.length }, () => []),
   };
 }
 
@@ -210,6 +219,15 @@ function normalizeBrain(brain) {
 }
 
 function normalizeBeliefStats(stats = {}) {
+  const tileErrorHistory = Array.from({ length: TILE_IDS.length }, (_, index) =>
+    Array.isArray(stats.tileErrorHistory?.[index])
+      ? stats.tileErrorHistory[index]
+          .map(Number)
+          .filter(Number.isFinite)
+          .map((value) => clamp(value, 0, 1))
+          .slice(-BELIEF_TILE_HISTORY_LIMIT)
+      : [],
+  );
   return {
     ...createBeliefStats(),
     trainSteps: Number(stats.trainSteps) || 0,
@@ -219,6 +237,7 @@ function normalizeBeliefStats(stats = {}) {
     tilePrecision: Number(stats.tilePrecision) || 0,
     tileRecall: Number(stats.tileRecall) || 0,
     closeness: Number(stats.closeness) || 0,
+    tileErrorHistory,
   };
 }
 
@@ -270,6 +289,7 @@ async function initBrainsFromDatabase() {
         await loadBrainFromDatabase(player, option.baseName);
       }
     }
+    syncSharedPredictionReferences();
     render("CÃƒÂ©rebros carregados do banco.");
   } catch (error) {
     console.error(error);
@@ -292,10 +312,24 @@ async function loadBrainFromDatabase(player, baseName) {
   const payload = await fetchJson(`${DOMINO_BRAIN_API}/${player + 1}/${encodeURIComponent(safeBaseName)}`);
   const brain = normalizeBrain(payload.brain);
   if (!isValidBrain(brain)) throw new Error("CÃƒÂ©rebro incompatÃƒÂ­vel.");
+  if (!state.sharedPredictionLoaded) {
+    state.sharedBelief = brain.belief;
+    state.sharedBeliefStats = brain.beliefStats;
+    state.sharedPredictionLoaded = true;
+  }
+  brain.belief = state.sharedBelief;
+  brain.beliefStats = state.sharedBeliefStats;
   state.brains[player] = brain;
   state.brainNames[player] = payload.nome;
   state.brainTrainMs[player] = Number(payload.tempoTreino) || 0;
   renderBrainSelectors();
+}
+
+function syncSharedPredictionReferences() {
+  for (const brain of state.brains) {
+    brain.belief = state.sharedBelief;
+    brain.beliefStats = state.sharedBeliefStats;
+  }
 }
 
 async function createBrainInDatabase(player, rawName) {
@@ -309,8 +343,27 @@ async function createBrainInDatabase(player, rawName) {
   render(`CÃƒÂ©rebro ${baseName}J${player + 1} criado e carregado.`);
 }
 
+async function deleteBrainsByBaseName(rawName) {
+  const baseName = sanitizeBrainBaseName(rawName);
+  const payload = await fetchJson(`${DOMINO_BRAIN_API}/${encodeURIComponent(baseName)}`, {
+    method: "DELETE",
+    body: JSON.stringify({ confirmName: baseName }),
+  });
+  await refreshBrainOptions();
+  for (let player = 0; player < PLAYERS; player += 1) {
+    if (brainBaseName(player) !== baseName) continue;
+    const fallback =
+      state.brainOptions[player].find((item) => item.baseName === DEFAULT_BRAIN_BASE_NAME) ||
+      state.brainOptions[player][0];
+    if (fallback) await loadBrainFromDatabase(player, fallback.baseName);
+  }
+  syncSharedPredictionReferences();
+  render(`${payload.deleted || 0} cérebro(s) com o nome ${baseName} foram excluídos.`);
+}
+
 async function saveSelectedBrains(force = false) {
   if (state.brainSaveInFlight) return;
+  syncSharedPredictionReferences();
   const now = Date.now();
   accrueTrainingTime(now);
   if (!force && now - state.lastBrainSaveAt < BRAIN_SAVE_INTERVAL_MS) return;
@@ -1101,6 +1154,7 @@ function startTrainingMode() {
   forceAllAgentsTrained();
   state.training = true;
   state.predictionTrainingEnabled = Boolean(els.trainPredictionHistory?.checked);
+  state.predictionChartEnabled = state.predictionTrainingEnabled && Boolean(els.showPredictionCharts?.checked);
   state.lastBrainSaveAt = Date.now();
   state.lastBrainTrainingClock = Date.now();
   syncHumanSeatFromAgents();
@@ -1111,6 +1165,7 @@ function stopTrainingMode(restoreAgents = true) {
   saveSelectedBrains(true);
   state.training = false;
   state.predictionTrainingEnabled = false;
+  state.predictionChartEnabled = false;
   state.lastBrainTrainingClock = 0;
   if (restoreAgents) restoreAgentModes(state.agentModesBeforeTraining);
   state.agentModesBeforeTraining = null;
@@ -1430,10 +1485,10 @@ function trainBeliefFromHandHistory(history) {
   const checkHands = handsAtHistoryTurn(history, checkTurn);
   const checkSnapshot = history.turns[checkTurn].before;
   const checkMissing = activeKnownMissingVector(history, checkTurn);
+  const allResults = [];
   for (let observer = 0; observer < PLAYERS; observer += 1) {
     if (!isTrainableAgent(observer)) continue;
     const context = beliefContextForSnapshot(checkSnapshot, observer, checkHands[observer], checkMissing);
-    const results = [];
     for (let targetPlayer = 0; targetPlayer < PLAYERS; targetPlayer += 1) {
       if (targetPlayer === observer) continue;
       const prediction = predictTileOwnership(
@@ -1445,10 +1500,10 @@ function trainBeliefFromHandHistory(history) {
         checkHands[observer],
         checkMissing,
       );
-      results.push(beliefPredictionMetrics(prediction, checkHands[targetPlayer]));
+      allResults.push(beliefPredictionMetrics(prediction, checkHands[targetPlayer]));
     }
-    updateBeliefStats(state.brains[observer], mergeBeliefMetrics(results));
   }
+  updateSharedBeliefStats(mergeBeliefMetrics(allResults));
 }
 
 function isTrainableAgent(player) {
@@ -1647,10 +1702,13 @@ function beliefPredictionMetrics(prediction, actualHand) {
   let tp = 0;
   let fp = 0;
   let fn = 0;
+  const tileErrors = Array(TILE_IDS.length).fill(0);
   for (const item of prediction.tiles) {
     const target = actualIds.has(item.id) ? 1 : 0;
     const probability = clamp(item.probability, 0.000001, 0.999999);
-    absoluteError += Math.abs(item.probability - target);
+    const tileError = Math.abs(item.probability - target);
+    tileErrors[item.index] = tileError;
+    absoluteError += tileError;
     logLoss += -(target * Math.log(probability) + (1 - target) * Math.log(1 - probability));
     const predicted = item.probability >= 0.5;
     if (predicted && target) tp += 1;
@@ -1662,17 +1720,28 @@ function beliefPredictionMetrics(prediction, actualHand) {
     closeness: clamp(1 - absoluteError / TILE_IDS.length, 0, 1),
     tilePrecision: safeRatio(tp, tp + fp),
     tileRecall: safeRatio(tp, tp + fn),
+    tileErrors,
   };
 }
 
 function mergeBeliefMetrics(results) {
-  if (!results.length) return { loss: 1, closeness: 0, tilePrecision: 0, tileRecall: 0, examples: 0 };
+  if (!results.length) {
+    return {
+      loss: 1,
+      closeness: 0,
+      tilePrecision: 0,
+      tileRecall: 0,
+      examples: 0,
+      tileErrors: Array(TILE_IDS.length).fill(0),
+    };
+  }
   return {
     loss: average(results.map((result) => result.loss)),
     closeness: average(results.map((result) => result.closeness)),
     tilePrecision: average(results.map((result) => result.tilePrecision)),
     tileRecall: average(results.map((result) => result.tileRecall)),
     examples: results.length * TILE_IDS.length,
+    tileErrors: TILE_IDS.map((_, index) => average(results.map((result) => result.tileErrors[index]))),
   };
 }
 
@@ -1680,9 +1749,9 @@ function safeRatio(numerator, denominator) {
   return denominator > 0 ? numerator / denominator : 0;
 }
 
-function updateBeliefStats(brain, result) {
-  brain.beliefStats = normalizeBeliefStats(brain.beliefStats);
-  const stats = brain.beliefStats;
+function updateSharedBeliefStats(result) {
+  state.sharedBeliefStats = normalizeBeliefStats(state.sharedBeliefStats);
+  const stats = state.sharedBeliefStats;
   stats.trainSteps += 1;
   stats.examplesSeen += result.examples || 0;
   stats.lastLoss = result.loss;
@@ -1696,6 +1765,13 @@ function updateBeliefStats(brain, result) {
     stats.tileRecall = stats.tileRecall * 0.985 + result.tileRecall * 0.015;
     stats.closeness = stats.closeness * 0.985 + result.closeness * 0.015;
   }
+  if (state.predictionChartEnabled) {
+    for (let index = 0; index < TILE_IDS.length; index += 1) {
+      stats.tileErrorHistory[index].push(clamp(result.tileErrors[index] || 0, 0, 1));
+      stats.tileErrorHistory[index] = stats.tileErrorHistory[index].slice(-BELIEF_TILE_HISTORY_LIMIT);
+    }
+  }
+  syncSharedPredictionReferences();
 }
 
 function sigmoid(value) {
@@ -1926,6 +2002,8 @@ function render(message = "") {
     select.disabled = state.training;
   });
   if (els.trainPredictionHistory) els.trainPredictionHistory.disabled = state.training;
+  if (els.showPredictionCharts) els.showPredictionCharts.disabled = state.training;
+  if (els.deleteBrain) els.deleteBrain.disabled = state.training;
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
   if (!state.training) {
@@ -2051,6 +2129,7 @@ function renderBeliefDashboard() {
       </table>
     </div>
     ${predictionErrorsHtml()}
+    ${els.showPredictionCharts?.checked ? predictionChartsHtml() : ""}
     ${els.revealAllHands?.checked ? revealedHandsHtml() : ""}
   `;
 }
@@ -2091,25 +2170,103 @@ function predictionCellHtml(prediction, observer, targetPlayer) {
 }
 
 function predictionErrorsHtml() {
+  const stats = normalizeBeliefStats(state.sharedBeliefStats);
   return `
     <section class="prediction-errors" aria-label="Erro de previsão por cérebro">
-      ${state.brains
-        .map((brain, player) => {
-          const stats = normalizeBeliefStats(brain.beliefStats);
-          return `
-            <div>
-              <span class="player-chip">J${player + 1}</span>
-              <p>
-                <strong>Erro ${formatDecimal(stats.avgLoss)}</strong>
-                <small>proximidade ${formatPercent(stats.closeness)} · precisão ${formatPercent(stats.tilePrecision)} · recall ${formatPercent(stats.tileRecall)}</small>
-              </p>
-              <em>${stats.examplesSeen || 0} comparações reais</em>
-            </div>
-          `;
-        })
-        .join("")}
+      <div>
+        <span class="prediction-shared-badge">Rede compartilhada</span>
+        <p>
+          <strong>Erro ${formatDecimal(stats.avgLoss)}</strong>
+          <small>proximidade ${formatPercent(stats.closeness)} · precisão ${formatPercent(stats.tilePrecision)} · recall ${formatPercent(stats.tileRecall)}</small>
+        </p>
+        <em>${stats.examplesSeen || 0} comparações reais entre pedras e mãos</em>
+      </div>
     </section>
   `;
+}
+
+function predictionChartsHtml() {
+  const stats = normalizeBeliefStats(state.sharedBeliefStats);
+  return `
+    <section class="prediction-chart-panel" aria-label="Erro por pedra">
+      <div class="prediction-chart-header">
+        <div>
+          <h3>Erro de probabilidade por pedra</h3>
+          <span>erro absoluto, média móvel de ${BELIEF_CHART_WINDOW} medições</span>
+        </div>
+        <strong>0% ideal · 100% pior</strong>
+      </div>
+      <div class="prediction-chart-grid">
+        ${TILE_IDS.map((id, index) => predictionTileChartHtml(id, stats.tileErrorHistory[index] || [])).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function predictionTileChartHtml(id, history) {
+  const series = movingAverage(history, BELIEF_CHART_WINDOW);
+  const chart = predictionChartGeometry(series, 160, 72);
+  const tile = tileFromId(id);
+  const latest = series.length ? series[series.length - 1] : null;
+  return `
+    <article class="prediction-tile-chart">
+      <header>
+        <span class="truth-tile" title="${id}">
+          <i class="pip-${tile.a}">${tile.a}</i>
+          <i class="pip-${tile.b}">${tile.b}</i>
+        </span>
+        <strong>${latest === null ? "--" : formatPercent(latest)}</strong>
+      </header>
+      <div class="prediction-chart-canvas">
+        <svg viewBox="0 0 160 72" role="img" aria-label="Erro da pedra ${id}">
+          <line x1="5" y1="8" x2="155" y2="8"></line>
+          <line x1="5" y1="26" x2="155" y2="26"></line>
+          <line x1="5" y1="44" x2="155" y2="44"></line>
+          <line x1="5" y1="62" x2="155" y2="62"></line>
+          ${chart.points ? `<polyline points="${chart.points}"></polyline>` : ""}
+        </svg>
+        <span>${formatPercent(chart.max)}</span>
+        <span>${formatPercent(chart.min)}</span>
+      </div>
+      <small>${history.length} medições</small>
+    </article>
+  `;
+}
+
+function movingAverage(values, windowSize) {
+  if (!Array.isArray(values) || values.length === 0) return [];
+  const result = [];
+  let sum = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    sum += Number(values[index]) || 0;
+    if (index >= windowSize) sum -= Number(values[index - windowSize]) || 0;
+    result.push(sum / Math.min(index + 1, windowSize));
+  }
+  return result;
+}
+
+function predictionChartGeometry(values, width, height) {
+  if (!values.length) return { points: "", min: 0, max: 1 };
+  const recent = values.slice(-180);
+  let min = Math.min(...recent);
+  let max = Math.max(...recent);
+  const center = (min + max) / 2;
+  const span = Math.max(0.16, max - min);
+  min = clamp(center - span * 0.65, 0, 1);
+  max = clamp(center + span * 0.65, 0, 1);
+  if (max - min < 0.16) {
+    if (min === 0) max = Math.min(1, 0.16);
+    else min = Math.max(0, max - 0.16);
+  }
+  const points = recent
+    .map((value, index) => {
+      const x = recent.length === 1 ? width / 2 : 5 + (index / (recent.length - 1)) * (width - 10);
+      const ratio = (clamp(value, min, max) - min) / Math.max(0.001, max - min);
+      const y = height - 10 - ratio * (height - 18);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return { points, min, max };
 }
 
 function revealedHandsHtml() {
@@ -2492,6 +2649,25 @@ els.trainStop.addEventListener("click", () => {
   startMatch();
 });
 
+els.deleteBrain?.addEventListener("click", async () => {
+  if (state.training) return;
+  const typed = window.prompt("Digite exatamente o nome-base do cérebro que deseja excluir de J1, J2, J3 e J4:");
+  if (typed === null) return;
+  const trimmed = typed.trim();
+  const baseName = sanitizeBrainBaseName(trimmed);
+  if (!trimmed || trimmed !== baseName) {
+    render("Nome inválido. Digite exatamente o nome exibido no seletor, sem J1, J2, J3 ou J4.");
+    return;
+  }
+  if (!window.confirm(`Excluir do banco ${baseName}J1, ${baseName}J2, ${baseName}J3 e ${baseName}J4?`)) return;
+  try {
+    await deleteBrainsByBaseName(baseName);
+  } catch (error) {
+    console.error(error);
+    render(error.message || "Não foi possível excluir os cérebros.");
+  }
+});
+
 els.agentModes.forEach((select) => {
   select.addEventListener("change", () => {
     if (state.training) stopTrainingMode(false);
@@ -2544,6 +2720,10 @@ els.humanSpeed.addEventListener("input", () => {
 });
 
 els.revealAllHands?.addEventListener("change", () => {
+  if (!state.training) renderBeliefDashboard();
+});
+
+els.showPredictionCharts?.addEventListener("change", () => {
   if (!state.training) renderBeliefDashboard();
 });
 
