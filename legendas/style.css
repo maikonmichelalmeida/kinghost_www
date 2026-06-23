@@ -1156,18 +1156,18 @@ h1 {
 }
 
 .vocabulary-queue-item.level-1 {
-  gap: 5px;
-  padding: 5px 7px;
+  gap: 4px;
+  padding: 3px 5px;
 }
 
 .vocabulary-queue-item.level-2 {
-  gap: 4px;
-  padding: 4px 6px;
+  gap: 3px;
+  padding: 2px 4px;
 }
 
 .vocabulary-queue-item.level-3 {
-  gap: 4px;
-  padding: 3px 5px;
+  gap: 3px;
+  padding: 2px 3px;
 }
 
 .vocabulary-queue-item.is-new {
@@ -1196,24 +1196,24 @@ h1 {
 }
 
 .vocabulary-queue-item.level-1 .vocabulary-queue-position {
-  flex-basis: 21px;
-  width: 21px;
-  height: 21px;
-  font-size: 0.72rem;
+  flex-basis: 16px;
+  width: 16px;
+  height: 16px;
+  font-size: 0.5rem;
 }
 
 .vocabulary-queue-item.level-2 .vocabulary-queue-position {
-  flex-basis: 19px;
-  width: 19px;
-  height: 19px;
-  font-size: 0.66rem;
+  flex-basis: 14px;
+  width: 14px;
+  height: 14px;
+  font-size: 0.43rem;
 }
 
 .vocabulary-queue-item.level-3 .vocabulary-queue-position {
-  flex-basis: 17px;
-  width: 17px;
-  height: 17px;
-  font-size: 0.6rem;
+  flex-basis: 12px;
+  width: 12px;
+  height: 12px;
+  font-size: 0.36rem;
 }
 
 .vocabulary-queue-content {
@@ -1221,10 +1221,23 @@ h1 {
   max-width: min(210px, 55vw);
 }
 
+.vocabulary-queue-item.level-1 .vocabulary-queue-content {
+  max-width: min(140px, 38vw);
+}
+
+.vocabulary-queue-item.level-2 .vocabulary-queue-content {
+  max-width: min(112px, 32vw);
+}
+
+.vocabulary-queue-item.level-3 .vocabulary-queue-content {
+  max-width: min(96px, 28vw);
+}
+
 .vocabulary-queue-content strong,
 .vocabulary-queue-content span {
   display: block;
   overflow-wrap: anywhere;
+  line-height: 1.08;
 }
 
 .vocabulary-queue-content strong {
@@ -1233,15 +1246,15 @@ h1 {
 }
 
 .vocabulary-queue-item.level-1 .vocabulary-queue-content strong {
-  font-size: 0.82rem;
+  font-size: 0.5rem;
 }
 
 .vocabulary-queue-item.level-2 .vocabulary-queue-content strong {
-  font-size: 0.74rem;
+  font-size: 0.43rem;
 }
 
 .vocabulary-queue-item.level-3 .vocabulary-queue-content strong {
-  font-size: 0.66rem;
+  font-size: 0.38rem;
 }
 
 .vocabulary-queue-content span {
@@ -1251,15 +1264,18 @@ h1 {
 }
 
 .vocabulary-queue-item.level-1 .vocabulary-queue-content span {
-  font-size: 0.62rem;
+  margin-top: 1px;
+  font-size: 0.45rem;
 }
 
 .vocabulary-queue-item.level-2 .vocabulary-queue-content span {
-  font-size: 0.56rem;
+  margin-top: 1px;
+  font-size: 0.39rem;
 }
 
 .vocabulary-queue-item.level-3 .vocabulary-queue-content span {
-  font-size: 0.5rem;
+  margin-top: 0;
+  font-size: 0.34rem;
 }
 
 .vocabulary-queue-badge {
@@ -1274,8 +1290,13 @@ h1 {
 
 .vocabulary-queue-item.level-2 .vocabulary-queue-badge,
 .vocabulary-queue-item.level-3 .vocabulary-queue-badge {
-  font-size: 0.56rem;
-  padding: 3px 5px;
+  font-size: 0.42rem;
+  padding: 2px 4px;
+}
+
+.vocabulary-queue-item.level-1 .vocabulary-queue-badge {
+  font-size: 0.48rem;
+  padding: 2px 5px;
 }
 
 .vocabulary-queue-item.is-new .vocabulary-queue-badge {
