@@ -1057,32 +1057,6 @@ p,
     linear-gradient(90deg, var(--blue) var(--value), #e5ece7 var(--value));
 }
 
-.lobo-mini {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  border-radius: 7px;
-  background: #eef4fb;
-  border: 1px solid #d8e5f2;
-  color: #4e6478;
-  padding: 5px 7px;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.lobo-mini strong {
-  color: #244b6e;
-  text-align: center;
-}
-
-.lobo-mini em {
-  color: #6f8090;
-  font-style: normal;
-  text-align: right;
-}
-
 .belief-chart-wrap {
   position: relative;
   margin-top: 10px;
