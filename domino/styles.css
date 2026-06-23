@@ -786,6 +786,114 @@ p,
   padding: 8px;
 }
 
+.belief-dashboard {
+  margin-top: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.belief-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.belief-dashboard-header h2 {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.belief-dashboard-header span {
+  font-size: 0.78rem;
+}
+
+.belief-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.belief-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfb;
+  padding: 8px;
+  min-width: 0;
+}
+
+.belief-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.belief-card-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.belief-metrics {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.belief-metric {
+  display: grid;
+  grid-template-columns: 72px 48px 1fr;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.belief-metric strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.belief-metric i {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--green) var(--value), #e5ece7 var(--value));
+}
+
+.belief-chart {
+  width: 100%;
+  height: 54px;
+  margin-top: 8px;
+  border-radius: 6px;
+  background: #f3f7f4;
+  border: 1px solid #e1e9e3;
+}
+
+.belief-chart polyline {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.belief-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -819,6 +927,14 @@ p,
 
   .reward-grid {
     grid-template-columns: 1fr;
+  }
+
+  .belief-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .belief-dashboard-header {
+    display: block;
   }
 
   .middle {

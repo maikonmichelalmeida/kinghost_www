@@ -1,4 +1,4 @@
-const PLAYERS = 4;
+﻿const PLAYERS = 4;
 const TEAM_BY_PLAYER = [0, 1, 0, 1];
 const TEAM_NAMES = ["A", "B"];
 const MATCH_POINTS = 4;
@@ -13,6 +13,12 @@ const DOMINO_BRAIN_API = "/api/domino/brains";
 const INPUT_SIZE = 203;
 const HIDDEN_SIZES = [96, 64, 32, 16];
 const LAYER_SIZES = [INPUT_SIZE, ...HIDDEN_SIZES, 1];
+const TILE_IDS = buildTileIds();
+const BELIEF_INPUT_SIZE = 165;
+const BELIEF_OUTPUT_SIZE = PLAYERS * 7 + PLAYERS * TILE_IDS.length;
+const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 96, 64, BELIEF_OUTPUT_SIZE];
+const BELIEF_LEARNING_RATE = 0.008;
+const BELIEF_HISTORY_LIMIT = 40;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
 
@@ -41,6 +47,7 @@ const els = {
   rewardSliders: [...document.querySelectorAll("[data-reward]")],
   brainStats: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-stat-${i}`)),
   brainCounts: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-${i}`)),
+  beliefDashboard: document.querySelector("#belief-dashboard"),
   players: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#player-${i}`)),
 };
 
@@ -73,6 +80,9 @@ const state = {
   lastBrainTrainingClock: 0,
   lastMoveId: null,
   moveSequence: 0,
+  handHistoryId: 0,
+  handHistory: null,
+  lastHandHistory: null,
   minPathIndex: 0,
   maxPathIndex: 0,
   decisions: [],
@@ -93,10 +103,41 @@ function createBrain() {
       const inputSize = LAYER_SIZES[index];
       return createLayer(inputSize, outputSize, Math.sqrt(2 / inputSize));
     }),
+    belief: createBeliefNetwork(),
+    beliefStats: createBeliefStats(),
     games: 0,
     roundsTrained: 0,
     treinosRealizados: 0,
     generation: 0,
+  };
+}
+
+function buildTileIds() {
+  const ids = [];
+  for (let a = 0; a <= 6; a += 1) {
+    for (let b = a; b <= 6; b += 1) ids.push(`${a}-${b}`);
+  }
+  return ids;
+}
+
+function createBeliefNetwork() {
+  return {
+    layers: BELIEF_LAYER_SIZES.slice(1).map((outputSize, index) => {
+      const inputSize = BELIEF_LAYER_SIZES[index];
+      return createLayer(inputSize, outputSize, Math.sqrt(2 / inputSize));
+    }),
+  };
+}
+
+function createBeliefStats() {
+  return {
+    trainSteps: 0,
+    lastLoss: 1,
+    avgLoss: 1,
+    numberAccuracy: 0,
+    tileAccuracy: 0,
+    closeness: 0,
+    history: [],
   };
 }
 
@@ -149,13 +190,49 @@ function saveRewardProfiles() {
 
 function normalizeBrain(brain) {
   const roundsTrained = Number(brain.roundsTrained ?? brain.treinosRealizados) || 0;
-  return {
+  const normalized = {
     ...brain,
+    belief: isValidBeliefNetwork(brain.belief) ? brain.belief : createBeliefNetwork(),
+    beliefStats: normalizeBeliefStats(brain.beliefStats),
     games: Number(brain.games) || 0,
     roundsTrained,
     treinosRealizados: roundsTrained,
     generation: Number(brain.generation) || 0,
   };
+  return normalized;
+}
+
+function normalizeBeliefStats(stats = {}) {
+  return {
+    ...createBeliefStats(),
+    ...stats,
+    trainSteps: Number(stats.trainSteps) || 0,
+    lastLoss: Number.isFinite(Number(stats.lastLoss)) ? Number(stats.lastLoss) : 1,
+    avgLoss: Number.isFinite(Number(stats.avgLoss)) ? Number(stats.avgLoss) : 1,
+    numberAccuracy: Number(stats.numberAccuracy) || 0,
+    tileAccuracy: Number(stats.tileAccuracy) || 0,
+    closeness: Number(stats.closeness) || 0,
+    history: Array.isArray(stats.history) ? stats.history.slice(-BELIEF_HISTORY_LIMIT) : [],
+  };
+}
+
+function isValidBeliefNetwork(network) {
+  return (
+    network &&
+    Array.isArray(network.layers) &&
+    network.layers.length === BELIEF_LAYER_SIZES.length - 1 &&
+    network.layers.every((layer, index) => {
+      const outputSize = BELIEF_LAYER_SIZES[index + 1];
+      const inputSize = BELIEF_LAYER_SIZES[index];
+      return (
+        Array.isArray(layer.weights) &&
+        layer.weights.length === outputSize &&
+        layer.weights.every((weights) => Array.isArray(weights) && weights.length === inputSize) &&
+        Array.isArray(layer.biases) &&
+        layer.biases.length === outputSize
+      );
+    })
+  );
 }
 
 function isValidBrain(brain) {
@@ -187,10 +264,10 @@ async function initBrainsFromDatabase() {
         await loadBrainFromDatabase(player, option.baseName);
       }
     }
-    render("CÃ©rebros carregados do banco.");
+    render("CÃƒÂ©rebros carregados do banco.");
   } catch (error) {
     console.error(error);
-    render("NÃ£o foi possÃ­vel carregar os cÃ©rebros do banco. Usando cÃ©rebros temporÃ¡rios em memÃ³ria.");
+    render("NÃƒÂ£o foi possÃƒÂ­vel carregar os cÃƒÂ©rebros do banco. Usando cÃƒÂ©rebros temporÃƒÂ¡rios em memÃƒÂ³ria.");
   }
 }
 
@@ -208,7 +285,7 @@ async function loadBrainFromDatabase(player, baseName) {
   const safeBaseName = sanitizeBrainBaseName(baseName);
   const payload = await fetchJson(`${DOMINO_BRAIN_API}/${player + 1}/${encodeURIComponent(safeBaseName)}`);
   const brain = normalizeBrain(payload.brain);
-  if (!isValidBrain(brain)) throw new Error("CÃ©rebro incompatÃ­vel.");
+  if (!isValidBrain(brain)) throw new Error("CÃƒÂ©rebro incompatÃƒÂ­vel.");
   state.brains[player] = brain;
   state.brainNames[player] = payload.nome;
   state.brainTrainMs[player] = Number(payload.tempoTreino) || 0;
@@ -223,7 +300,7 @@ async function createBrainInDatabase(player, rawName) {
   });
   await refreshBrainOptions();
   await loadBrainFromDatabase(player, payload.baseName || baseName);
-  render(`CÃ©rebro ${baseName}J${player + 1} criado e carregado.`);
+  render(`CÃƒÂ©rebro ${baseName}J${player + 1} criado e carregado.`);
 }
 
 async function saveSelectedBrains(force = false) {
@@ -267,7 +344,7 @@ function accrueTrainingTime(now = Date.now()) {
   }
   const elapsed = Math.max(0, now - state.lastBrainTrainingClock);
   for (let player = 0; player < PLAYERS; player += 1) {
-    if (agentMode(player) === "trained") state.brainTrainMs[player] += elapsed;
+    if (agentMode(player) === "carneiro") state.brainTrainMs[player] += elapsed;
   }
   state.lastBrainTrainingClock = now;
 }
@@ -278,7 +355,7 @@ async function fetchJson(url, options = {}) {
     ...options,
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || "Erro na comunicaÃ§Ã£o com o banco.");
+  if (!response.ok) throw new Error(payload.error || "Erro na comunicaÃƒÂ§ÃƒÂ£o com o banco.");
   return payload;
 }
 
@@ -363,6 +440,7 @@ function startHand(autoSchedule = true) {
   state.maxPathIndex = 0;
   state.decisions = [];
   state.publicSignals = createPublicSignals();
+  state.handHistory = null;
 
   for (let i = 0; i < deck.length; i += 1) {
     state.hands[i % PLAYERS].push(deck[i]);
@@ -380,6 +458,7 @@ function startHand(autoSchedule = true) {
     state.requireDoubleSix = false;
   }
 
+  startHandHistory();
   render();
   if (autoSchedule) scheduleBots();
 }
@@ -461,6 +540,309 @@ function tileNumbers(tile) {
   return tile.a === tile.b ? [tile.a] : [tile.a, tile.b];
 }
 
+function startHandHistory() {
+  state.handHistoryId += 1;
+  const initialPublic = publicSnapshot();
+  state.handHistory = {
+    id: state.handHistoryId,
+    startedAt: new Date().toISOString(),
+    endedAt: null,
+    initial: {
+      scores: state.scores.slice(),
+      starter: state.current,
+      requireDoubleSix: state.requireDoubleSix,
+      nextStarter: state.nextStarter,
+      publicSnapshot: initialPublic,
+    },
+    turns: [],
+    knownMissingNumbers: createKnownMissingNumbers(),
+    passCountsByOpenNumber: Array.from({ length: PLAYERS }, () => Array(7).fill(0)),
+    choiceCountsByAvoidedNumber: Array.from({ length: PLAYERS }, () => Array(7).fill(0)),
+    couldHavePlayedButAvoidedCounts: Array.from({ length: PLAYERS }, () => Array(7).fill(0)),
+    playedNumberCountsByPlayer: Array.from({ length: PLAYERS }, () => Array(7).fill(0)),
+    result: null,
+    privateTruth: {
+      initialHands: cloneHands(state.hands),
+      finalHands: null,
+    },
+  };
+}
+
+function createKnownMissingNumbers() {
+  return Array.from({ length: PLAYERS }, () => Array.from({ length: 7 }, () => []));
+}
+
+function recordTurnHistoryBefore(player, legalMovesForTurn) {
+  if (!state.handHistory) return null;
+  const legalMoves = legalMovesForTurn.map(historyMoveSummary);
+  return {
+    turnIndex: state.handHistory.turns.length,
+    player,
+    team: TEAM_BY_PLAYER[player],
+    before: publicSnapshot(),
+    legalMoves,
+    derivedBefore: derivedHistoryFeatures(player, legalMovesForTurn, null),
+  };
+}
+
+function recordMoveHistory(player, move, tile, beforeSnapshot) {
+  if (!state.handHistory || !beforeSnapshot) return;
+  const afterSnapshot = publicSnapshot();
+  const playedNumbers = tileNumbers(tile);
+  const avoidedNumber = avoidedOpenNumber(move, tile, beforeSnapshot.before.ends);
+  const avoidableNumber = avoidedPlayableOpenNumber(move, tile, beforeSnapshot);
+  for (const number of playedNumbers) {
+    state.handHistory.playedNumberCountsByPlayer[player][number] += 1;
+    clearKnownMissingNumber(player, number, beforeSnapshot.turnIndex);
+  }
+  if (avoidedNumber !== null) {
+    state.handHistory.choiceCountsByAvoidedNumber[player][avoidedNumber] += 1;
+  }
+  if (avoidableNumber !== null) {
+    state.handHistory.couldHavePlayedButAvoidedCounts[player][avoidableNumber] += 1;
+  }
+  state.handHistory.turns.push({
+    ...beforeSnapshot,
+    type: "move",
+    move: {
+      side: move.side,
+      tile: cloneTile(tile),
+      numbers: playedNumbers,
+      avoidedNumber,
+      avoidableNumber,
+      playedId: state.lastMoveId,
+    },
+    after: afterSnapshot,
+    derivedAfter: derivedHistoryFeatures(player, [], move),
+  });
+}
+
+function recordPassHistory(player, beforeSnapshot) {
+  if (!state.handHistory || !beforeSnapshot) return;
+  const openNumbers = openEndNumbers(beforeSnapshot.before.ends);
+  for (const number of openNumbers) {
+    state.handHistory.passCountsByOpenNumber[player][number] += 1;
+    markKnownMissingNumber(player, number, beforeSnapshot.turnIndex);
+  }
+  state.handHistory.turns.push({
+    ...beforeSnapshot,
+    type: "pass",
+    pass: {
+      openNumbers,
+      certainty: openNumbers.map((number) => ({ number, reason: "passed_on_open_end", probability: 1 })),
+    },
+    after: publicSnapshot(),
+    derivedAfter: derivedHistoryFeatures(player, [], null),
+  });
+}
+
+function finishHandHistory(winnerTeam, winningPlayer = null, closed = false) {
+  if (!state.handHistory || state.handHistory.result) return;
+  state.handHistory.endedAt = new Date().toISOString();
+  state.handHistory.result = {
+    winnerTeam,
+    winningPlayer,
+    closed,
+    scoresAfterHand: state.scores.slice(),
+    handsPlayedAfter: state.handsPlayed,
+    publicSnapshot: publicSnapshot(),
+  };
+  state.handHistory.privateTruth.finalHands = cloneHands(state.hands);
+  state.handHistory.privateTruth.finalSnapshot = privateTruthSnapshot();
+  state.lastHandHistory = state.handHistory;
+}
+
+function publicSnapshot() {
+  return {
+    moveSequence: state.moveSequence,
+    current: state.current,
+    scores: state.scores.slice(),
+    handsPlayed: state.handsPlayed,
+    ends: { left: state.leftEnd, right: state.rightEnd },
+    board: state.board.map((tile) => ({
+      id: tile.id,
+      a: tile.a,
+      b: tile.b,
+      owner: tile.owner,
+      playedId: tile.playedId,
+      pathIndex: tile.pathIndex,
+    })),
+    handCounts: state.hands.map((hand) => hand.length),
+    passedPlayers: state.passedPlayers.slice(),
+    publicSignals: state.publicSignals.map((signals) => ({
+      passes: signals.passes.slice(),
+      avoids: signals.avoids.slice(),
+    })),
+    playedNumberStats: playedNumberStats(),
+    playedNumberPresenceStats: playedNumberPresenceStats(),
+    unseenNumberCounts: unseenNumberCounts(),
+    stage: handStage(),
+    teamHandDelta: teamHandSizeDelta(),
+    matchProgress: {
+      teamA: state.scores[0] / MATCH_POINTS,
+      teamB: state.scores[1] / MATCH_POINTS,
+    },
+  };
+}
+
+function visibleSnapshotFor(player) {
+  return {
+    ...publicSnapshot(),
+    perspectivePlayer: player,
+    ownHand: cloneTiles(state.hands[player]),
+  };
+}
+
+function privateTruthSnapshot() {
+  return {
+    hands: cloneHands(state.hands),
+    handNumberPresence: state.hands.map(numberPresenceCounts),
+    handTileIds: state.hands.map((hand) => hand.map((tile) => tile.id)),
+  };
+}
+
+function derivedHistoryFeatures(player, legalMovesForTurn, move) {
+  const ends = { left: state.leftEnd, right: state.rightEnd };
+  const ownHand = state.hands[player];
+  const handAfterMove = move ? ownHand.filter((tile) => tile.id !== move.tile.id) : ownHand;
+  const partner = (player + 2) % PLAYERS;
+  const nextOpponent = (player + 1) % PLAYERS;
+  return {
+    stage: handStage(),
+    legalMoveCount: legalMovesForTurn.length,
+    ownPlayableAfter: countPlayableTiles(handAfterMove, ends),
+    partnerLikelyMobility: visibleMobilityForKnownHand(partner, ends),
+    nextOpponentKnownMobility: visibleMobilityForKnownHand(nextOpponent, ends),
+    teamHandDelta: teamHandSizeDelta(),
+    unseenNumberCounts: unseenNumberCounts(),
+    tileCriticality: move ? tileCriticality(move.tile) : null,
+    doubleRiskAfter: handAfterMove.filter((tile) => tile.a === tile.b && !canTilePlayEnds(tile, ends)).length,
+    handConnectivityAfter: handConnectivity(handAfterMove),
+    moveFavorsNextOpponent: move ? visibleMobilityForKnownHand(nextOpponent, ends) : null,
+    moveHelpsPartner: move ? visibleMobilityForKnownHand(partner, ends) : null,
+  };
+}
+
+function historyMoveSummary(move) {
+  return {
+    tileId: move.tile.id,
+    a: move.tile.a,
+    b: move.tile.b,
+    side: move.side,
+    isDouble: move.tile.a === move.tile.b,
+  };
+}
+
+function avoidedOpenNumber(move, tile, ends) {
+  if (!move || move.side === "start" || ends.left === ends.right) return null;
+  const avoided = move.side === "left" ? ends.right : ends.left;
+  return tileHasNumber(tile, avoided) ? null : avoided;
+}
+
+function avoidedPlayableOpenNumber(move, tile, beforeSnapshot) {
+  const avoided = avoidedOpenNumber(move, tile, beforeSnapshot.before.ends);
+  if (avoided === null) return null;
+  const avoidedSide = move.side === "left" ? "right" : "left";
+  return beforeSnapshot.legalMoves.some((candidate) => candidate.side === avoidedSide) ? avoided : null;
+}
+
+function openEndNumbers(ends) {
+  if (!ends || ends.left === null || ends.left === undefined) return [];
+  return ends.left === ends.right ? [ends.left] : [ends.left, ends.right];
+}
+
+function markKnownMissingNumber(player, number, turnIndex) {
+  const entries = state.handHistory.knownMissingNumbers[player][number];
+  const last = entries[entries.length - 1];
+  if (last && last.untilTurn === null) return;
+  entries.push({ fromTurn: turnIndex, untilTurn: null, reason: "pass_on_open_end" });
+}
+
+function clearKnownMissingNumber(player, number, turnIndex) {
+  if (!state.handHistory) return;
+  const entries = state.handHistory.knownMissingNumbers[player][number];
+  const last = entries[entries.length - 1];
+  if (last && last.untilTurn === null) last.untilTurn = turnIndex;
+}
+
+function unseenNumberCounts() {
+  const played = playedNumberStats().total;
+  return played.map((count) => Math.max(0, 8 - count));
+}
+
+function handStage() {
+  const remainingTiles = state.hands.reduce((sum, hand) => sum + hand.length, 0);
+  if (remainingTiles > 20) return "inicio";
+  if (remainingTiles > 10) return "meio";
+  return "fim";
+}
+
+function teamHandSizeDelta() {
+  const teamA = state.hands[0].length + state.hands[2].length;
+  const teamB = state.hands[1].length + state.hands[3].length;
+  return teamA - teamB;
+}
+
+function visibleMobilityForKnownHand(player, ends) {
+  return countPlayableTiles(state.hands[player], ends);
+}
+
+function tileCriticality(tile) {
+  const unseen = unseenNumberCounts();
+  const numbers = tileNumbers(tile);
+  const scarcity = numbers.reduce((sum, number) => sum + (1 - unseen[number] / 8), 0) / numbers.length;
+  return {
+    isDouble: tile.a === tile.b,
+    scarcity: clamp(scarcity, 0, 1),
+    remainingForNumbers: Object.fromEntries(numbers.map((number) => [number, unseen[number]])),
+  };
+}
+
+function handConnectivity(hand) {
+  if (hand.length === 0) return { components: 0, largestComponent: 0, isolatedTiles: 0 };
+  const visited = new Set();
+  const adjacency = hand.map((tile, index) =>
+    hand
+      .map((other, otherIndex) => (index !== otherIndex && tileNumbers(tile).some((number) => tileHasNumber(other, number)) ? otherIndex : -1))
+      .filter((index) => index !== -1),
+  );
+  const componentSizes = [];
+  for (let i = 0; i < hand.length; i += 1) {
+    if (visited.has(i)) continue;
+    const stack = [i];
+    visited.add(i);
+    let size = 0;
+    while (stack.length > 0) {
+      const current = stack.pop();
+      size += 1;
+      for (const next of adjacency[current]) {
+        if (!visited.has(next)) {
+          visited.add(next);
+          stack.push(next);
+        }
+      }
+    }
+    componentSizes.push(size);
+  }
+  return {
+    components: componentSizes.length,
+    largestComponent: Math.max(...componentSizes),
+    isolatedTiles: componentSizes.filter((size) => size === 1).length,
+  };
+}
+
+function cloneHands(hands) {
+  return hands.map(cloneTiles);
+}
+
+function cloneTiles(tiles) {
+  return tiles.map(cloneTile);
+}
+
+function cloneTile(tile) {
+  return { a: tile.a, b: tile.b, id: tile.id };
+}
+
 function closesTableForEveryone(move, player) {
   const ends = previewEnds(move);
   return state.hands.every((hand, handOwner) =>
@@ -480,6 +862,7 @@ function playMove(player, move) {
   const hand = state.hands[player];
   const index = hand.findIndex((tile) => tile.id === move.tile.id);
   if (index === -1) return false;
+  const beforeHistory = recordTurnHistoryBefore(player, legalMoves(player));
   const [tile] = hand.splice(index, 1);
   const playedId = `${player}-${state.moveSequence}`;
   state.moveSequence += 1;
@@ -511,11 +894,12 @@ function playMove(player, move) {
   }
 
   state.lastMoveId = playedId;
+  recordMoveHistory(player, move, tile, beforeHistory);
   state.consecutivePasses = 0;
   state.selectedTileId = null;
   if (state.hands[player].length === 0) {
     const team = TEAM_BY_PLAYER[player];
-    finishHand(team, `Jogador ${player + 1} bateu. Time ${TEAM_NAMES[team]} marcou 1 ponto.`);
+    finishHand(team, `Jogador ${player + 1} bateu. Time ${TEAM_NAMES[team]} marcou 1 ponto.`, player, false);
     return true;
   }
   advanceTurn();
@@ -524,12 +908,15 @@ function playMove(player, move) {
 
 function passTurn() {
   if (state.handFinished || state.matchFinished) return;
-  state.passedPlayers[state.current] = true;
-  if (state.training) rewardOpponentPassOutcome(state.current);
-  recordPassSignal(state.current);
+  const player = state.current;
+  const beforeHistory = recordTurnHistoryBefore(player, legalMoves(player));
+  state.passedPlayers[player] = true;
+  if (state.training) rewardOpponentPassOutcome(player);
+  recordPassSignal(player);
+  recordPassHistory(player, beforeHistory);
   state.consecutivePasses += 1;
   if (state.consecutivePasses >= PLAYERS) {
-    finishHand(null, "Jogo fechado. NinguÃ©m marcou porque nenhuma mÃ£o foi esvaziada.");
+    finishHand(null, "Jogo fechado. Ninguem marcou porque nenhuma mao foi esvaziada.", null, true);
     return;
   }
   advanceTurn();
@@ -540,7 +927,7 @@ function advanceTurn() {
   state.passedPlayers[state.current] = false;
 }
 
-function finishHand(winnerTeam, message) {
+function finishHand(winnerTeam, message, winningPlayer = null, closed = false) {
   state.handFinished = true;
   state.passedPlayers = Array(PLAYERS).fill(false);
   clearBotTimer();
@@ -551,6 +938,7 @@ function finishHand(winnerTeam, message) {
   }
 
   state.handsPlayed += 1;
+  finishHandHistory(winnerTeam, winningPlayer, closed);
   if (state.training) {
     trainFromHand(winnerTeam);
     state.brainGames += 1;
@@ -597,14 +985,14 @@ function finishHand(winnerTeam, message) {
 function humanResultMessage(winnerTeam, fallback) {
   if (state.humanSeat === null || winnerTeam === null) return fallback;
   const humanTeam = TEAM_BY_PLAYER[state.humanSeat];
-  return winnerTeam === humanTeam ? `VitÃ³ria! ${fallback}` : `Derrota. ${fallback}`;
+  return winnerTeam === humanTeam ? `VitÃƒÂ³ria! ${fallback}` : `Derrota. ${fallback}`;
 }
 
 function matchResultMessage(winnerTeam, handMessage) {
   const base = `Time ${TEAM_NAMES[winnerTeam]} venceu a partida por ${state.scores[winnerTeam]} a ${state.scores[1 - winnerTeam]}. ${handMessage}`;
   if (state.humanSeat === null) return base;
   const humanTeam = TEAM_BY_PLAYER[state.humanSeat];
-  if (winnerTeam === humanTeam) return `Grande vitÃ³ria! Seu time fechou a partida. Nova partida em instantes.`;
+  if (winnerTeam === humanTeam) return `Grande vitÃƒÂ³ria! Seu time fechou a partida. Nova partida em instantes.`;
   return `Fim de partida. O outro time chegou a ${MATCH_POINTS} pontos. Nova chance em instantes.`;
 }
 
@@ -638,7 +1026,8 @@ function isRandomAgent(player) {
 }
 
 function agentMode(player) {
-  return els.agentModes[player]?.value || "trained";
+  const value = els.agentModes[player]?.value || "carneiro";
+  return value === "trained" ? "carneiro" : value;
 }
 
 function syncHumanSeatFromAgents() {
@@ -648,7 +1037,7 @@ function syncHumanSeatFromAgents() {
 
 function forceAllAgentsTrained() {
   for (const select of els.agentModes) {
-    select.value = "trained";
+    select.value = "carneiro";
   }
   state.humanSeat = null;
   state.selectedTileId = null;
@@ -943,6 +1332,193 @@ function trainFromHand(winnerTeam) {
     state.brains[player].roundsTrained = (state.brains[player].roundsTrained || 0) + 1;
     state.brains[player].treinosRealizados = state.brains[player].roundsTrained;
   }
+  trainBeliefFromHandHistory(state.lastHandHistory);
+}
+
+function trainBeliefFromHandHistory(history) {
+  if (!history || !history.privateTruth?.initialHands || history.turns.length === 0) return;
+  for (let turnIndex = 0; turnIndex < history.turns.length; turnIndex += 1) {
+    const handsAtTurn = handsAtHistoryTurn(history, turnIndex);
+    for (let observer = 0; observer < PLAYERS; observer += 1) {
+      if (agentMode(observer) !== "carneiro") continue;
+      const inputs = beliefInputsForHistoryTurn(history, turnIndex, observer, handsAtTurn[observer]);
+      const target = beliefTargetFromHands(handsAtTurn);
+      const result = trainBeliefNetwork(state.brains[observer].belief, inputs, target);
+      updateBeliefStats(state.brains[observer], result);
+    }
+  }
+}
+
+function handsAtHistoryTurn(history, turnIndex) {
+  const hands = cloneHands(history.privateTruth.initialHands);
+  for (let i = 0; i < turnIndex; i += 1) {
+    const turn = history.turns[i];
+    if (turn.type !== "move") continue;
+    const hand = hands[turn.player];
+    const index = hand.findIndex((tile) => tile.id === turn.move.tile.id);
+    if (index !== -1) hand.splice(index, 1);
+  }
+  return hands;
+}
+
+function beliefInputsForHistoryTurn(history, turnIndex, observer, observerHand) {
+  const turn = history.turns[turnIndex];
+  const snapshot = turn.before;
+  const ends = snapshot.ends || {};
+  const played = snapshot.playedNumberStats || { total: Array(7).fill(0) };
+  const unseen = snapshot.unseenNumberCounts || Array(7).fill(8);
+  const ownCounts = numberCounts(observerHand);
+  const ownTiles = tilePresenceVector(observerHand);
+  const knownMissing = activeKnownMissingVector(history, turnIndex);
+  return fitBeliefInputs([
+    ...oneHot(observer, PLAYERS),
+    ...oneHot(snapshot.current ?? turn.player, PLAYERS),
+    snapshot.scores[0] / MATCH_POINTS,
+    snapshot.scores[1] / MATCH_POINTS,
+    ...snapshot.handCounts.map((count) => count / 7),
+    ...oneHotNumberOrEmpty(ends.left),
+    ...oneHotNumberOrEmpty(ends.right),
+    snapshot.board.length / 28,
+    ...stageVector(snapshot.stage),
+    ...played.total.map((count) => count / 8),
+    ...unseen.map((count) => count / 8),
+    ...snapshot.publicSignals.flatMap((signals) => [
+      ...signals.passes.map((value) => Math.min(1, value / 4)),
+      ...signals.avoids.map((value) => Math.min(1, value / 4)),
+    ]),
+    ...knownMissing,
+    ...ownCounts.map((count) => count / 7),
+    ...ownTiles,
+  ]);
+}
+
+function beliefTargetFromHands(hands) {
+  return [
+    ...hands.flatMap((hand) => numberPresenceCounts(hand)),
+    ...hands.flatMap((hand) => tilePresenceVector(hand)),
+  ];
+}
+
+function tilePresenceVector(hand) {
+  const ids = new Set(hand.map((tile) => tile.id));
+  return TILE_IDS.map((id) => (ids.has(id) ? 1 : 0));
+}
+
+function activeKnownMissingVector(history, turnIndex) {
+  return history.knownMissingNumbers.flatMap((playerEntries) =>
+    playerEntries.map((entries) =>
+      entries.some((entry) => entry.fromTurn <= turnIndex && (entry.untilTurn === null || entry.untilTurn > turnIndex)) ? 1 : 0,
+    ),
+  );
+}
+
+function fitBeliefInputs(inputs) {
+  if (inputs.length === BELIEF_INPUT_SIZE) return inputs;
+  if (inputs.length > BELIEF_INPUT_SIZE) return inputs.slice(0, BELIEF_INPUT_SIZE);
+  return [...inputs, ...Array(BELIEF_INPUT_SIZE - inputs.length).fill(0)];
+}
+
+function oneHot(index, size) {
+  return Array.from({ length: size }, (_, i) => (i === index ? 1 : 0));
+}
+
+function oneHotNumberOrEmpty(number) {
+  return Array.from({ length: 7 }, (_, i) => (number === i ? 1 : 0));
+}
+
+function stageVector(stage) {
+  return [stage === "inicio" ? 1 : 0, stage === "meio" ? 1 : 0, stage === "fim" ? 1 : 0];
+}
+
+function evaluateBelief(network, inputs) {
+  const activations = [inputs];
+  const preActivations = [];
+  let current = inputs;
+  for (let layerIndex = 0; layerIndex < network.layers.length; layerIndex += 1) {
+    const layer = network.layers[layerIndex];
+    const z = layer.biases.map((bias, neuron) => {
+      return bias + layer.weights[neuron].reduce((sum, weight, inputIndex) => sum + weight * current[inputIndex], 0);
+    });
+    preActivations.push(z);
+    current = layerIndex === network.layers.length - 1 ? z.map(sigmoid) : z.map(Math.tanh);
+    activations.push(current);
+  }
+  return { outputs: current, activations, preActivations };
+}
+
+function trainBeliefNetwork(network, inputs, target) {
+  const evaluation = evaluateBelief(network, inputs);
+  const layers = network.layers;
+  const output = evaluation.outputs;
+  const outputDelta = output.map((prediction, index) => {
+    const error = prediction - target[index];
+    return error * prediction * (1 - prediction);
+  });
+  const deltas = [outputDelta];
+  for (let layerIndex = layers.length - 2; layerIndex >= 0; layerIndex -= 1) {
+    const layerOutput = evaluation.activations[layerIndex + 1];
+    const nextLayer = layers[layerIndex + 1];
+    const nextDelta = deltas[0];
+    const delta = layerOutput.map((value, neuron) => {
+      const downstream = nextDelta.reduce((sum, nextValue, nextNeuron) => {
+        return sum + nextLayer.weights[nextNeuron][neuron] * nextValue;
+      }, 0);
+      return downstream * (1 - value * value);
+    });
+    deltas.unshift(delta);
+  }
+  for (let layerIndex = 0; layerIndex < layers.length; layerIndex += 1) {
+    const layer = layers[layerIndex];
+    const inputActivation = evaluation.activations[layerIndex];
+    for (let neuron = 0; neuron < layer.weights.length; neuron += 1) {
+      const clippedDelta = clamp(deltas[layerIndex][neuron], -2, 2);
+      for (let inputIndex = 0; inputIndex < layer.weights[neuron].length; inputIndex += 1) {
+        layer.weights[neuron][inputIndex] -= BELIEF_LEARNING_RATE * clippedDelta * inputActivation[inputIndex];
+      }
+      layer.biases[neuron] -= BELIEF_LEARNING_RATE * clippedDelta;
+    }
+  }
+  return beliefMetrics(output, target);
+}
+
+function beliefMetrics(output, target) {
+  let absoluteError = 0;
+  let numberCorrect = 0;
+  let tileCorrect = 0;
+  for (let i = 0; i < output.length; i += 1) {
+    absoluteError += Math.abs(output[i] - target[i]);
+    const correct = (output[i] >= 0.5) === (target[i] >= 0.5);
+    if (i < PLAYERS * 7) numberCorrect += correct ? 1 : 0;
+    else tileCorrect += correct ? 1 : 0;
+  }
+  const numberTotal = PLAYERS * 7;
+  const tileTotal = PLAYERS * TILE_IDS.length;
+  const mae = absoluteError / output.length;
+  return {
+    loss: mae,
+    closeness: clamp(1 - mae, 0, 1),
+    numberAccuracy: numberCorrect / numberTotal,
+    tileAccuracy: tileCorrect / tileTotal,
+  };
+}
+
+function updateBeliefStats(brain, result) {
+  brain.beliefStats = normalizeBeliefStats(brain.beliefStats);
+  const stats = brain.beliefStats;
+  stats.trainSteps += 1;
+  stats.lastLoss = result.loss;
+  stats.avgLoss = stats.trainSteps === 1 ? result.loss : stats.avgLoss * 0.985 + result.loss * 0.015;
+  stats.numberAccuracy = stats.numberAccuracy * 0.985 + result.numberAccuracy * 0.015;
+  stats.tileAccuracy = stats.tileAccuracy * 0.985 + result.tileAccuracy * 0.015;
+  stats.closeness = stats.closeness * 0.985 + result.closeness * 0.015;
+  if (stats.trainSteps % 12 === 0) {
+    stats.history.push(Number(stats.closeness.toFixed(4)));
+    stats.history = stats.history.slice(-BELIEF_HISTORY_LIMIT);
+  }
+}
+
+function sigmoid(value) {
+  return 1 / (1 + Math.exp(-value));
 }
 
 function moveHeuristicReward(player, move) {
@@ -1087,7 +1663,7 @@ function humanBotDelay() {
 
 function humanBotDelayLabel() {
   const delay = humanBotDelay();
-  if (delay === 0) return "mÃ¡x.";
+  if (delay === 0) return "mÃƒÂ¡x.";
   if (delay < 1000) return `${delay}ms`;
   return `${(delay / 1000).toFixed(1)}s`;
 }
@@ -1157,6 +1733,7 @@ function render(message = "") {
   });
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
+  renderBeliefDashboard();
 
   renderPlayers();
   renderBoard();
@@ -1196,7 +1773,7 @@ function renderResultOverlay(message, kind) {
       <div class="result-title">${title}</div>
       <div class="result-score">Time A ${state.scores[0]} &times; ${state.scores[1]} Time B</div>
       <div class="result-message">${message}</div>
-      <div class="result-timer">${state.resultType === "match" ? "Nova partida em instantes" : "PrÃ³xima rodada em instantes"}</div>
+      <div class="result-timer">${state.resultType === "match" ? "Nova partida em instantes" : "PrÃƒÂ³xima rodada em instantes"}</div>
     </div>
   `;
 }
@@ -1223,6 +1800,66 @@ function renderBrainStats() {
     els.brainStats[i].hidden = false;
     els.brainCounts[i].textContent = state.brains[i].roundsTrained || 0;
   }
+}
+
+function renderBeliefDashboard() {
+  if (!els.beliefDashboard) return;
+  els.beliefDashboard.innerHTML = `
+    <div class="belief-dashboard-header">
+      <h2>Rede de previsão</h2>
+      <span>aproximação entre probabilidade estimada e verdade revelada no fim da rodada</span>
+    </div>
+    <div class="belief-card-grid">
+      ${state.brains.map((brain, player) => beliefCardHtml(brain, player)).join("")}
+    </div>
+  `;
+}
+
+function beliefCardHtml(brain, player) {
+  const stats = normalizeBeliefStats(brain.beliefStats);
+  const history = stats.history.length > 0 ? stats.history : [stats.closeness || 0];
+  return `
+    <article class="belief-card belief-card-${player}">
+      <div class="belief-card-title">
+        <span class="player-chip">J${player + 1}</span>
+        <strong>${escapeHtml(brainBaseName(player))}</strong>
+      </div>
+      <div class="belief-metrics">
+        ${beliefMetricHtml("Proximidade", stats.closeness)}
+        ${beliefMetricHtml("Números", stats.numberAccuracy)}
+        ${beliefMetricHtml("Pedras", stats.tileAccuracy)}
+      </div>
+      <svg class="belief-chart" viewBox="0 0 160 52" role="img" aria-label="Evolução da proximidade J${player + 1}">
+        <polyline points="${beliefSparklinePoints(history)}"></polyline>
+      </svg>
+      <div class="belief-foot">
+        <span>erro ${(stats.avgLoss || 0).toFixed(3)}</span>
+        <span>${stats.trainSteps || 0} ajustes</span>
+      </div>
+    </article>
+  `;
+}
+
+function beliefMetricHtml(label, value) {
+  const percent = clamp(value || 0, 0, 1) * 100;
+  return `
+    <div class="belief-metric">
+      <span>${label}</span>
+      <strong>${percent.toFixed(1)}%</strong>
+      <i style="--value:${percent}%"></i>
+    </div>
+  `;
+}
+
+function beliefSparklinePoints(values) {
+  const normalized = values.length > 1 ? values : [0, values[0] || 0];
+  return normalized
+    .map((value, index) => {
+      const x = (index / (normalized.length - 1)) * 154 + 3;
+      const y = 49 - clamp(value, 0, 1) * 44;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
 }
 
 function renderRewardSliders() {
@@ -1530,10 +2167,10 @@ els.brainSelects.forEach((select, player) => {
     if (state.training) return;
     try {
       await loadBrainFromDatabase(player, select.value);
-      render(`Cérebro ${select.value}J${player + 1} carregado.`);
+      render(`CÃ©rebro ${select.value}J${player + 1} carregado.`);
     } catch (error) {
       console.error(error);
-      render("Não foi possível carregar esse cérebro.");
+      render("NÃ£o foi possÃ­vel carregar esse cÃ©rebro.");
     }
   });
 });
@@ -1542,13 +2179,13 @@ els.newBrainButtons.forEach((button) => {
   button.addEventListener("click", async () => {
     if (state.training) return;
     const player = Number(button.dataset.newBrain);
-    const name = window.prompt(`Nome do novo cérebro para J${player + 1}:`, "cerebro");
+    const name = window.prompt(`Nome do novo cÃ©rebro para J${player + 1}:`, "cerebro");
     if (name === null) return;
     try {
       await createBrainInDatabase(player, name);
     } catch (error) {
       console.error(error);
-      render("Não foi possível criar esse cérebro.");
+      render("NÃ£o foi possÃ­vel criar esse cÃ©rebro.");
     }
   });
 });
