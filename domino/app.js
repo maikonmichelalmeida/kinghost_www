@@ -281,6 +281,8 @@ function isValidBrain(brain) {
 
 async function initBrainsFromDatabase() {
   try {
+    resetAllBrainsLocally();
+    renderBrainStats();
     await refreshBrainOptions();
     for (let player = 0; player < PLAYERS; player += 1) {
       const defaultBase = DEFAULT_BRAIN_BASE_NAME;
@@ -295,6 +297,40 @@ async function initBrainsFromDatabase() {
     console.error(error);
     render("NÃƒÂ£o foi possÃƒÂ­vel carregar os cÃƒÂ©rebros do banco. Usando cÃƒÂ©rebros temporÃƒÂ¡rios em memÃƒÂ³ria.");
   }
+}
+
+function resetAllBrainsLocally() {
+  state.sharedBelief = createBeliefNetwork();
+  state.sharedBeliefStats = createBeliefStats();
+  state.sharedPredictionLoaded = false;
+  state.brains = Array.from({ length: PLAYERS }, createBrain);
+  state.brainNames = Array.from({ length: PLAYERS }, (_, player) => `${DEFAULT_BRAIN_BASE_NAME}J${player + 1}`);
+  state.brainTrainMs = Array(PLAYERS).fill(0);
+  syncSharedPredictionReferences();
+}
+
+function resetDeletedBrainSlotsLocally(baseName) {
+  const affectedPlayers = [];
+  for (let player = 0; player < PLAYERS; player += 1) {
+    if (brainBaseName(player) !== baseName) continue;
+    affectedPlayers.push(player);
+    const freshBrain = createBrain();
+    freshBrain.roundsTrained = 0;
+    freshBrain.treinosRealizados = 0;
+    freshBrain.games = 0;
+    state.brains[player] = freshBrain;
+    state.brainNames[player] = `${DEFAULT_BRAIN_BASE_NAME}J${player + 1}`;
+    state.brainTrainMs[player] = 0;
+  }
+  if (affectedPlayers.length) {
+    state.sharedBelief = createBeliefNetwork();
+    state.sharedBeliefStats = createBeliefStats();
+    state.sharedPredictionLoaded = false;
+    syncSharedPredictionReferences();
+    renderBrainStats();
+    renderBrainSelectors();
+  }
+  return affectedPlayers;
 }
 
 async function refreshBrainOptions() {
@@ -349,16 +385,17 @@ async function deleteBrainsByBaseName(rawName) {
     method: "DELETE",
     body: JSON.stringify({ confirmName: baseName }),
   });
+  const affectedPlayers = resetDeletedBrainSlotsLocally(baseName);
+  render(`${payload.deleted || 0} cérebro(s) excluídos. Contadores zerados; carregando substitutos aleatórios.`);
   await refreshBrainOptions();
-  for (let player = 0; player < PLAYERS; player += 1) {
-    if (brainBaseName(player) !== baseName) continue;
+  for (const player of affectedPlayers) {
     const fallback =
       state.brainOptions[player].find((item) => item.baseName === DEFAULT_BRAIN_BASE_NAME) ||
       state.brainOptions[player][0];
     if (fallback) await loadBrainFromDatabase(player, fallback.baseName);
   }
   syncSharedPredictionReferences();
-  render(`${payload.deleted || 0} cérebro(s) com o nome ${baseName} foram excluídos.`);
+  render(`${payload.deleted || 0} cérebro(s) com o nome ${baseName} foram excluídos. Novos contadores: 0.`);
 }
 
 async function saveSelectedBrains(force = false) {
