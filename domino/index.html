@@ -14,14 +14,9 @@
           <button id="reset-results" type="button" class="secondary">Zerar resultados</button>
           <button id="train-start" type="button">Iniciar treino</button>
           <button id="train-stop" type="button" hidden>Parar treino</button>
-          <label class="training-preset-control">
-            Treino
-            <select id="training-preset">
-              <option value="keep">Usar seleção atual</option>
-              <option value="all-lobo">Todos Lobo</option>
-              <option value="lobo-a-carneiro-b">Lobo A x Carneiro B</option>
-              <option value="carneiro-a-lobo-b">Carneiro A x Lobo B</option>
-            </select>
+          <label class="prediction-training-control">
+            <input id="train-prediction-history" type="checkbox" />
+            Gerar histórico e treinar previsão
           </label>
           <label class="speed-control">
             Bots contra humano
@@ -169,6 +164,6 @@
       <section class="belief-dashboard" id="belief-dashboard" aria-label="Aprendizado da rede de previsão"></section>
     </main>
 
-    <script src="./app.js?v=20260623-lean-lobo-smooth-chart"></script>
+    <script src="./app.js?v=20260623-optional-prediction-training"></script>
   </body>
 </html>

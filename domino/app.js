@@ -47,7 +47,7 @@ const els = {
   resetResults: document.querySelector("#reset-results"),
   trainStart: document.querySelector("#train-start"),
   trainStop: document.querySelector("#train-stop"),
-  trainingPreset: document.querySelector("#training-preset"),
+  trainPredictionHistory: document.querySelector("#train-prediction-history"),
   brainSelects: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-select-${i}`)),
   newBrainButtons: [...document.querySelectorAll("[data-new-brain]")],
   humanSpeed: document.querySelector("#human-speed"),
@@ -75,6 +75,7 @@ const state = {
   wins: [0, 0],
   handsPlayed: 0,
   training: false,
+  predictionTrainingEnabled: false,
   humanSeat: null,
   selectedTileId: null,
   handFinished: false,
@@ -87,6 +88,7 @@ const state = {
   brainSaveInFlight: false,
   lastBrainSaveAt: 0,
   lastBrainTrainingClock: 0,
+  lastLearningDashboardRenderAt: 0,
   lastMoveId: null,
   moveSequence: 0,
   handHistoryId: 0,
@@ -580,7 +582,7 @@ function startHand(autoSchedule = true) {
     state.requireDoubleSix = false;
   }
 
-  startHandHistory();
+  if (shouldCollectTrainingHistory()) startHandHistory();
   render();
   if (autoSchedule) scheduleBots();
 }
@@ -688,6 +690,10 @@ function startHandHistory() {
       finalHands: null,
     },
   };
+}
+
+function shouldCollectTrainingHistory() {
+  return state.training && state.predictionTrainingEnabled;
 }
 
 function createKnownMissingNumbers() {
@@ -984,7 +990,7 @@ function playMove(player, move) {
   const hand = state.hands[player];
   const index = hand.findIndex((tile) => tile.id === move.tile.id);
   if (index === -1) return false;
-  const beforeHistory = recordTurnHistoryBefore(player, legalMoves(player));
+  const beforeHistory = shouldCollectTrainingHistory() ? recordTurnHistoryBefore(player, legalMoves(player)) : null;
   const [tile] = hand.splice(index, 1);
   const playedId = `${player}-${state.moveSequence}`;
   state.moveSequence += 1;
@@ -1031,7 +1037,7 @@ function playMove(player, move) {
 function passTurn() {
   if (state.handFinished || state.matchFinished) return;
   const player = state.current;
-  const beforeHistory = recordTurnHistoryBefore(player, legalMoves(player));
+  const beforeHistory = shouldCollectTrainingHistory() ? recordTurnHistoryBefore(player, legalMoves(player)) : null;
   state.passedPlayers[player] = true;
   if (state.training) rewardOpponentPassOutcome(player);
   recordPassSignal(player);
@@ -1060,7 +1066,7 @@ function finishHand(winnerTeam, message, winningPlayer = null, closed = false) {
   }
 
   state.handsPlayed += 1;
-  finishHandHistory(winnerTeam, winningPlayer, closed);
+  if (shouldCollectTrainingHistory()) finishHandHistory(winnerTeam, winningPlayer, closed);
   if (state.training) {
     trainFromHand(winnerTeam);
     state.brainGames += 1;
@@ -1173,7 +1179,7 @@ function syncHumanSeatFromAgents() {
 
 function forceAllAgentsTrained() {
   for (const select of els.agentModes) {
-    select.value = "lobo";
+    select.value = "carneiro";
   }
   state.humanSeat = null;
   state.selectedTileId = null;
@@ -1215,19 +1221,6 @@ function restoreAgentModes(modes) {
   });
 }
 
-function applyTrainingPreset() {
-  const preset = els.trainingPreset?.value || "keep";
-  if (preset === "all-lobo") {
-    setAgentModes(["lobo", "lobo", "lobo", "lobo"]);
-  } else if (preset === "lobo-a-carneiro-b") {
-    setAgentModes(["lobo", "carneiro", "lobo", "carneiro"]);
-  } else if (preset === "carneiro-a-lobo-b") {
-    setAgentModes(["carneiro", "lobo", "carneiro", "lobo"]);
-  } else if (agentMode(0) === "human") {
-    els.agentModes[0].value = "lobo";
-  }
-}
-
 function setAgentModes(modes) {
   modes.forEach((mode, player) => {
     if (els.agentModes[player]) els.agentModes[player].value = mode;
@@ -1236,8 +1229,9 @@ function setAgentModes(modes) {
 
 function startTrainingMode() {
   state.agentModesBeforeTraining = currentAgentModes();
-  applyTrainingPreset();
+  forceAllAgentsTrained();
   state.training = true;
+  state.predictionTrainingEnabled = Boolean(els.trainPredictionHistory?.checked);
   state.lastBrainSaveAt = Date.now();
   state.lastBrainTrainingClock = Date.now();
   syncHumanSeatFromAgents();
@@ -1247,6 +1241,7 @@ function startTrainingMode() {
 function stopTrainingMode(restoreAgents = true) {
   saveSelectedBrains(true);
   state.training = false;
+  state.predictionTrainingEnabled = false;
   state.lastBrainTrainingClock = 0;
   if (restoreAgents) restoreAgentModes(state.agentModesBeforeTraining);
   state.agentModesBeforeTraining = null;
@@ -1668,12 +1663,11 @@ function rememberDecision(player, move) {
 function trainFromHand(winnerTeam) {
   const trainedPlayers = new Set();
   trainCarneiroDecisions(winnerTeam, trainedPlayers);
-  trainLoboDecisions(winnerTeam, trainedPlayers);
   for (const player of trainedPlayers) {
     state.brains[player].roundsTrained = (state.brains[player].roundsTrained || 0) + 1;
     state.brains[player].treinosRealizados = state.brains[player].roundsTrained;
   }
-  trainBeliefFromHandHistory(state.lastHandHistory);
+  if (state.predictionTrainingEnabled) trainBeliefFromHandHistory(state.lastHandHistory);
 }
 
 function trainCarneiroDecisions(winnerTeam, trainedPlayers) {
@@ -2209,10 +2203,14 @@ function render(message = "") {
   els.agentModes.forEach((select) => {
     select.disabled = state.training;
   });
-  if (els.trainingPreset) els.trainingPreset.disabled = state.training;
+  if (els.trainPredictionHistory) els.trainPredictionHistory.disabled = state.training;
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
-  renderBeliefDashboard();
+  const now = Date.now();
+  if (!state.training || now - state.lastLearningDashboardRenderAt >= 1000) {
+    renderBeliefDashboard();
+    state.lastLearningDashboardRenderAt = now;
+  }
 
   renderPlayers();
   renderBoard();
@@ -2304,11 +2302,13 @@ function renderBeliefDashboard() {
 
 function learningDiagnosisHtml() {
   const beliefSteps = state.brains.reduce((sum, brain) => sum + (normalizeBeliefStats(brain.beliefStats).trainSteps || 0), 0);
-  const loboSteps = state.brains.reduce((sum, brain) => sum + (normalizeLoboStats(brain.loboStats).trainSteps || 0), 0);
   const avgCloseness = average(state.brains.map((brain) => normalizeBeliefStats(brain.beliefStats).closeness));
-  const avgTd = average(state.brains.map((brain) => normalizeLoboStats(brain.loboStats).avgTdError));
-  const loboStatus = loboSteps === 0 ? "Lobo ainda sem treino TD salvo" : "Lobo recebendo treino TD";
-  const beliefStatus = beliefSteps === 0 ? "Previsão ainda sem treino" : "Previsão treinando";
+  const active = state.training && state.predictionTrainingEnabled;
+  const beliefStatus = active
+    ? "Histórico e previsão ativos"
+    : state.training
+      ? "Treino rápido: previsão desligada"
+      : "Previsão em espera";
   return `
     <section class="learning-diagnosis" aria-label="Diagnóstico de aprendizado">
       <div>
@@ -2316,12 +2316,7 @@ function learningDiagnosisHtml() {
         <strong>${formatPercent(avgCloseness)}</strong>
         <em>${beliefSteps} ajustes de previsão</em>
       </div>
-      <div class="${loboSteps === 0 ? "needs-training" : ""}">
-        <span>${loboStatus}</span>
-        <strong>${loboSteps === 0 ? "0" : formatDecimal(avgTd)}</strong>
-        <em>${loboSteps} ajustes TD</em>
-      </div>
-      <p>${loboSteps === 0 ? "Selecione Lobo nos jogadores ou use o preset de treino com Lobo para a value network começar a aprender." : "Erro TD menor e taxa de vitória maior são os sinais principais de evolução do Lobo."}</p>
+      <p>${active ? "Cada rodada gera o histórico privado e corrige a rede preditiva no encerramento." : "O Carneiro está livre do custo de histórico e backpropagation preditivo. Marque a opção antes de iniciar para ativá-los."}</p>
     </section>
   `;
 }
@@ -2376,7 +2371,6 @@ function winRateForTeam(matches, team) {
 
 function beliefCardHtml(brain, player) {
   const stats = normalizeBeliefStats(brain.beliefStats);
-  const loboStats = normalizeLoboStats(brain.loboStats);
   const history = stats.history.length > 0 ? stats.history : [beliefHistoryPoint(stats)];
   const delta = beliefTrendDelta(stats);
   const trend = beliefTrendLabel(delta);
@@ -2397,11 +2391,6 @@ function beliefCardHtml(brain, player) {
         ${beliefMetricHtml("Números achados", stats.numberRecall)}
         ${beliefMetricHtml("Pedras achadas", stats.tileRecall)}
         ${beliefMetricHtml("Precisão pedras", stats.tilePrecision)}
-      </div>
-      <div class="lobo-mini">
-        <span>${loboLearningLabel(loboStats)}</span>
-        <strong>erro ${formatDecimal(loboStats.avgTdError)}</strong>
-        <em>${loboStats.trainSteps || 0} ajustes TD</em>
       </div>
       <div class="belief-chart-wrap">
         <span class="chart-label">Previsão: proximidade com a verdade, média a cada 100 pontos</span>

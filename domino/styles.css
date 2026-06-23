@@ -142,8 +142,27 @@ p,
   margin-left: auto;
 }
 
-.training-preset-control select {
-  min-width: 178px;
+.prediction-training-control {
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink) !important;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.prediction-training-control input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.prediction-training-control:has(input:checked) {
+  border-color: var(--green);
+  background: #edf7f0;
 }
 
 .controls label span {
@@ -887,7 +906,7 @@ p,
 
 .learning-diagnosis {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }
