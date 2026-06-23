@@ -58,12 +58,6 @@ button[aria-pressed="true"] {
   border-color: #183b62;
 }
 
-button.danger {
-  background: #b91c1c;
-  border-color: #7f1d1d;
-  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.16);
-}
-
 button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -197,7 +191,7 @@ p,
   width: 100%;
 }
 
-.brain-file-controls {
+.brain-db-controls {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -214,12 +208,13 @@ p,
   padding-inline: 0.5rem;
 }
 
-.brain-file-controls input[type="text"] {
-  width: 132px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  padding: 0.55rem 0.5rem;
+.brain-db-controls label {
+  gap: 6px;
+}
+
+.brain-db-controls select {
+  max-width: 132px;
+  padding-inline: 0.5rem;
 }
 
 .reward-panel {
@@ -267,18 +262,6 @@ p,
 
 .reward-player input {
   min-width: 0;
-}
-
-.training-mode-control select {
-  max-width: 150px;
-}
-
-.tournament-target-control input {
-  width: 84px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  padding: 0.55rem 0.5rem;
 }
 
 .table {

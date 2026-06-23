@@ -7,15 +7,12 @@ const TRAINING_STEPS_PER_FRAME = 140;
 const BOARD_CELL = 34;
 const LEARNING_RATE = 0.01;
 const GAMMA = 0.8;
-const TOURNAMENT_MIN_WINS = 4;
-const TOURNAMENT_MAX_WINS = 1000;
-const MUTATION_RATE = 0.02;
-const MUTATION_STRENGTH = 0.03;
-const RESET_BRAIN_CONFIRM_MS = 5000;
+const BRAIN_SAVE_INTERVAL_MS = 60000;
+const DEFAULT_BRAIN_BASE_NAME = "basico";
+const DOMINO_BRAIN_API = "/api/domino/brains";
 const INPUT_SIZE = 203;
 const HIDDEN_SIZES = [96, 64, 32, 16];
 const LAYER_SIZES = [INPUT_SIZE, ...HIDDEN_SIZES, 1];
-const BRAIN_STORAGE_KEY = "domino-ai-brains-v2";
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
 
@@ -36,30 +33,14 @@ const els = {
   resetResults: document.querySelector("#reset-results"),
   trainStart: document.querySelector("#train-start"),
   trainStop: document.querySelector("#train-stop"),
-  trainingMode: document.querySelector("#training-mode"),
-  tournamentTarget: document.querySelector("#tournament-target"),
-  resetBrain: document.querySelector("#reset-brain"),
-  resetBrainTarget: document.querySelector("#reset-brain-target"),
-  brainFileName: document.querySelector("#brain-file-name"),
-  brainSaveTarget: document.querySelector("#brain-save-target"),
-  saveBrainFile: document.querySelector("#save-brain-file"),
-  brainLoadTarget: document.querySelector("#brain-load-target"),
-  brainFileInput: document.querySelector("#brain-file-input"),
-  loadBrainFile: document.querySelector("#load-brain-file"),
+  brainSelects: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-select-${i}`)),
+  newBrainButtons: [...document.querySelectorAll("[data-new-brain]")],
   humanSpeed: document.querySelector("#human-speed"),
   humanSpeedValue: document.querySelector("#human-speed-value"),
   agentModes: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#agent-${i}`)),
   rewardSliders: [...document.querySelectorAll("[data-reward]")],
   brainStats: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-stat-${i}`)),
   brainCounts: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-${i}`)),
-  tournamentGeneration: document.querySelector("#tournament-generation"),
-  tournamentScore: document.querySelector("#tournament-score"),
-  tournamentLast: document.querySelector("#tournament-last"),
-  tournamentStats: [
-    document.querySelector("#tournament-generation-stat"),
-    document.querySelector("#tournament-score-stat"),
-    document.querySelector("#tournament-last-stat"),
-  ],
   players: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#player-${i}`)),
 };
 
@@ -78,11 +59,6 @@ const state = {
   wins: [0, 0],
   handsPlayed: 0,
   training: false,
-  trainingMode: "normal",
-  tournamentTarget: 50,
-  tournamentWins: [0, 0],
-  tournamentGeneration: 0,
-  tournamentLast: "nenhum",
   humanSeat: null,
   selectedTileId: null,
   handFinished: false,
@@ -92,8 +68,9 @@ const state = {
   resultType: null,
   botTimer: null,
   resultTimer: null,
-  resetBrainConfirmTimer: null,
-  resetBrainConfirmTarget: null,
+  brainSaveInFlight: false,
+  lastBrainSaveAt: 0,
+  lastBrainTrainingClock: 0,
   lastMoveId: null,
   moveSequence: 0,
   minPathIndex: 0,
@@ -103,6 +80,9 @@ const state = {
   publicSignals: createPublicSignals(),
   rewardProfiles: createRewardProfiles(),
   brains: Array.from({ length: PLAYERS }, createBrain),
+  brainNames: Array.from({ length: PLAYERS }, (_, i) => `${DEFAULT_BRAIN_BASE_NAME}J${i + 1}`),
+  brainOptions: Array.from({ length: PLAYERS }, () => []),
+  brainTrainMs: Array(PLAYERS).fill(0),
   brainGames: 0,
   epsilon: 0.35,
 };
@@ -166,22 +146,6 @@ function saveRewardProfiles() {
   }
 }
 
-function loadBrains() {
-  try {
-    const raw = localStorage.getItem(BRAIN_STORAGE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (!isValidSavedBrain(saved)) return;
-    state.brains = saved.brains.map(normalizeBrain);
-    state.brainGames = saved.brainGames || 0;
-    state.tournamentGeneration = saved.tournamentGeneration || 0;
-    state.tournamentLast = saved.tournamentLast || "nenhum";
-    state.epsilon = Math.max(0.04, 0.35 * Math.pow(0.997, state.brainGames));
-  } catch {
-    localStorage.removeItem(BRAIN_STORAGE_KEY);
-  }
-}
-
 function normalizeBrain(brain) {
   return {
     ...brain,
@@ -189,31 +153,6 @@ function normalizeBrain(brain) {
     roundsTrained: brain.roundsTrained || 0,
     generation: brain.generation || 0,
   };
-}
-
-function saveBrains() {
-  try {
-    localStorage.setItem(
-      BRAIN_STORAGE_KEY,
-      JSON.stringify({
-        brainGames: state.brainGames,
-        tournamentGeneration: state.tournamentGeneration,
-        tournamentLast: state.tournamentLast,
-        brains: state.brains,
-      }),
-    );
-  } catch {
-    // If storage is full or unavailable, training continues in memory.
-  }
-}
-
-function isValidSavedBrain(saved) {
-  return (
-    saved &&
-    Array.isArray(saved.brains) &&
-    saved.brains.length === PLAYERS &&
-    saved.brains.every(isValidBrain)
-  );
 }
 
 function isValidBrain(brain) {
@@ -233,6 +172,120 @@ function isValidBrain(brain) {
       );
     })
   );
+}
+
+async function initBrainsFromDatabase() {
+  try {
+    await refreshBrainOptions();
+    for (let player = 0; player < PLAYERS; player += 1) {
+      const defaultBase = DEFAULT_BRAIN_BASE_NAME;
+      const option = state.brainOptions[player].find((item) => item.baseName === defaultBase) || state.brainOptions[player][0];
+      if (option) {
+        await loadBrainFromDatabase(player, option.baseName);
+      }
+    }
+    render("CÃ©rebros carregados do banco.");
+  } catch (error) {
+    console.error(error);
+    render("NÃ£o foi possÃ­vel carregar os cÃ©rebros do banco. Usando cÃ©rebros temporÃ¡rios em memÃ³ria.");
+  }
+}
+
+async function refreshBrainOptions() {
+  const payload = await fetchJson(DOMINO_BRAIN_API);
+  state.brainOptions = Array.from({ length: PLAYERS }, (_, player) =>
+    (payload.brains || [])
+      .filter((brain) => brain.player === player + 1)
+      .sort((a, b) => a.baseName.localeCompare(b.baseName, "pt-BR")),
+  );
+  renderBrainSelectors();
+}
+
+async function loadBrainFromDatabase(player, baseName) {
+  const safeBaseName = sanitizeBrainBaseName(baseName);
+  const payload = await fetchJson(`${DOMINO_BRAIN_API}/${player + 1}/${encodeURIComponent(safeBaseName)}`);
+  const brain = normalizeBrain(payload.brain);
+  if (!isValidBrain(brain)) throw new Error("CÃ©rebro incompatÃ­vel.");
+  state.brains[player] = brain;
+  state.brainNames[player] = payload.nome;
+  state.brainTrainMs[player] = Number(payload.tempoTreino) || 0;
+  renderBrainSelectors();
+}
+
+async function createBrainInDatabase(player, rawName) {
+  const baseName = sanitizeBrainBaseName(rawName);
+  const payload = await fetchJson(DOMINO_BRAIN_API, {
+    method: "POST",
+    body: JSON.stringify({ player: player + 1, nome: baseName }),
+  });
+  await refreshBrainOptions();
+  await loadBrainFromDatabase(player, payload.baseName || baseName);
+  render(`CÃ©rebro ${baseName}J${player + 1} criado e carregado.`);
+}
+
+async function saveSelectedBrains(force = false) {
+  if (state.brainSaveInFlight) return;
+  const now = Date.now();
+  accrueTrainingTime(now);
+  if (!force && now - state.lastBrainSaveAt < BRAIN_SAVE_INTERVAL_MS) return;
+  state.brainSaveInFlight = true;
+  try {
+    await fetchJson(DOMINO_BRAIN_API, {
+      method: "PUT",
+      body: JSON.stringify({
+        items: state.brains.map((brain, player) => ({
+          player: player + 1,
+          nome: state.brainNames[player],
+          brain,
+          tempoTreino: Math.round(state.brainTrainMs[player]),
+        })),
+      }),
+    });
+    state.lastBrainSaveAt = now;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    state.brainSaveInFlight = false;
+  }
+}
+
+function accrueTrainingTime(now = Date.now()) {
+  if (!state.training || state.lastBrainTrainingClock === 0) {
+    state.lastBrainTrainingClock = now;
+    return;
+  }
+  const elapsed = Math.max(0, now - state.lastBrainTrainingClock);
+  for (let player = 0; player < PLAYERS; player += 1) {
+    if (agentMode(player) === "trained") state.brainTrainMs[player] += elapsed;
+  }
+  state.lastBrainTrainingClock = now;
+}
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "Erro na comunicaÃ§Ã£o com o banco.");
+  return payload;
+}
+
+function sanitizeBrainBaseName(value) {
+  const cleaned = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/J[1-4]$/i, "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80);
+  return cleaned || DEFAULT_BRAIN_BASE_NAME;
+}
+
+function brainBaseName(player) {
+  const match = String(state.brainNames[player] || "").match(/^(.+)J[1-4]$/);
+  return match ? match[1] : DEFAULT_BRAIN_BASE_NAME;
 }
 
 function createTiles() {
@@ -276,32 +329,6 @@ function resetCounters() {
   state.statusMessage = "";
   state.statusKind = "neutral";
   state.resultType = null;
-}
-
-function armResetBrain(target) {
-  disarmResetBrain();
-  state.resetBrainConfirmTarget = target;
-  els.resetBrain.classList.add("danger");
-  els.resetBrain.textContent = target === "all" ? "Confirmar zerar todos" : `Confirmar zerar J${Number(target) + 1}`;
-  state.resetBrainConfirmTimer = window.setTimeout(disarmResetBrain, RESET_BRAIN_CONFIRM_MS);
-}
-
-function disarmResetBrain() {
-  if (state.resetBrainConfirmTimer !== null) {
-    window.clearTimeout(state.resetBrainConfirmTimer);
-    state.resetBrainConfirmTimer = null;
-  }
-  state.resetBrainConfirmTarget = null;
-  if (els.resetBrain) {
-    els.resetBrain.classList.remove("danger");
-    els.resetBrain.textContent = "Zerar";
-  }
-}
-
-function resetBrainConfirmMessage(target) {
-  return target === "all"
-    ? "Clique de novo para confirmar: isso apaga todos os cérebros salvos na memória local."
-    : `Clique de novo para confirmar: isso apaga o cérebro do J${Number(target) + 1}.`;
 }
 
 function startHand(autoSchedule = true) {
@@ -491,7 +518,7 @@ function passTurn() {
   recordPassSignal(state.current);
   state.consecutivePasses += 1;
   if (state.consecutivePasses >= PLAYERS) {
-    finishHand(null, "Jogo fechado. Ninguém marcou porque nenhuma mão foi esvaziada.");
+    finishHand(null, "Jogo fechado. NinguÃ©m marcou porque nenhuma mÃ£o foi esvaziada.");
     return;
   }
   advanceTurn();
@@ -517,16 +544,12 @@ function finishHand(winnerTeam, message) {
     trainFromHand(winnerTeam);
     state.brainGames += 1;
     state.epsilon = Math.max(0.04, 0.35 * Math.pow(0.997, state.brainGames));
-    saveBrains();
   }
 
   const matchWinner = state.scores.findIndex((score) => score >= MATCH_POINTS);
   if (matchWinner !== -1) {
     state.wins[matchWinner] += 1;
     if (state.humanSeat === null) {
-      if (state.training && state.trainingMode === "tournament") {
-        recordTournamentMatchWin(matchWinner);
-      }
       state.scores = [0, 0];
       state.firstHand = true;
       state.nextStarter = 0;
@@ -563,14 +586,14 @@ function finishHand(winnerTeam, message) {
 function humanResultMessage(winnerTeam, fallback) {
   if (state.humanSeat === null || winnerTeam === null) return fallback;
   const humanTeam = TEAM_BY_PLAYER[state.humanSeat];
-  return winnerTeam === humanTeam ? `Vitória! ${fallback}` : `Derrota. ${fallback}`;
+  return winnerTeam === humanTeam ? `VitÃ³ria! ${fallback}` : `Derrota. ${fallback}`;
 }
 
 function matchResultMessage(winnerTeam, handMessage) {
   const base = `Time ${TEAM_NAMES[winnerTeam]} venceu a partida por ${state.scores[winnerTeam]} a ${state.scores[1 - winnerTeam]}. ${handMessage}`;
   if (state.humanSeat === null) return base;
   const humanTeam = TEAM_BY_PLAYER[state.humanSeat];
-  if (winnerTeam === humanTeam) return `Grande vitória! Seu time fechou a partida. Nova partida em instantes.`;
+  if (winnerTeam === humanTeam) return `Grande vitÃ³ria! Seu time fechou a partida. Nova partida em instantes.`;
   return `Fim de partida. O outro time chegou a ${MATCH_POINTS} pontos. Nova chance em instantes.`;
 }
 
@@ -633,151 +656,22 @@ function restoreAgentModes(modes) {
 
 function startTrainingMode() {
   state.agentModesBeforeTraining = currentAgentModes();
-  state.trainingMode = els.trainingMode.value;
-  state.tournamentTarget = tournamentTargetValue();
-  state.tournamentWins = [0, 0];
   state.training = true;
+  state.lastBrainSaveAt = Date.now();
+  state.lastBrainTrainingClock = Date.now();
   forceAllAgentsTrained();
   syncHumanSeatFromAgents();
   startMatch();
 }
 
 function stopTrainingMode(restoreAgents = true) {
+  saveSelectedBrains(true);
   state.training = false;
+  state.lastBrainTrainingClock = 0;
   if (restoreAgents) restoreAgentModes(state.agentModesBeforeTraining);
   state.agentModesBeforeTraining = null;
   syncHumanSeatFromAgents();
 }
-
-function tournamentTargetValue() {
-  const value = Number.parseInt(els.tournamentTarget.value, 10);
-  const clamped = clamp(Number.isFinite(value) ? value : 50, TOURNAMENT_MIN_WINS, TOURNAMENT_MAX_WINS);
-  els.tournamentTarget.value = clamped;
-  return clamped;
-}
-
-function recordTournamentMatchWin(winnerTeam) {
-  state.tournamentWins[winnerTeam] += 1;
-  if (state.tournamentWins[winnerTeam] < state.tournamentTarget) return;
-  evolveFromTournamentWinner(winnerTeam);
-  state.tournamentWins = [0, 0];
-}
-
-function evolveFromTournamentWinner(winnerTeam) {
-  const winners = playersForTeam(winnerTeam);
-  const losers = playersForTeam(1 - winnerTeam);
-  const replacedPlayer = losers[Math.floor(Math.random() * losers.length)];
-  const child = createChildBrain(state.brains[winners[0]], state.brains[winners[1]]);
-  state.tournamentGeneration += 1;
-  child.generation = state.tournamentGeneration;
-  state.brains[replacedPlayer] = child;
-  state.tournamentLast = `T${TEAM_NAMES[winnerTeam]} -> J${replacedPlayer + 1}`;
-  saveBrains();
-}
-
-function playersForTeam(team) {
-  return TEAM_BY_PLAYER.map((playerTeam, player) => (playerTeam === team ? player : -1)).filter((player) => player !== -1);
-}
-
-function createChildBrain(parentA, parentB) {
-  const child = {
-    layers: parentA.layers.map((layer, layerIndex) => ({
-      weights: layer.weights.map((weights, neuron) =>
-        weights.map((weight, inputIndex) => {
-          const inherited = Math.random() < 0.5 ? weight : parentB.layers[layerIndex].weights[neuron][inputIndex];
-          return mutateValue(inherited);
-        }),
-      ),
-      biases: layer.biases.map((bias, neuron) => {
-        const inherited = Math.random() < 0.5 ? bias : parentB.layers[layerIndex].biases[neuron];
-        return mutateValue(inherited);
-      }),
-    })),
-    games: 0,
-    roundsTrained: 0,
-    generation: 0,
-  };
-  return child;
-}
-
-function mutateValue(value) {
-  if (Math.random() >= MUTATION_RATE) return value;
-  return value + (Math.random() * 2 - 1) * MUTATION_STRENGTH;
-}
-
-function exportedBrainPayload(player) {
-  return {
-    type: "domino-ai-brain",
-    version: 2,
-    architecture: {
-      inputSize: INPUT_SIZE,
-      layerSizes: LAYER_SIZES,
-    },
-    player,
-    label: `J${player + 1}`,
-    exportedAt: new Date().toISOString(),
-    brain: state.brains[player],
-  };
-}
-
-function saveBrainFiles() {
-  const baseName = safeFileBaseName(els.brainFileName.value);
-  const target = els.brainSaveTarget.value;
-  const players = target === "all" ? [0, 1, 2, 3] : [Number(target)];
-  for (const player of players) {
-    downloadTextFile(`${baseName}.J${player + 1}`, JSON.stringify(exportedBrainPayload(player), null, 2));
-  }
-  render(players.length === 4 ? "Cérebros exportados." : `Cérebro J${players[0] + 1} exportado.`);
-}
-
-function safeFileBaseName(value) {
-  const cleaned = String(value || "")
-    .trim()
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-")
-    .replace(/\s+/g, "_")
-    .replace(/^\.+$/, "");
-  return cleaned || "cerebro";
-}
-
-function downloadTextFile(fileName, content) {
-  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function openBrainFilePicker() {
-  els.brainFileInput.value = "";
-  els.brainFileInput.click();
-}
-
-function loadBrainFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    try {
-      const payload = JSON.parse(String(reader.result || ""));
-      const brain = normalizeBrain(payload.brain || payload);
-      if (!isValidBrain(brain)) {
-        render("Arquivo de cérebro incompatível.");
-        return;
-      }
-      const target = Number(els.brainLoadTarget.value);
-      state.brains[target] = brain;
-      saveBrains();
-      render(`Cérebro carregado em J${target + 1}.`);
-    } catch {
-      render("Não foi possível carregar esse arquivo.");
-    }
-  });
-  reader.readAsText(file);
-}
-
 function featuresFor(player, move) {
   const tile = move.tile;
   const myRemaining = state.hands[player].length - 1;
@@ -974,6 +868,14 @@ function fitInputs(inputs) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function previewEnds(move) {
@@ -1173,7 +1075,7 @@ function humanBotDelay() {
 
 function humanBotDelayLabel() {
   const delay = humanBotDelay();
-  if (delay === 0) return "máx.";
+  if (delay === 0) return "mÃ¡x.";
   if (delay < 1000) return `${delay}ms`;
   return `${(delay / 1000).toFixed(1)}s`;
 }
@@ -1222,6 +1124,7 @@ function trainFast() {
       stepBot(false);
     }
   }
+  saveSelectedBrains(false);
   render();
   requestAnimationFrame(trainFast);
 }
@@ -1235,15 +1138,13 @@ function render(message = "") {
   els.humanSpeedValue.textContent = humanBotDelayLabel();
   els.trainStart.hidden = state.training;
   els.trainStop.hidden = !state.training;
-  els.trainingMode.disabled = state.training;
-  els.tournamentTarget.disabled = state.training;
   renderRewardSliders();
+  renderBrainSelectors();
   els.agentModes.forEach((select) => {
     select.disabled = state.training;
   });
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
-  renderTournamentStats();
 
   renderPlayers();
   renderBoard();
@@ -1283,7 +1184,7 @@ function renderResultOverlay(message, kind) {
       <div class="result-title">${title}</div>
       <div class="result-score">Time A ${state.scores[0]} &times; ${state.scores[1]} Time B</div>
       <div class="result-message">${message}</div>
-      <div class="result-timer">${state.resultType === "match" ? "Nova partida em instantes" : "Próxima rodada em instantes"}</div>
+      <div class="result-timer">${state.resultType === "match" ? "Nova partida em instantes" : "PrÃ³xima rodada em instantes"}</div>
     </div>
   `;
 }
@@ -1313,16 +1214,6 @@ function renderBrainStats() {
   }
 }
 
-function renderTournamentStats() {
-  const show = state.trainingMode === "tournament" || els.trainingMode.value === "tournament";
-  for (const stat of els.tournamentStats) {
-    stat.hidden = !show;
-  }
-  els.tournamentGeneration.textContent = state.tournamentGeneration;
-  els.tournamentScore.textContent = `${state.tournamentWins[0]} x ${state.tournamentWins[1]} / ${state.tournamentTarget}`;
-  els.tournamentLast.textContent = state.tournamentLast;
-}
-
 function renderRewardSliders() {
   for (const slider of els.rewardSliders) {
     const player = Number(slider.dataset.player);
@@ -1331,6 +1222,25 @@ function renderRewardSliders() {
     if (Number(slider.value) !== value) slider.value = value;
     const valueEl = document.querySelector(`[data-reward-value="${player}-${key}"]`);
     if (valueEl) valueEl.textContent = value;
+  }
+}
+
+function renderBrainSelectors() {
+  for (let player = 0; player < PLAYERS; player += 1) {
+    const select = els.brainSelects[player];
+    if (!select) continue;
+    const options = state.brainOptions[player];
+    const selectedBase = brainBaseName(player);
+    select.innerHTML = options
+      .map((option) => `<option value="${escapeHtml(option.baseName)}">${escapeHtml(option.baseName)}</option>`)
+      .join("");
+    if (options.some((option) => option.baseName === selectedBase)) {
+      select.value = selectedBase;
+    }
+    select.disabled = state.training;
+  }
+  for (const button of els.newBrainButtons) {
+    button.disabled = state.training;
   }
 }
 
@@ -1604,49 +1514,33 @@ els.agentModes.forEach((select) => {
   });
 });
 
-els.trainingMode.addEventListener("change", () => {
-  if (!state.training) state.trainingMode = els.trainingMode.value;
-  render();
+els.brainSelects.forEach((select, player) => {
+  select.addEventListener("change", async () => {
+    if (state.training) return;
+    try {
+      await loadBrainFromDatabase(player, select.value);
+      render(`Cérebro ${select.value}J${player + 1} carregado.`);
+    } catch (error) {
+      console.error(error);
+      render("Não foi possível carregar esse cérebro.");
+    }
+  });
 });
 
-els.tournamentTarget.addEventListener("change", () => {
-  state.tournamentTarget = tournamentTargetValue();
-  render();
+els.newBrainButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (state.training) return;
+    const player = Number(button.dataset.newBrain);
+    const name = window.prompt(`Nome do novo cérebro para J${player + 1}:`, "cerebro");
+    if (name === null) return;
+    try {
+      await createBrainInDatabase(player, name);
+    } catch (error) {
+      console.error(error);
+      render("Não foi possível criar esse cérebro.");
+    }
+  });
 });
-
-els.resetBrain.addEventListener("click", () => {
-  const target = els.resetBrainTarget.value;
-  if (state.resetBrainConfirmTarget !== target) {
-    armResetBrain(target);
-    render(resetBrainConfirmMessage(target));
-    return;
-  }
-  disarmResetBrain();
-  if (target === "all") {
-    state.brains = Array.from({ length: PLAYERS }, createBrain);
-    state.brainGames = 0;
-    state.epsilon = 0.35;
-    state.tournamentWins = [0, 0];
-    state.tournamentGeneration = 0;
-    state.tournamentLast = "nenhum";
-  } else {
-    state.brains[Number(target)] = createBrain();
-  }
-  state.statusKind = "neutral";
-  saveBrains();
-  render(target === "all" ? "Cérebros zerados." : `Cérebro J${Number(target) + 1} zerado.`);
-});
-
-els.resetBrainTarget.addEventListener("change", disarmResetBrain);
-
-els.saveBrainFile.addEventListener("click", saveBrainFiles);
-
-els.loadBrainFile.addEventListener("click", openBrainFilePicker);
-
-els.brainFileInput.addEventListener("change", () => {
-  loadBrainFile(els.brainFileInput.files?.[0]);
-});
-
 els.rewardSliders.forEach((slider) => {
   slider.addEventListener("input", () => {
     const player = Number(slider.dataset.player);
@@ -1705,6 +1599,6 @@ document.addEventListener("pointerdown", dismissResultOverlay);
 document.addEventListener("keydown", dismissResultOverlay);
 
 syncHumanSeatFromAgents();
-loadBrains();
 loadRewardProfiles();
 startMatch();
+initBrainsFromDatabase();
