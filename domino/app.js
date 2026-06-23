@@ -18,7 +18,8 @@ const BELIEF_INPUT_SIZE = 165;
 const BELIEF_OUTPUT_SIZE = PLAYERS * 7 + PLAYERS * TILE_IDS.length;
 const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 96, 64, BELIEF_OUTPUT_SIZE];
 const BELIEF_LEARNING_RATE = 0.008;
-const BELIEF_HISTORY_LIMIT = 120;
+const BELIEF_HISTORY_LIMIT = 12000;
+const CHART_POINT_LIMIT = 900;
 const LOBO_INPUT_SIZE = INPUT_SIZE + BELIEF_OUTPUT_SIZE + 17;
 const LOBO_LAYER_SIZES = [LOBO_INPUT_SIZE, 128, 96, 48, 1];
 const LOBO_LEARNING_RATE = 0.008;
@@ -2404,9 +2405,9 @@ function beliefCardHtml(brain, player) {
   const history = stats.history.length > 0 ? stats.history : [beliefHistoryPoint(stats)];
   const delta = beliefTrendDelta(stats);
   const trend = beliefTrendLabel(delta);
-  const chart = beliefSparklineData(history, "closeness", 320, 92);
+  const chart = beliefSparklineData(history, "closeness", 900, 116);
   const loboHistory = Array.isArray(loboStats.history) ? loboStats.history : [];
-  const loboChart = loboHistory.length ? beliefSparklineData(loboHistory, "avgTdError", 320, 78, true) : null;
+  const loboChart = loboHistory.length ? beliefSparklineData(loboHistory, "avgTdError", 900, 86, true) : null;
   return `
     <article class="belief-card belief-card-${player}">
       <div class="belief-card-title">
@@ -2431,8 +2432,8 @@ function beliefCardHtml(brain, player) {
       </div>
       <div class="belief-chart-wrap">
         <span class="chart-label">Previsão: proximidade com a verdade</span>
-        <svg class="belief-chart" viewBox="0 0 320 92" role="img" aria-label="Evolução da proximidade J${player + 1}">
-          <line x1="6" y1="82" x2="314" y2="82"></line>
+        <svg class="belief-chart" viewBox="0 0 900 116" role="img" aria-label="Evolução da proximidade J${player + 1}">
+          <line x1="6" y1="106" x2="894" y2="106"></line>
           <polyline points="${chart.points}"></polyline>
         </svg>
         <div class="belief-scale">
@@ -2444,8 +2445,8 @@ function beliefCardHtml(brain, player) {
         <span class="chart-label">Lobo TD: estabilidade do erro</span>
         ${
           loboChart
-            ? `<svg class="belief-chart td-chart" viewBox="0 0 320 78" role="img" aria-label="Erro TD J${player + 1}">
-                <line x1="6" y1="68" x2="314" y2="68"></line>
+            ? `<svg class="belief-chart td-chart" viewBox="0 0 900 86" role="img" aria-label="Erro TD J${player + 1}">
+                <line x1="6" y1="76" x2="894" y2="76"></line>
                 <polyline points="${loboChart.points}"></polyline>
               </svg>
               <div class="belief-scale">
@@ -2499,7 +2500,8 @@ function beliefTrendLabel(delta) {
 }
 
 function beliefSparklineData(history, field, width = 180, height = 62, lowerIsBetter = false) {
-  const values = history.map((entry) => {
+  const sampledHistory = sampleHistoryForChart(history, CHART_POINT_LIMIT);
+  const values = sampledHistory.map((entry) => {
     const value = Number(entry?.[field]);
     if (!Number.isFinite(value)) return 0;
     return lowerIsBetter ? Math.max(0, value) : clamp(value, 0, 1);
@@ -2532,6 +2534,16 @@ function beliefSparklineData(history, field, width = 180, height = 62, lowerIsBe
     })
     .join(" ");
   return { points, min, max };
+}
+
+function sampleHistoryForChart(history, limit) {
+  if (!Array.isArray(history) || history.length <= limit) return history || [];
+  const sampled = [];
+  const lastIndex = history.length - 1;
+  for (let i = 0; i < limit; i += 1) {
+    sampled.push(history[Math.round((i / (limit - 1)) * lastIndex)]);
+  }
+  return sampled;
 }
 
 function formatPercent(value) {

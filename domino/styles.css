@@ -933,8 +933,8 @@ p,
 
 .belief-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .belief-card {
@@ -1071,14 +1071,14 @@ p,
 
 .belief-chart {
   width: 100%;
-  height: 92px;
+  height: 116px;
   border-radius: 6px;
   background: #f3f7f4;
   border: 1px solid #e1e9e3;
 }
 
 .td-chart {
-  height: 78px;
+  height: 86px;
   background: #f8f5ef;
   border-color: #eadfce;
 }
