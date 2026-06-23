@@ -44,7 +44,8 @@ let training = null;
 let submitting = false;
 let meaningFitFrame = 0;
 let neutralPendingTraining = null;
-let lastSpokenText = "";
+let lastSpokenFeedback = null;
+let narrationSequence = 0;
 
 elements.answerForm.addEventListener("submit", submitAnswer);
 elements.answerInput.addEventListener("input", updateSubmitState);
@@ -53,7 +54,7 @@ elements.settingsForm.addEventListener("submit", saveSettings);
 elements.feedbackContinueButton.addEventListener("click", continueAfterFeedback);
 elements.unknownButton.addEventListener("click", handleUnknownAnswer);
 elements.narrationCheckbox.addEventListener("change", saveNarrationPreference);
-elements.feedbackRepeatButton.addEventListener("click", () => speakFeedback(lastSpokenText));
+elements.feedbackRepeatButton.addEventListener("click", () => speakFeedback(lastSpokenFeedback));
 window.addEventListener("resize", scheduleMeaningFit);
 boot();
 
@@ -196,6 +197,8 @@ function renderTraining() {
   neutralPendingTraining = null;
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
+  elements.submitButton.dataset.state = "answer";
+  elements.submitButton.textContent = "Confirmar";
   elements.submitButton.disabled = true;
   setStatus("A pontuacao considera cada caractere da resposta.");
   requestAnimationFrame(() => {
@@ -205,13 +208,6 @@ function renderTraining() {
 }
 
 async function handleUnknownAnswer() {
-  if (elements.unknownButton.dataset.state === "continue") {
-    if (neutralPendingTraining) training = neutralPendingTraining;
-    neutralPendingTraining = null;
-    renderTraining();
-    return;
-  }
-
   const exercise = training?.exercises?.[training.currentIndex];
   if (!exercise || exercise.type !== "meaning" || submitting) return;
   submitting = true;
@@ -227,11 +223,12 @@ async function handleUnknownAnswer() {
     neutralPendingTraining = data.training;
     elements.revealedAnswerText.textContent = data.result.correctAnswer;
     elements.revealedAnswer.classList.remove("is-hidden");
-    elements.unknownButton.dataset.state = "continue";
-    elements.unknownButton.textContent = "Continuar treino";
-    elements.unknownButton.disabled = false;
+    elements.unknownButton.classList.add("is-hidden");
+    elements.submitButton.dataset.state = "continue";
+    elements.submitButton.textContent = "Continuar treino";
+    elements.submitButton.disabled = false;
     setStatus(`Score mantido em ${data.result.wordScore}. Analise a resposta antes de continuar.`);
-    requestAnimationFrame(() => elements.unknownButton.focus());
+    requestAnimationFrame(() => elements.submitButton.focus());
   } catch (error) {
     setStatus(error.message, true);
     elements.answerInput.disabled = false;
@@ -301,6 +298,13 @@ function fitMeaningPrompt() {
 
 async function submitAnswer(event) {
   event.preventDefault();
+  if (elements.submitButton.dataset.state === "continue") {
+    if (neutralPendingTraining) training = neutralPendingTraining;
+    neutralPendingTraining = null;
+    renderTraining();
+    return;
+  }
+
   const exercise = training?.exercises?.[training.currentIndex];
   const answer = elements.answerInput.value.trim();
   if (!exercise || !answer || submitting) return;
@@ -345,15 +349,19 @@ function showDetailedFeedback(result) {
   elements.trainingPanel.classList.add("is-feedback");
   elements.feedbackToast.classList.toggle("is-wrong", accuracy < 50);
   elements.feedbackToast.classList.add("is-visible");
-  lastSpokenText = String(result.spokenText || "").trim();
-  const canNarrate = elements.narrationCheckbox.checked && supportsNarration() && Boolean(lastSpokenText);
+  lastSpokenFeedback = {
+    word: String(result.writing || "").replace(/\s*\*\s*/g, " ").trim(),
+    sentence: String(result.spokenText || "").trim()
+  };
+  const canNarrate = elements.narrationCheckbox.checked && supportsNarration() && Boolean(lastSpokenFeedback.sentence);
   elements.feedbackRepeatButton.classList.toggle("is-hidden", !canNarrate);
-  if (canNarrate) speakFeedback(lastSpokenText);
+  if (canNarrate) speakFeedback(lastSpokenFeedback);
   if (currentExercise?.type === "meaning") requestAnimationFrame(fitMeaningPrompt);
   requestAnimationFrame(() => elements.feedbackContinueButton.focus());
 }
 
 function continueAfterFeedback() {
+  narrationSequence += 1;
   window.speechSynthesis?.cancel();
   elements.trainingPanel.classList.remove("is-feedback");
   elements.feedbackToast.classList.remove("is-visible");
@@ -364,20 +372,46 @@ function supportsNarration() {
   return "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
 }
 
-function speakFeedback(text) {
-  const content = String(text || "").trim();
-  if (!content || !elements.narrationCheckbox.checked || !supportsNarration()) return;
-  const utterance = new SpeechSynthesisUtterance(content);
-  utterance.lang = "en-US";
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
+function speakFeedback(feedback) {
+  const word = String(feedback?.word || "").trim();
+  const sentence = String(feedback?.sentence || "").trim();
+  if (!sentence || !elements.narrationCheckbox.checked || !supportsNarration()) return;
   const voices = window.speechSynthesis.getVoices();
-  utterance.voice = voices.find((voice) => voice.lang === "en-US" && /google/i.test(voice.name)) ||
+  const voice = voices.find((item) => item.lang === "en-US" && /google/i.test(item.name)) ||
     voices.find((voice) => voice.lang === "en-US") ||
     voices.find((voice) => /^en[-_]/i.test(voice.lang)) ||
     null;
+  const sequence = ++narrationSequence;
+  const speakSentence = () => {
+    if (sequence !== narrationSequence) return;
+    const utterance = createEnglishUtterance(sentence, 0.88, voice);
+    window.speechSynthesis.speak(utterance);
+  };
+
   window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  if (!word || normalizeSpeechText(word) === normalizeSpeechText(sentence)) {
+    window.speechSynthesis.speak(createEnglishUtterance(sentence, 0.72, voice));
+    return;
+  }
+
+  const wordUtterance = createEnglishUtterance(word, 0.68, voice);
+  wordUtterance.addEventListener("end", () => {
+    window.setTimeout(speakSentence, 420);
+  }, { once: true });
+  window.speechSynthesis.speak(wordUtterance);
+}
+
+function createEnglishUtterance(text, rate, voice) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = rate;
+  utterance.pitch = 1;
+  utterance.voice = voice;
+  return utterance;
+}
+
+function normalizeSpeechText(text) {
+  return String(text || "").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function showState(title, message) {
