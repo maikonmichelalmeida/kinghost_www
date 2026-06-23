@@ -337,10 +337,10 @@ function showDetailedFeedback(result) {
   elements.feedbackCorrect.textContent = result.correctAnswer || "--";
   elements.feedbackPoints.textContent = `${formatSigned(result.delta)} pontos`;
   elements.feedbackScore.textContent = result.graduated
-    ? "Palavra concluida"
+    ? "Nivel 4 - concluida"
     : `${result.wordScore} no nivel ${result.wordLevel}`;
   elements.feedbackMessage.textContent = result.graduated
-    ? "Esta palavra saiu da sua lista de revisao."
+    ? "Esta palavra foi arquivada no nivel 4 e nao volta aos exercicios."
     : result.promoted
       ? `A palavra subiu para o nivel ${result.wordLevel}.`
       : `Score atualizado de ${result.writing}.`;
