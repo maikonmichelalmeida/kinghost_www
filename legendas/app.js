@@ -42,9 +42,6 @@ const API_BASES = getApiBases();
 
 const elements = {
   lessonSelect: document.getElementById("lessonSelect"),
-  loadLessonButton: document.getElementById("loadLessonButton"),
-  refreshLessonsButton: document.getElementById("refreshLessonsButton"),
-  lessonTitle: document.getElementById("lessonTitle"),
   blockCounter: document.getElementById("blockCounter"),
   timeRange: document.getElementById("timeRange"),
   englishZone: document.getElementById("englishZone"),
@@ -100,14 +97,10 @@ updateModeControls();
 bootAuthenticatedApp();
 
 elements.lessonSelect.addEventListener("change", () => {
-  elements.loadLessonButton.disabled = !elements.lessonSelect.value;
-});
-elements.loadLessonButton.addEventListener("click", () => {
   if (elements.lessonSelect.value) {
     loadLessonFromDatabase(elements.lessonSelect.value);
   }
 });
-elements.refreshLessonsButton.addEventListener("click", loadAvailableLessons);
 
 elements.originalText.addEventListener("click", (event) => {
   const wordButton = event.target.closest(".caption-word");
@@ -257,7 +250,6 @@ async function loadRemoteUserContext() {
 
 async function loadAvailableLessons() {
   elements.lessonSelect.disabled = true;
-  elements.loadLessonButton.disabled = true;
   setStatus("Carregando lista de aulas...");
 
   try {
@@ -277,7 +269,6 @@ async function loadAvailableLessons() {
     setStatus(error.message || "Nao foi possivel carregar as aulas.", true);
   } finally {
     elements.lessonSelect.disabled = false;
-    elements.loadLessonButton.disabled = !elements.lessonSelect.value;
   }
 }
 
@@ -301,7 +292,7 @@ async function loadLessonFromDatabase(id) {
       : null;
   elements.lessonSelect.value = nextLessonId;
   setStatus(`Carregando ${selected ? selected.title : "aula"}...`);
-  elements.loadLessonButton.disabled = true;
+  elements.lessonSelect.disabled = true;
 
   try {
     const lesson = await requestJson(`/api/public/lessons/${encodeURIComponent(id)}`);
@@ -317,7 +308,7 @@ async function loadLessonFromDatabase(id) {
     setControlsEnabled(false);
     setStatus(error.message || "Nao foi possivel carregar a aula.", true);
   } finally {
-    elements.loadLessonButton.disabled = !elements.lessonSelect.value;
+    elements.lessonSelect.disabled = false;
   }
 }
 
@@ -361,7 +352,6 @@ async function loadLessonText(text, label = "aula", options = {}) {
     throw new Error("Nao consegui extrair o ID do video do YouTube.");
   }
 
-  elements.lessonTitle.textContent = lessonData.title || label || "Aula sem titulo";
   initializeYouTubePlayer(videoId);
   renderBlockList();
   showBlock(currentBlockIndex);
@@ -1577,7 +1567,6 @@ async function restoreActiveLessonSelection() {
 
   elements.lessonSelect.value = activeLessonId;
   if (currentLessonStorageId === activeLessonId && lessonData) {
-    elements.loadLessonButton.disabled = false;
     return true;
   }
 

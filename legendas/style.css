@@ -77,7 +77,7 @@ button:disabled {
 
 .top-panel {
   display: grid;
-  grid-template-columns: minmax(250px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
   gap: 14px;
   min-height: 0;
   overflow: hidden;
@@ -95,31 +95,30 @@ button:disabled {
 .video-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 16px;
+  padding: 12px;
 }
 
-.brand-row {
+.lesson-picker-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .fixar-shortcut {
-  align-self: flex-start;
-  min-height: 36px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 1px solid rgba(73, 223, 193, 0.38);
   border-radius: 5px;
   color: var(--accent, #49dfc1);
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -171,12 +170,12 @@ h1 {
 
 .lesson-picker {
   display: grid;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   border: 1px solid rgba(244, 201, 93, 0.18);
   border-radius: 8px;
   background: rgba(244, 201, 93, 0.07);
-  padding: 10px;
+  padding: 8px;
 }
 
 .lesson-picker label {
@@ -188,19 +187,13 @@ h1 {
 .lesson-picker select {
   min-width: 0;
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #252932;
   color: var(--text);
   padding: 0 10px;
   font: inherit;
-}
-
-.lesson-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
 }
 
 .player-frame {
@@ -233,10 +226,10 @@ h1 {
 }
 
 .status-message {
-  min-height: 48px;
+  min-height: 40px;
   color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.45;
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .status-message.error {
@@ -245,18 +238,12 @@ h1 {
 
 .vocabulary-composer {
   display: grid;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
   border: 1px solid rgba(82, 214, 181, 0.24);
   border-radius: 8px;
   background: linear-gradient(135deg, rgba(82, 214, 181, 0.1), rgba(244, 201, 93, 0.04));
-  padding: 10px;
-}
-
-.vocabulary-composer label {
-  color: var(--accent-2);
-  font-size: 0.75rem;
-  font-weight: 850;
+  padding: 8px;
 }
 
 .vocabulary-input-row {
@@ -269,7 +256,7 @@ h1 {
 .vocabulary-input-row input {
   grid-column: 1 / -1;
   min-width: 0;
-  height: 42px;
+  height: 38px;
   border: 1px solid var(--line);
   border-radius: 8px;
   outline: none;
@@ -289,7 +276,7 @@ h1 {
 }
 
 .vocabulary-input-row button {
-  min-height: 42px;
+  min-height: 38px;
   padding-inline: 12px;
 }
 
@@ -1342,7 +1329,6 @@ h1 {
     align-items: start;
   }
 
-  .brand-row,
   .lesson-picker,
   .vocabulary-composer,
   .status-message {
