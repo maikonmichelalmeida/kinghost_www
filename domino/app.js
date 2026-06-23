@@ -19,6 +19,14 @@ const BELIEF_OUTPUT_SIZE = PLAYERS * 7 + PLAYERS * TILE_IDS.length;
 const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 96, 64, BELIEF_OUTPUT_SIZE];
 const BELIEF_LEARNING_RATE = 0.008;
 const BELIEF_HISTORY_LIMIT = 120;
+const LOBO_INPUT_SIZE = INPUT_SIZE + BELIEF_OUTPUT_SIZE + 17;
+const LOBO_LAYER_SIZES = [LOBO_INPUT_SIZE, 128, 96, 48, 1];
+const LOBO_LEARNING_RATE = 0.008;
+const LOBO_REPLAY_CAPACITY = 1800;
+const LOBO_REPLAY_BATCH = 28;
+const LOBO_TARGET_SYNC_STEPS = 240;
+const LOBO_TARGET_SOFT_TAU = 0.08;
+const MATCH_HISTORY_LIMIT = 300;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
 
@@ -87,6 +95,9 @@ const state = {
   maxPathIndex: 0,
   decisions: [],
   agentModesBeforeTraining: null,
+  matchStartAgentModes: null,
+  matchHistory: [],
+  loboReplayBuffers: Array.from({ length: PLAYERS }, () => []),
   publicSignals: createPublicSignals(),
   rewardProfiles: createRewardProfiles(),
   brains: Array.from({ length: PLAYERS }, createBrain),
@@ -98,6 +109,7 @@ const state = {
 };
 
 function createBrain() {
+  const lobo = createLoboNetwork();
   return {
     layers: LAYER_SIZES.slice(1).map((outputSize, index) => {
       const inputSize = LAYER_SIZES[index];
@@ -105,6 +117,9 @@ function createBrain() {
     }),
     belief: createBeliefNetwork(),
     beliefStats: createBeliefStats(),
+    lobo,
+    loboTarget: cloneNetwork(lobo),
+    loboStats: createLoboStats(),
     games: 0,
     roundsTrained: 0,
     treinosRealizados: 0,
@@ -126,6 +141,36 @@ function createBeliefNetwork() {
       const inputSize = BELIEF_LAYER_SIZES[index];
       return createLayer(inputSize, outputSize, Math.sqrt(2 / inputSize));
     }),
+  };
+}
+
+function createLoboNetwork() {
+  return {
+    layers: LOBO_LAYER_SIZES.slice(1).map((outputSize, index) => {
+      const inputSize = LOBO_LAYER_SIZES[index];
+      return createLayer(inputSize, outputSize, Math.sqrt(2 / inputSize));
+    }),
+  };
+}
+
+function cloneNetwork(network) {
+  return {
+    layers: network.layers.map((layer) => ({
+      weights: layer.weights.map((weights) => weights.slice()),
+      biases: layer.biases.slice(),
+    })),
+  };
+}
+
+function createLoboStats() {
+  return {
+    trainSteps: 0,
+    avgTdError: 1,
+    lastTdError: 1,
+    valueMean: 0,
+    replaySize: 0,
+    targetSyncs: 0,
+    history: [],
   };
 }
 
@@ -198,16 +243,34 @@ function saveRewardProfiles() {
 
 function normalizeBrain(brain) {
   const roundsTrained = Number(brain.roundsTrained ?? brain.treinosRealizados) || 0;
+  const lobo = isValidLoboNetwork(brain.lobo) ? brain.lobo : createLoboNetwork();
   const normalized = {
     ...brain,
     belief: isValidBeliefNetwork(brain.belief) ? brain.belief : createBeliefNetwork(),
     beliefStats: normalizeBeliefStats(brain.beliefStats),
+    lobo,
+    loboTarget: isValidLoboNetwork(brain.loboTarget) ? brain.loboTarget : cloneNetwork(lobo),
+    loboStats: normalizeLoboStats(brain.loboStats),
     games: Number(brain.games) || 0,
     roundsTrained,
     treinosRealizados: roundsTrained,
     generation: Number(brain.generation) || 0,
   };
   return normalized;
+}
+
+function normalizeLoboStats(stats = {}) {
+  return {
+    ...createLoboStats(),
+    ...stats,
+    trainSteps: Number(stats.trainSteps) || 0,
+    avgTdError: Number.isFinite(Number(stats.avgTdError)) ? Number(stats.avgTdError) : 1,
+    lastTdError: Number.isFinite(Number(stats.lastTdError)) ? Number(stats.lastTdError) : 1,
+    valueMean: Number(stats.valueMean) || 0,
+    replaySize: Number(stats.replaySize) || 0,
+    targetSyncs: Number(stats.targetSyncs) || 0,
+    history: Array.isArray(stats.history) ? stats.history.slice(-BELIEF_HISTORY_LIMIT) : [],
+  };
 }
 
 function normalizeBeliefStats(stats = {}) {
@@ -289,6 +352,25 @@ function isValidBeliefNetwork(network) {
   );
 }
 
+function isValidLoboNetwork(network) {
+  return (
+    network &&
+    Array.isArray(network.layers) &&
+    network.layers.length === LOBO_LAYER_SIZES.length - 1 &&
+    network.layers.every((layer, index) => {
+      const outputSize = LOBO_LAYER_SIZES[index + 1];
+      const inputSize = LOBO_LAYER_SIZES[index];
+      return (
+        Array.isArray(layer.weights) &&
+        layer.weights.length === outputSize &&
+        layer.weights.every((weights) => Array.isArray(weights) && weights.length === inputSize) &&
+        Array.isArray(layer.biases) &&
+        layer.biases.length === outputSize
+      );
+    })
+  );
+}
+
 function isValidBrain(brain) {
   return (
     brain &&
@@ -343,6 +425,8 @@ async function loadBrainFromDatabase(player, baseName) {
   state.brains[player] = brain;
   state.brainNames[player] = payload.nome;
   state.brainTrainMs[player] = Number(payload.tempoTreino) || 0;
+  state.loboReplayBuffers[player] = [];
+  state.brains[player].loboStats.replaySize = 0;
   renderBrainSelectors();
 }
 
@@ -398,7 +482,7 @@ function accrueTrainingTime(now = Date.now()) {
   }
   const elapsed = Math.max(0, now - state.lastBrainTrainingClock);
   for (let player = 0; player < PLAYERS; player += 1) {
-    if (agentMode(player) === "carneiro") state.brainTrainMs[player] += elapsed;
+    if (isTrainableAgent(player)) state.brainTrainMs[player] += elapsed;
   }
   state.lastBrainTrainingClock = now;
 }
@@ -452,6 +536,7 @@ function shuffle(items) {
 function startMatch() {
   clearBotTimer();
   clearResultTimer();
+  state.matchStartAgentModes = currentAgentModes().map((mode) => (mode === "human" ? "humano" : agentModeLabel(mode)));
   state.scores = [0, 0];
   state.firstHand = true;
   state.requireDoubleSix = true;
@@ -1002,6 +1087,7 @@ function finishHand(winnerTeam, message, winningPlayer = null, closed = false) {
   const matchWinner = state.scores.findIndex((score) => score >= MATCH_POINTS);
   if (matchWinner !== -1) {
     state.wins[matchWinner] += 1;
+    recordMatchResult(matchWinner);
     if (state.humanSeat === null) {
       state.scores = [0, 0];
       state.firstHand = true;
@@ -1061,8 +1147,16 @@ function chooseBotMove(player) {
   if (moves.length === 0) return null;
   if (isRandomAgent(player)) return randomAgentMove(moves);
   if (state.training && Math.random() < state.epsilon) return moves[Math.floor(Math.random() * moves.length)];
+  if (isLoboAgent(player)) return chooseLoboMove(player, moves);
   return moves
     .map((move) => ({ move, score: evaluate(state.brains[player], featuresFor(player, move)).value }))
+    .sort((a, b) => b.score - a.score)[0].move;
+}
+
+function chooseLoboMove(player, moves) {
+  const brain = state.brains[player];
+  return moves
+    .map((move) => ({ move, score: evaluate(brain.lobo, loboFeaturesFor(player, move)).value }))
     .sort((a, b) => b.score - a.score)[0].move;
 }
 
@@ -1079,6 +1173,10 @@ function isRandomAgent(player) {
   return agentMode(player) === "random";
 }
 
+function isLoboAgent(player) {
+  return agentMode(player) === "lobo";
+}
+
 function agentMode(player) {
   const value = els.agentModes[player]?.value || "carneiro";
   return value === "trained" ? "carneiro" : value;
@@ -1091,7 +1189,7 @@ function syncHumanSeatFromAgents() {
 
 function forceAllAgentsTrained() {
   for (const select of els.agentModes) {
-    select.value = "carneiro";
+    select.value = "lobo";
   }
   state.humanSeat = null;
   state.selectedTileId = null;
@@ -1099,6 +1197,31 @@ function forceAllAgentsTrained() {
 
 function currentAgentModes() {
   return els.agentModes.map((select) => select.value);
+}
+
+function agentModeLabel(mode) {
+  if (mode === "lobo") return "Lobo";
+  if (mode === "carneiro" || mode === "trained") return "Carneiro";
+  if (mode === "random") return "Aleatoria";
+  if (mode === "human") return "Humano";
+  return mode || "Agente";
+}
+
+function teamAgentLabel(modes, team) {
+  const players = team === 0 ? [0, 2] : [1, 3];
+  return players.map((player) => modes?.[player] || agentModeLabel(agentMode(player))).join("+");
+}
+
+function recordMatchResult(winnerTeam) {
+  const modes = state.matchStartAgentModes || currentAgentModes().map(agentModeLabel);
+  const entry = {
+    winnerTeam,
+    teamA: teamAgentLabel(modes, 0),
+    teamB: teamAgentLabel(modes, 1),
+    at: Date.now(),
+  };
+  state.matchHistory.push(entry);
+  state.matchHistory = state.matchHistory.slice(-MATCH_HISTORY_LIMIT);
 }
 
 function restoreAgentModes(modes) {
@@ -1113,7 +1236,7 @@ function startTrainingMode() {
   state.training = true;
   state.lastBrainSaveAt = Date.now();
   state.lastBrainTrainingClock = Date.now();
-  forceAllAgentsTrained();
+  if (agentMode(0) === "human") els.agentModes[0].value = "lobo";
   syncHumanSeatFromAgents();
   startMatch();
 }
@@ -1221,6 +1344,117 @@ function featuresFor(player, move) {
   return fitInputs(inputs);
 }
 
+function loboFeaturesFor(player, move) {
+  const baseFeatures = featuresFor(player, move);
+  const beliefInputs = liveBeliefInputsFor(player);
+  const beliefOutput = evaluateBelief(state.brains[player].belief, beliefInputs).outputs;
+  const newEnds = previewEnds(move);
+  const partner = (player + 2) % PLAYERS;
+  const next = (player + 1) % PLAYERS;
+  const previousOpponent = (player + 3) % PLAYERS;
+  const handAfterMove = state.hands[player].filter((candidate) => candidate.id !== move.tile.id);
+  const ownAfter = numberPresenceCounts(handAfterMove);
+  const partnerBelief = beliefNumberSlice(beliefOutput, partner);
+  const nextBelief = beliefNumberSlice(beliefOutput, next);
+  const previousOpponentBelief = beliefNumberSlice(beliefOutput, previousOpponent);
+  const partnerCanPlay = likelyCanPlayFromBelief(partnerBelief, newEnds);
+  const nextCanPlay = likelyCanPlayFromBelief(nextBelief, newEnds);
+  const previousOpponentCanPlay = likelyCanPlayFromBelief(previousOpponentBelief, newEnds);
+  const opponentCanPlay = (nextCanPlay + previousOpponentCanPlay) / 2;
+  const ownCanContinue = countPlayableTiles(handAfterMove, newEnds) / 7;
+  const ownConnected = handConnectivityScore(handAfterMove);
+  const ownEndCoverage =
+    newEnds.left === newEnds.right
+      ? ownAfter[newEnds.left] / 7
+      : ((ownAfter[newEnds.left] || 0) + (ownAfter[newEnds.right] || 0)) / 7;
+  const tileRarity = tileRarityScore(move.tile);
+  const doubleRisk = trappedDoubleRisk(handAfterMove, newEnds);
+  const loboExtras = [
+    partnerCanPlay,
+    nextCanPlay,
+    previousOpponentCanPlay,
+    opponentCanPlay,
+    partnerCanPlay - opponentCanPlay,
+    ownCanContinue,
+    ownConnected,
+    ownEndCoverage,
+    tileRarity,
+    doubleRisk,
+    createsExhaustedDoubleEnd(move) ? 1 : 0,
+    moveLeavesOwnHandDead(handAfterMove, newEnds) ? 1 : 0,
+    state.consecutivePasses / PLAYERS,
+    state.scores[TEAM_BY_PLAYER[player]] / MATCH_POINTS,
+    state.scores[1 - TEAM_BY_PLAYER[player]] / MATCH_POINTS,
+    state.hands[player].length / 7,
+    state.board.length / 28,
+  ];
+  return fitLoboInputs([...baseFeatures, ...beliefOutput, ...loboExtras]);
+}
+
+function liveBeliefInputsFor(observer) {
+  const snapshot = publicSnapshot();
+  const ends = snapshot.ends || {};
+  const played = snapshot.playedNumberStats || { total: Array(7).fill(0) };
+  const unseen = snapshot.unseenNumberCounts || Array(7).fill(8);
+  const observerHand = state.hands[observer] || [];
+  const ownCounts = numberCounts(observerHand);
+  const ownTiles = tilePresenceVector(observerHand);
+  const knownMissing = state.handHistory
+    ? activeKnownMissingVector(state.handHistory, state.handHistory.turns.length)
+    : Array(PLAYERS * 7).fill(0);
+  return fitBeliefInputs([
+    ...oneHot(observer, PLAYERS),
+    ...oneHot(snapshot.current ?? observer, PLAYERS),
+    snapshot.scores[0] / MATCH_POINTS,
+    snapshot.scores[1] / MATCH_POINTS,
+    ...snapshot.handCounts.map((count) => count / 7),
+    ...oneHotNumberOrEmpty(ends.left),
+    ...oneHotNumberOrEmpty(ends.right),
+    snapshot.board.length / 28,
+    ...stageVector(snapshot.stage),
+    ...played.total.map((count) => count / 8),
+    ...unseen.map((count) => count / 8),
+    ...snapshot.publicSignals.flatMap((signals) => [
+      ...signals.passes.map((value) => Math.min(1, value / 4)),
+      ...signals.avoids.map((value) => Math.min(1, value / 4)),
+    ]),
+    ...knownMissing,
+    ...ownCounts.map((count) => count / 7),
+    ...ownTiles,
+  ]);
+}
+
+function beliefNumberSlice(output, player) {
+  const start = player * 7;
+  return output.slice(start, start + 7);
+}
+
+function handConnectivityScore(hand) {
+  if (hand.length <= 1) return 1;
+  const presence = numberPresenceCounts(hand);
+  const activeNumbers = presence.filter(Boolean).length;
+  const totalPresence = presence.reduce((sum, count) => sum + count, 0);
+  return clamp(totalPresence / Math.max(1, activeNumbers * hand.length), 0, 1);
+}
+
+function tileRarityScore(tile) {
+  const played = playedNumberPresenceStats().total;
+  const aRarity = (played[tile.a] || 0) / 7;
+  const bRarity = (played[tile.b] || 0) / 7;
+  return tile.a === tile.b ? aRarity : (aRarity + bRarity) / 2;
+}
+
+function trappedDoubleRisk(hand, ends) {
+  const doubles = hand.filter((tile) => tile.a === tile.b);
+  if (doubles.length === 0) return 0;
+  const blocked = doubles.filter((tile) => ends.left !== tile.a && ends.right !== tile.a).length;
+  return blocked / doubles.length;
+}
+
+function moveLeavesOwnHandDead(hand, ends) {
+  return hand.length > 0 && countPlayableTiles(hand, ends) === 0;
+}
+
 function oneHotNumber(value) {
   return Array.from({ length: 7 }, (_, number) => (number === value ? 1 : 0));
 }
@@ -1320,6 +1554,12 @@ function fitInputs(inputs) {
   return [...inputs, ...Array(INPUT_SIZE - inputs.length).fill(0)];
 }
 
+function fitLoboInputs(inputs) {
+  if (inputs.length === LOBO_INPUT_SIZE) return inputs;
+  if (inputs.length > LOBO_INPUT_SIZE) return inputs.slice(0, LOBO_INPUT_SIZE);
+  return [...inputs, ...Array(LOBO_INPUT_SIZE - inputs.length).fill(0)];
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -1359,21 +1599,35 @@ function evaluate(brain, inputs) {
 }
 
 function rememberDecision(player, move) {
-  const features = featuresFor(player, move);
-  const evaluation = evaluate(state.brains[player], features);
+  const mode = agentMode(player);
+  const features = mode === "lobo" ? loboFeaturesFor(player, move) : featuresFor(player, move);
+  const network = mode === "lobo" ? state.brains[player].lobo : state.brains[player];
+  const evaluation = evaluate(network, features);
   state.decisions.push({
     player,
     team: TEAM_BY_PLAYER[player],
+    mode,
     features,
-    immediateReward: moveHeuristicReward(player, move),
+    immediateReward: mode === "lobo" ? loboMoveHeuristicReward(player, move) : moveHeuristicReward(player, move),
     value: evaluation.value,
   });
 }
 
 function trainFromHand(winnerTeam) {
   const trainedPlayers = new Set();
+  trainCarneiroDecisions(winnerTeam, trainedPlayers);
+  trainLoboDecisions(winnerTeam, trainedPlayers);
+  for (const player of trainedPlayers) {
+    state.brains[player].roundsTrained = (state.brains[player].roundsTrained || 0) + 1;
+    state.brains[player].treinosRealizados = state.brains[player].roundsTrained;
+  }
+  trainBeliefFromHandHistory(state.lastHandHistory);
+}
+
+function trainCarneiroDecisions(winnerTeam, trainedPlayers) {
   for (let index = 0; index < state.decisions.length; index += 1) {
     const decision = state.decisions[index];
+    if (decision.mode === "lobo") continue;
     const finalReward = winnerTeam === null ? -0.3 : decision.team === winnerTeam ? 1 : -1;
     const distanceFromEnd = state.decisions.length - 1 - index;
     const discount = 0.55 + 0.45 * Math.pow(GAMMA, Math.min(6, distanceFromEnd));
@@ -1382,11 +1636,60 @@ function trainFromHand(winnerTeam) {
     state.brains[decision.player].games = (state.brains[decision.player].games || 0) + 1;
     trainedPlayers.add(decision.player);
   }
-  for (const player of trainedPlayers) {
-    state.brains[player].roundsTrained = (state.brains[player].roundsTrained || 0) + 1;
-    state.brains[player].treinosRealizados = state.brains[player].roundsTrained;
+}
+
+function trainLoboDecisions(winnerTeam, trainedPlayers) {
+  const loboDecisions = state.decisions.filter((decision) => decision.mode === "lobo");
+  for (let index = 0; index < loboDecisions.length; index += 1) {
+    const decision = loboDecisions[index];
+    const nextTeamDecision = loboDecisions.slice(index + 1).find((candidate) => candidate.team === decision.team);
+    const finalReward = winnerTeam === null ? -0.25 : decision.team === winnerTeam ? 1 : -1;
+    const terminal = !nextTeamDecision;
+    const reward = terminal ? finalReward : decision.immediateReward;
+    const transition = {
+      features: decision.features,
+      reward,
+      nextFeatures: nextTeamDecision?.features || null,
+      done: terminal,
+    };
+    rememberLoboTransition(decision.player, transition);
+    trainLoboReplayBatch(decision.player);
+    state.brains[decision.player].games = (state.brains[decision.player].games || 0) + 1;
+    trainedPlayers.add(decision.player);
   }
-  trainBeliefFromHandHistory(state.lastHandHistory);
+}
+
+function rememberLoboTransition(player, transition) {
+  const buffer = state.loboReplayBuffers[player];
+  buffer.push(transition);
+  if (buffer.length > LOBO_REPLAY_CAPACITY) buffer.splice(0, buffer.length - LOBO_REPLAY_CAPACITY);
+  state.brains[player].loboStats = normalizeLoboStats(state.brains[player].loboStats);
+  state.brains[player].loboStats.replaySize = buffer.length;
+}
+
+function trainLoboReplayBatch(player) {
+  const buffer = state.loboReplayBuffers[player];
+  if (buffer.length === 0) return;
+  const batch = sampleReplay(buffer, Math.min(LOBO_REPLAY_BATCH, buffer.length));
+  for (const transition of batch) {
+    const target = loboTransitionTarget(state.brains[player], transition);
+    const before = evaluate(state.brains[player].lobo, transition.features).value;
+    trainValueNetwork(state.brains[player].lobo, transition.features, target, LOBO_LEARNING_RATE);
+    updateLoboStats(state.brains[player], Math.abs(target - before), before);
+  }
+}
+
+function sampleReplay(buffer, size) {
+  const sample = [];
+  for (let i = 0; i < size; i += 1) {
+    sample.push(buffer[Math.floor(Math.random() * buffer.length)]);
+  }
+  return sample;
+}
+
+function loboTransitionTarget(brain, transition) {
+  const bootstrap = transition.done || !transition.nextFeatures ? 0 : evaluate(brain.loboTarget, transition.nextFeatures).value;
+  return clamp(transition.reward + GAMMA * bootstrap, -1.25, 1.25);
 }
 
 function trainBeliefFromHandHistory(history) {
@@ -1394,13 +1697,18 @@ function trainBeliefFromHandHistory(history) {
   for (let turnIndex = 0; turnIndex < history.turns.length; turnIndex += 1) {
     const handsAtTurn = handsAtHistoryTurn(history, turnIndex);
     for (let observer = 0; observer < PLAYERS; observer += 1) {
-      if (agentMode(observer) !== "carneiro") continue;
+      if (!isTrainableAgent(observer)) continue;
       const inputs = beliefInputsForHistoryTurn(history, turnIndex, observer, handsAtTurn[observer]);
       const target = beliefTargetFromHands(handsAtTurn);
       const result = trainBeliefNetwork(state.brains[observer].belief, inputs, target);
       updateBeliefStats(state.brains[observer], result);
     }
   }
+}
+
+function isTrainableAgent(player) {
+  const mode = agentMode(player);
+  return mode === "carneiro" || mode === "lobo";
 }
 
 function handsAtHistoryTurn(history, turnIndex) {
@@ -1667,6 +1975,31 @@ function moveHeuristicReward(player, move) {
   return clamp(reward, -0.45, 0.55);
 }
 
+function loboMoveHeuristicReward(player, move) {
+  const newEnds = previewEnds(move);
+  const partner = (player + 2) % PLAYERS;
+  const next = (player + 1) % PLAYERS;
+  const previousOpponent = (player + 3) % PLAYERS;
+  const beliefOutput = evaluateBelief(state.brains[player].belief, liveBeliefInputsFor(player)).outputs;
+  const partnerCanPlay = likelyCanPlayFromBelief(beliefNumberSlice(beliefOutput, partner), newEnds);
+  const nextCanPlay = likelyCanPlayFromBelief(beliefNumberSlice(beliefOutput, next), newEnds);
+  const previousOpponentCanPlay = likelyCanPlayFromBelief(beliefNumberSlice(beliefOutput, previousOpponent), newEnds);
+  const handAfterMove = state.hands[player].filter((candidate) => candidate.id !== move.tile.id);
+  const ownMobility = countPlayableTiles(handAfterMove, newEnds) / 7;
+  const averageOpponentCanPlay = (nextCanPlay + previousOpponentCanPlay) / 2;
+  const finishingBonus = handAfterMove.length === 0 ? 0.35 : 0;
+  const doubleRelief = move.tile.a === move.tile.b ? 0.04 : 0;
+  const pressure = (1 - averageOpponentCanPlay) * 0.12 * rewardFactor(player, "pass");
+  const partnership = Math.max(0, partnerCanPlay - averageOpponentCanPlay) * 0.14 * rewardFactor(player, "partner");
+  const mobility = ownMobility * 0.1 * rewardFactor(player, "mobility");
+  const safetyPenalty =
+    ((createsExhaustedDoubleEnd(move) ? 0.24 : 0) +
+      (moveLeavesOwnHandDead(handAfterMove, newEnds) ? 0.14 : 0) +
+      trappedDoubleRisk(handAfterMove, newEnds) * 0.12) *
+    rewardFactor(player, "safety");
+  return clamp(pressure + partnership + mobility + finishingBonus + doubleRelief - safetyPenalty, -0.45, 0.55);
+}
+
 function rewardOpponentPassOutcome(passingPlayer) {
   const passingTeam = TEAM_BY_PLAYER[passingPlayer];
   for (let i = state.decisions.length - 1; i >= 0; i -= 1) {
@@ -1687,8 +2020,12 @@ function rewardFactor(player, key) {
 }
 
 function trainNetwork(brain, inputs, target) {
-  const evaluation = evaluate(brain, inputs);
-  const layers = brain.layers;
+  trainValueNetwork(brain, inputs, target, LEARNING_RATE);
+}
+
+function trainValueNetwork(network, inputs, target, learningRate) {
+  const evaluation = evaluate(network, inputs);
+  const layers = network.layers;
   let deltas = [[evaluation.value - target]];
 
   for (let layerIndex = layers.length - 2; layerIndex >= 0; layerIndex -= 1) {
@@ -1710,9 +2047,46 @@ function trainNetwork(brain, inputs, target) {
     for (let neuron = 0; neuron < layer.weights.length; neuron += 1) {
       const clippedDelta = Math.max(-2, Math.min(2, deltas[layerIndex][neuron]));
       for (let inputIndex = 0; inputIndex < layer.weights[neuron].length; inputIndex += 1) {
-        layer.weights[neuron][inputIndex] -= LEARNING_RATE * clippedDelta * inputActivation[inputIndex];
+        layer.weights[neuron][inputIndex] -= learningRate * clippedDelta * inputActivation[inputIndex];
       }
-      layer.biases[neuron] -= LEARNING_RATE * clippedDelta;
+      layer.biases[neuron] -= learningRate * clippedDelta;
+    }
+  }
+}
+
+function updateLoboStats(brain, tdError, value) {
+  brain.loboStats = normalizeLoboStats(brain.loboStats);
+  const stats = brain.loboStats;
+  stats.trainSteps += 1;
+  stats.lastTdError = tdError;
+  stats.avgTdError = stats.trainSteps === 1 ? tdError : stats.avgTdError * 0.985 + tdError * 0.015;
+  stats.valueMean = stats.valueMean * 0.985 + value * 0.015;
+  if (stats.trainSteps % LOBO_TARGET_SYNC_STEPS === 0) {
+    softUpdateTargetNetwork(brain.loboTarget, brain.lobo, LOBO_TARGET_SOFT_TAU);
+    stats.targetSyncs += 1;
+  }
+  if (stats.trainSteps % 12 === 0) {
+    stats.history.push({
+      step: stats.trainSteps,
+      avgTdError: Number(stats.avgTdError.toFixed(4)),
+      valueMean: Number(stats.valueMean.toFixed(4)),
+      replaySize: stats.replaySize,
+    });
+    stats.history = stats.history.slice(-BELIEF_HISTORY_LIMIT);
+  }
+}
+
+function softUpdateTargetNetwork(target, source, tau) {
+  if (!isValidLoboNetwork(target) || !isValidLoboNetwork(source)) return;
+  for (let layerIndex = 0; layerIndex < target.layers.length; layerIndex += 1) {
+    const targetLayer = target.layers[layerIndex];
+    const sourceLayer = source.layers[layerIndex];
+    for (let neuron = 0; neuron < targetLayer.weights.length; neuron += 1) {
+      targetLayer.biases[neuron] = targetLayer.biases[neuron] * (1 - tau) + sourceLayer.biases[neuron] * tau;
+      for (let inputIndex = 0; inputIndex < targetLayer.weights[neuron].length; inputIndex += 1) {
+        targetLayer.weights[neuron][inputIndex] =
+          targetLayer.weights[neuron][inputIndex] * (1 - tau) + sourceLayer.weights[neuron][inputIndex] * tau;
+      }
     }
   }
 }
@@ -1916,6 +2290,7 @@ function renderBeliefDashboard() {
     .map((brain, player) => ({ player, stats: normalizeBeliefStats(brain.beliefStats) }))
     .sort((a, b) => b.stats.closeness - a.stats.closeness)[0];
   els.beliefDashboard.innerHTML = `
+    ${matchAnalyticsHtml()}
     <div class="belief-dashboard-header">
       <div>
         <h2>Rede de previsão</h2>
@@ -1929,8 +2304,51 @@ function renderBeliefDashboard() {
   `;
 }
 
+function matchAnalyticsHtml() {
+  const last50 = state.matchHistory.slice(-50);
+  const last200 = state.matchHistory.slice(-200);
+  const a50 = winRateForTeam(last50, 0);
+  const b50 = winRateForTeam(last50, 1);
+  const a200 = winRateForTeam(last200, 0);
+  const b200 = winRateForTeam(last200, 1);
+  const last = state.matchHistory[state.matchHistory.length - 1];
+  const matchup = last ? `${last.teamA} vs ${last.teamB}` : `${teamAgentLabel(state.matchStartAgentModes, 0)} vs ${teamAgentLabel(state.matchStartAgentModes, 1)}`;
+  return `
+    <section class="match-analytics" aria-label="Avaliação dos agentes">
+      <div class="match-analytics-title">
+        <h2>Avaliação em jogo</h2>
+        <span>${escapeHtml(matchup)}</span>
+      </div>
+      <div class="match-analytics-grid">
+        ${matchMetricHtml("Time A últimas 50", a50, last50.length)}
+        ${matchMetricHtml("Time B últimas 50", b50, last50.length)}
+        ${matchMetricHtml("Time A últimas 200", a200, last200.length)}
+        ${matchMetricHtml("Time B últimas 200", b200, last200.length)}
+      </div>
+    </section>
+  `;
+}
+
+function matchMetricHtml(label, value, sampleSize) {
+  const percent = clamp(value, 0, 1) * 100;
+  return `
+    <div class="match-metric">
+      <span>${label}</span>
+      <strong>${sampleSize ? `${percent.toFixed(1)}%` : "--"}</strong>
+      <i style="--value:${sampleSize ? percent : 0}%"></i>
+      <em>${sampleSize} partidas</em>
+    </div>
+  `;
+}
+
+function winRateForTeam(matches, team) {
+  if (!matches.length) return 0;
+  return matches.filter((match) => match.winnerTeam === team).length / matches.length;
+}
+
 function beliefCardHtml(brain, player) {
   const stats = normalizeBeliefStats(brain.beliefStats);
+  const loboStats = normalizeLoboStats(brain.loboStats);
   const history = stats.history.length > 0 ? stats.history : [beliefHistoryPoint(stats)];
   const delta = beliefTrendDelta(stats);
   const trend = beliefTrendLabel(delta);
@@ -1951,6 +2369,11 @@ function beliefCardHtml(brain, player) {
         ${beliefMetricHtml("Números achados", stats.numberRecall)}
         ${beliefMetricHtml("Pedras achadas", stats.tileRecall)}
         ${beliefMetricHtml("Precisão pedras", stats.tilePrecision)}
+      </div>
+      <div class="lobo-mini">
+        <span>Lobo TD</span>
+        <strong>erro ${formatDecimal(loboStats.avgTdError)}</strong>
+        <em>${loboStats.trainSteps || 0} ajustes · replay ${loboStats.replaySize || 0}</em>
       </div>
       <div class="belief-chart-wrap">
         <svg class="belief-chart" viewBox="0 0 180 62" role="img" aria-label="Evolução da proximidade J${player + 1}">
@@ -2037,6 +2460,10 @@ function formatSignedPercent(value) {
   const percent = (value || 0) * 100;
   const sign = percent > 0 ? "+" : "";
   return `${sign}${percent.toFixed(1)} p.p.`;
+}
+
+function formatDecimal(value) {
+  return (Number(value) || 0).toFixed(3);
 }
 
 function renderRewardSliders() {
