@@ -21,6 +21,10 @@ const BELIEF_LEARNING_RATE = 0.008;
 const BELIEF_NEGATIVE_SAMPLE_RATIO = 2;
 const BELIEF_CHART_ROUNDS_PER_POINT = 20;
 const BELIEF_CHART_POINT_LIMIT = 200;
+const DEFAULT_MONTE_CARLO_SIMULATIONS = 100;
+const MONTE_CARLO_MIN_SIMULATIONS = 10;
+const MONTE_CARLO_MAX_SIMULATIONS = 1000;
+const MONTE_CARLO_MAX_TURNS = 120;
 const MATCH_HISTORY_LIMIT = 300;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
@@ -46,6 +50,7 @@ const els = {
   trainPredictionHistory: document.querySelector("#train-prediction-history"),
   revealAllHands: document.querySelector("#reveal-all-hands"),
   showPredictionCharts: document.querySelector("#show-prediction-charts"),
+  monteCarloSimulations: document.querySelector("#monte-carlo-simulations"),
   brainSelects: [...Array(PLAYERS)].map((_, i) => document.querySelector(`#brain-select-${i}`)),
   newBrainButtons: [...document.querySelectorAll("[data-new-brain]")],
   humanSpeed: document.querySelector("#human-speed"),
@@ -1127,6 +1132,7 @@ function chooseBotMove(player) {
   const moves = legalMoves(player);
   if (moves.length === 0) return null;
   if (isRandomAgent(player)) return randomAgentMove(moves);
+  if (isMonteCarloAgent(player)) return chooseMonteCarloMove(player, moves);
   if (state.training && Math.random() < state.epsilon) return moves[Math.floor(Math.random() * moves.length)];
   return moves
     .map((move) => ({ move, score: evaluate(state.brains[player], featuresFor(player, move)).value }))
@@ -1142,8 +1148,351 @@ function randomAgentMove(moves) {
   return randomMove(doubleMoves.length > 0 ? doubleMoves : moves);
 }
 
+function monteCarloSimulationCount() {
+  const raw = Number.parseInt(els.monteCarloSimulations?.value, 10);
+  const value = Number.isFinite(raw) ? raw : DEFAULT_MONTE_CARLO_SIMULATIONS;
+  const normalized = Math.max(MONTE_CARLO_MIN_SIMULATIONS, Math.min(MONTE_CARLO_MAX_SIMULATIONS, value));
+  if (els.monteCarloSimulations && Number(els.monteCarloSimulations.value) !== normalized) {
+    els.monteCarloSimulations.value = normalized;
+  }
+  return normalized;
+}
+
+function chooseMonteCarloMove(player, legalMovesForPlayer) {
+  const moves = distinctMonteCarloMoves(legalMovesForPlayer);
+  if (moves.length === 1) return moves[0];
+  const simulations = monteCarloSimulationCount();
+  const hypothesisModel = createMonteCarloHypothesisModel(player);
+  if (!hypothesisModel) {
+    return moves
+      .map((move) => ({ move, score: evaluate(state.brains[player], featuresFor(player, move)).value }))
+      .sort((a, b) => b.score - a.score)[0].move;
+  }
+  const results = moves.map((move) => ({ move, wins: 0, losses: 0, closed: 0, total: 0 }));
+  let completed = 0;
+  let attempts = 0;
+  while (completed < simulations && attempts < simulations * 8) {
+    attempts += 1;
+    const hypotheticalHands = sampleHypotheticalHands(player, hypothesisModel);
+    if (!hypotheticalHands) continue;
+    for (const result of results) {
+      const outcome = runMonteCarloRollout(createMonteCarloState(hypotheticalHands), player, result.move);
+      result.total += 1;
+      if (outcome.winnerTeam === TEAM_BY_PLAYER[player]) result.wins += 1;
+      else if (outcome.winnerTeam === null) result.closed += 1;
+      else result.losses += 1;
+    }
+    completed += 1;
+  }
+  if (completed === 0) {
+    return moves
+      .map((move) => ({ move, score: evaluate(state.brains[player], featuresFor(player, move)).value }))
+      .sort((a, b) => b.score - a.score)[0].move;
+  }
+  return results
+    .map((result) => ({
+      ...result,
+      expectedValue: (result.wins - result.losses) / result.total,
+      trainedTieBreak: evaluate(state.brains[player], featuresFor(player, result.move)).value,
+    }))
+    .sort(
+      (a, b) =>
+        b.expectedValue - a.expectedValue ||
+        b.wins - a.wins ||
+        a.losses - b.losses ||
+        b.trainedTieBreak - a.trainedTieBreak,
+    )[0].move;
+}
+
+function distinctMonteCarloMoves(moves) {
+  if (state.board.length === 0 || state.leftEnd !== state.rightEnd) return moves;
+  const preferredSide = Math.abs(state.minPathIndex) <= state.maxPathIndex ? "left" : "right";
+  const byTile = new Map();
+  for (const move of moves) {
+    const current = byTile.get(move.tile.id);
+    if (!current || move.side === preferredSide) byTile.set(move.tile.id, move);
+  }
+  return [...byTile.values()];
+}
+
+function createMonteCarloHypothesisModel(observer) {
+  const snapshot = publicSnapshot();
+  const knownMissing = liveKnownMissingVector();
+  const observerHand = cloneTiles(state.hands[observer]);
+  const context = beliefContextForSnapshot(snapshot, observer, observerHand, knownMissing);
+  const targets = Array.from({ length: PLAYERS }, (_, player) => player).filter((player) => player !== observer);
+  const boardIds = new Set(snapshot.board.map((tile) => tile.id || canonicalTileId(tile.a, tile.b)));
+  const ownIds = new Set(observerHand.map((tile) => tile.id));
+  const unknownTiles = createTiles().filter((tile) => !boardIds.has(tile.id) && !ownIds.has(tile.id));
+  const remaining = Object.fromEntries(targets.map((target) => [target, snapshot.handCounts[target] || 0]));
+  if (targets.reduce((sum, target) => sum + remaining[target], 0) !== unknownTiles.length) return null;
+
+  const weights = {};
+  for (const target of targets) {
+    const prediction = predictTileOwnership(
+      state.sharedBelief,
+      context,
+      snapshot,
+      observer,
+      target,
+      observerHand,
+      knownMissing,
+    );
+    weights[target] = new Map(
+      prediction.tiles
+        .filter((item) => !item.eliminated)
+        .map((item) => [item.id, Math.max(0.000001, item.probability)]),
+    );
+  }
+  return { observerHand, targets, unknownTiles, remaining, weights };
+}
+
+function sampleHypotheticalHands(observer, model = createMonteCarloHypothesisModel(observer)) {
+  if (!model) return null;
+  const { observerHand, targets, unknownTiles, weights } = model;
+  const remaining = { ...model.remaining };
+  const assigned = Object.fromEntries(targets.map((target) => [target, []]));
+  const success = assignHypotheticalTiles(unknownTiles, targets, remaining, weights, assigned, { nodes: 0 });
+  if (!success) return null;
+  const hands = Array.from({ length: PLAYERS }, () => []);
+  hands[observer] = observerHand;
+  for (const target of targets) hands[target] = assigned[target].map(cloneTile);
+  return hands;
+}
+
+function assignHypotheticalTiles(unassigned, targets, remaining, weights, assigned, search) {
+  search.nodes += 1;
+  if (search.nodes > 25000) return false;
+  if (unassigned.length === 0) return targets.every((target) => remaining[target] === 0);
+  if (!hypotheticalAssignmentFeasible(unassigned, targets, remaining, weights)) return false;
+
+  let chosenIndex = 0;
+  let chosenCandidates = null;
+  for (let index = 0; index < unassigned.length; index += 1) {
+    const tile = unassigned[index];
+    const candidates = targets.filter((target) => remaining[target] > 0 && weights[target].has(tile.id));
+    if (
+      chosenCandidates === null ||
+      candidates.length < chosenCandidates.length ||
+      (candidates.length === chosenCandidates.length &&
+        candidates.reduce((sum, target) => sum + weights[target].get(tile.id), 0) <
+          chosenCandidates.reduce((sum, target) => sum + weights[target].get(unassigned[chosenIndex].id), 0))
+    ) {
+      chosenIndex = index;
+      chosenCandidates = candidates;
+    }
+  }
+  if (!chosenCandidates?.length) return false;
+
+  const tile = unassigned[chosenIndex];
+  const nextUnassigned = [...unassigned.slice(0, chosenIndex), ...unassigned.slice(chosenIndex + 1)];
+  const candidateOrder = weightedRandomOrder(chosenCandidates, (target) => weights[target].get(tile.id));
+  for (const target of candidateOrder) {
+    remaining[target] -= 1;
+    assigned[target].push(tile);
+    if (assignHypotheticalTiles(nextUnassigned, targets, remaining, weights, assigned, search)) return true;
+    assigned[target].pop();
+    remaining[target] += 1;
+  }
+  return false;
+}
+
+function hypotheticalAssignmentFeasible(unassigned, targets, remaining, weights) {
+  if (targets.reduce((sum, target) => sum + remaining[target], 0) !== unassigned.length) return false;
+  for (const tile of unassigned) {
+    if (!targets.some((target) => remaining[target] > 0 && weights[target].has(tile.id))) return false;
+  }
+  for (let mask = 1; mask < 1 << targets.length; mask += 1) {
+    const subset = targets.filter((_, index) => mask & (1 << index));
+    const demand = subset.reduce((sum, target) => sum + remaining[target], 0);
+    const available = unassigned.filter((tile) => subset.some((target) => weights[target].has(tile.id))).length;
+    if (available < demand) return false;
+  }
+  return true;
+}
+
+function weightedRandomOrder(items, weightFor) {
+  return items
+    .map((item) => {
+      const weight = Math.max(0.000001, Number(weightFor(item)) || 0.000001);
+      return { item, key: Math.pow(Math.random(), 1 / weight) };
+    })
+    .sort((a, b) => b.key - a.key)
+    .map((entry) => entry.item);
+}
+
+function createMonteCarloState(hands) {
+  return {
+    hands: cloneHands(hands),
+    board: state.board.map((tile) => ({
+      id: tile.id || canonicalTileId(tile.a, tile.b),
+      a: tile.a,
+      b: tile.b,
+    })),
+    leftEnd: state.leftEnd,
+    rightEnd: state.rightEnd,
+    current: state.current,
+    consecutivePasses: state.consecutivePasses,
+    requireDoubleSix: state.requireDoubleSix,
+  };
+}
+
+function runMonteCarloRollout(simulation, rootPlayer, rootMove) {
+  let outcome = applyMonteCarloMove(simulation, rootPlayer, rootMove);
+  if (outcome.done) return outcome;
+  for (let turn = 0; turn < MONTE_CARLO_MAX_TURNS; turn += 1) {
+    const player = simulation.current;
+    const moves = monteCarloLegalMoves(simulation, player);
+    if (moves.length === 0) {
+      simulation.consecutivePasses += 1;
+      if (simulation.consecutivePasses >= PLAYERS) {
+        return { done: true, winnerTeam: null, closed: true };
+      }
+      simulation.current = (player + 1) % PLAYERS;
+      continue;
+    }
+    const move = chooseMonteCarloRolloutMove(simulation, player, moves);
+    outcome = applyMonteCarloMove(simulation, player, move);
+    if (outcome.done) return outcome;
+  }
+  return { done: true, winnerTeam: null, closed: true };
+}
+
+function monteCarloLegalMoves(simulation, player) {
+  const hand = simulation.hands[player];
+  if (simulation.board.length === 0) {
+    const doubleSix = hand.find((tile) => tile.id === "6-6");
+    if (simulation.requireDoubleSix && doubleSix) return [{ tile: doubleSix, side: "start" }];
+    return hand.map((tile) => ({ tile, side: "start" }));
+  }
+  const moves = [];
+  for (const tile of hand) {
+    if (tileHasNumber(tile, simulation.leftEnd)) moves.push({ tile, side: "left" });
+    if (tileHasNumber(tile, simulation.rightEnd)) moves.push({ tile, side: "right" });
+  }
+  const filtered = monteCarloFilterLockingMoves(simulation, moves, player);
+  if (simulation.leftEnd !== simulation.rightEnd) return filtered;
+  const unique = new Map();
+  for (const move of filtered) if (!unique.has(move.tile.id)) unique.set(move.tile.id, move);
+  return [...unique.values()];
+}
+
+function monteCarloFilterLockingMoves(simulation, moves, player) {
+  if (moves.length <= 1) return moves;
+  const safe = moves.filter((move) => !monteCarloProhibitedLockMove(simulation, move, player));
+  return safe.length ? safe : moves;
+}
+
+function monteCarloProhibitedLockMove(simulation, move, player) {
+  if (simulation.hands[player].length <= 1) return false;
+  return (
+    monteCarloCreatesExhaustedDoubleEnd(simulation, move) ||
+    monteCarloClosesTableForEveryone(simulation, move, player)
+  );
+}
+
+function monteCarloCreatesExhaustedDoubleEnd(simulation, move) {
+  const ends = monteCarloPreviewEnds(simulation, move);
+  if (ends.left !== ends.right) return false;
+  const value = ends.left;
+  const played = simulation.board.filter(
+    (tile) => tile.a !== tile.b && (tile.a === value || tile.b === value),
+  ).length;
+  const candidate = move.tile.a !== move.tile.b && tileHasNumber(move.tile, value) ? 1 : 0;
+  return played + candidate >= 6;
+}
+
+function monteCarloClosesTableForEveryone(simulation, move, player) {
+  const ends = monteCarloPreviewEnds(simulation, move);
+  return simulation.hands.every((hand, owner) =>
+    hand.every((tile) => {
+      if (owner === player && tile.id === move.tile.id) return true;
+      return !canTilePlayEnds(tile, ends);
+    }),
+  );
+}
+
+function monteCarloPreviewEnds(simulation, move) {
+  if (simulation.board.length === 0) return { left: move.tile.a, right: move.tile.b };
+  if (move.side === "left") {
+    return {
+      left: move.tile.a === simulation.leftEnd ? move.tile.b : move.tile.a,
+      right: simulation.rightEnd,
+    };
+  }
+  return {
+    left: simulation.leftEnd,
+    right: move.tile.a === simulation.rightEnd ? move.tile.b : move.tile.a,
+  };
+}
+
+function applyMonteCarloMove(simulation, player, move) {
+  const hand = simulation.hands[player];
+  const tileIndex = hand.findIndex((tile) => tile.id === move.tile.id);
+  if (tileIndex === -1) return { done: true, winnerTeam: 1 - TEAM_BY_PLAYER[player], closed: false };
+  const [tile] = hand.splice(tileIndex, 1);
+  if (simulation.board.length === 0) {
+    simulation.leftEnd = tile.a;
+    simulation.rightEnd = tile.b;
+  } else if (move.side === "left") {
+    simulation.leftEnd = tile.a === simulation.leftEnd ? tile.b : tile.a;
+  } else {
+    simulation.rightEnd = tile.a === simulation.rightEnd ? tile.b : tile.a;
+  }
+  simulation.board.push(cloneTile(tile));
+  simulation.consecutivePasses = 0;
+  simulation.requireDoubleSix = false;
+  if (hand.length === 0) return { done: true, winnerTeam: TEAM_BY_PLAYER[player], closed: false };
+  simulation.current = (player + 1) % PLAYERS;
+  return { done: false, winnerTeam: null, closed: false };
+}
+
+function chooseMonteCarloRolloutMove(simulation, player, moves) {
+  if (moves.length === 1) return moves[0];
+  const scored = moves.map((move) => ({ move, score: monteCarloRolloutMoveScore(simulation, player, move) }));
+  const best = Math.max(...scored.map((entry) => entry.score));
+  const temperature = 0.42;
+  const weighted = scored.map((entry) => ({
+    ...entry,
+    weight: Math.exp((entry.score - best) / temperature),
+  }));
+  let draw = Math.random() * weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  for (const entry of weighted) {
+    draw -= entry.weight;
+    if (draw <= 0) return entry.move;
+  }
+  return weighted[weighted.length - 1].move;
+}
+
+function monteCarloRolloutMoveScore(simulation, player, move) {
+  const handAfter = simulation.hands[player].filter((tile) => tile.id !== move.tile.id);
+  if (handAfter.length === 0) return 10;
+  const ends = monteCarloPreviewEnds(simulation, move);
+  const mobility = handAfter.filter((tile) => canTilePlayEnds(tile, ends)).length;
+  const endCoverage = handAfter.reduce((sum, tile) => {
+    const left = tileHasNumber(tile, ends.left) ? 1 : 0;
+    const right = ends.right !== ends.left && tileHasNumber(tile, ends.right) ? 1 : 0;
+    return sum + left + right;
+  }, 0);
+  const trappedDoubles = handAfter.filter(
+    (tile) => tile.a === tile.b && !tileHasNumber(tile, ends.left) && !tileHasNumber(tile, ends.right),
+  ).length;
+  return (
+    mobility * 0.42 +
+    endCoverage * 0.16 +
+    (move.tile.a === move.tile.b ? 0.28 : 0) -
+    trappedDoubles * 0.18 -
+    (mobility === 0 ? 0.75 : 0) +
+    Math.random() * 0.04
+  );
+}
+
 function isRandomAgent(player) {
   return agentMode(player) === "random";
+}
+
+function isMonteCarloAgent(player) {
+  return agentMode(player) === "montecarlo";
 }
 
 function agentMode(player) {
@@ -1169,6 +1518,7 @@ function currentAgentModes() {
 }
 
 function agentModeLabel(mode) {
+  if (mode === "montecarlo") return "Monte Carlo";
   if (mode === "carneiro" || mode === "trained") return "Carneiro";
   if (mode === "random") return "Aleatoria";
   if (mode === "human") return "Humano";
@@ -2072,6 +2422,7 @@ function render(message = "") {
   if (els.trainPredictionHistory) els.trainPredictionHistory.disabled = state.training;
   if (els.showPredictionCharts) els.showPredictionCharts.disabled = state.training;
   if (els.deleteBrain) els.deleteBrain.disabled = state.training;
+  if (els.monteCarloSimulations) els.monteCarloSimulations.disabled = state.training;
   els.handPanel.hidden = state.humanSeat === null;
   renderBrainStats();
   if (!state.training) {
@@ -2764,6 +3115,10 @@ els.rewardSliders.forEach((slider) => {
 els.humanSpeed.addEventListener("input", () => {
   render();
   if (state.humanSeat !== null && state.humanSeat !== state.current) scheduleBots();
+});
+
+els.monteCarloSimulations?.addEventListener("change", () => {
+  monteCarloSimulationCount();
 });
 
 els.revealAllHands?.addEventListener("change", () => {
