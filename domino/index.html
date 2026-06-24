@@ -15,21 +15,14 @@
           <button id="train-start" type="button">Iniciar treino</button>
           <button id="train-stop" type="button" hidden>Parar treino</button>
           <button id="delete-brain" type="button" class="danger">Excluir cérebro</button>
-          <label class="prediction-training-control">
-            <input id="train-prediction-history" type="checkbox" />
-            Gerar histórico e treinar previsão
-          </label>
-          <label class="prediction-training-control">
+          <label class="option-control">
             <input id="reveal-all-hands" type="checkbox" />
             Revelar todas as mãos
           </label>
-          <label class="prediction-training-control">
-            <input id="show-prediction-charts" type="checkbox" />
-            Mostrar gráficos
-          </label>
           <label class="monte-carlo-control">
             Simulações por jogada
-            <input id="monte-carlo-simulations" type="number" min="10" max="1000" step="10" value="100" />
+            <input id="monte-carlo-simulations" type="number" min="10" max="100000" step="100" value="100" />
+            <span id="monte-carlo-last">nenhuma análise ainda</span>
           </label>
           <label class="speed-control">
             Bots contra humano
@@ -174,9 +167,9 @@
         <div id="human-hand" class="human-hand"></div>
       </section>
 
-      <section class="belief-dashboard" id="belief-dashboard" aria-label="Aprendizado da rede de previsão"></section>
+      <section class="candidate-dashboard" id="candidate-dashboard" aria-label="Probabilidades matemáticas das pedras"></section>
     </main>
 
-    <script src="./app.js?v=20260623-monte-carlo-agent"></script>
+    <script src="./app.js?v=20260624-monte-carlo-matematico"></script>
   </body>
 </html>
