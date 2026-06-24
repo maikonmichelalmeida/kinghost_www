@@ -19,8 +19,8 @@ const BELIEF_INPUT_SIZE = BELIEF_CONTEXT_SIZE + PLAYERS + TILE_IDS.length;
 const BELIEF_LAYER_SIZES = [BELIEF_INPUT_SIZE, 72, 40, 1];
 const BELIEF_LEARNING_RATE = 0.008;
 const BELIEF_NEGATIVE_SAMPLE_RATIO = 2;
-const BELIEF_TILE_HISTORY_LIMIT = 2000;
-const BELIEF_CHART_WINDOW = 20;
+const BELIEF_CHART_ROUNDS_PER_POINT = 20;
+const BELIEF_CHART_POINT_LIMIT = 200;
 const MATCH_HISTORY_LIMIT = 300;
 const REWARD_STORAGE_KEY = "domino-reward-profiles-v1";
 const REWARD_KEYS = ["pass", "partner", "aggression", "mobility", "safety"];
@@ -155,7 +155,9 @@ function createBeliefStats() {
     tilePrecision: 0,
     tileRecall: 0,
     closeness: 0,
-    tileErrorHistory: Array.from({ length: TILE_IDS.length }, () => []),
+    chartRoundErrorSum: 0,
+    chartRoundCount: 0,
+    roundErrorHistory: [],
   };
 }
 
@@ -222,15 +224,13 @@ function normalizeBrain(brain) {
 }
 
 function normalizeBeliefStats(stats = {}) {
-  const tileErrorHistory = Array.from({ length: TILE_IDS.length }, (_, index) =>
-    Array.isArray(stats.tileErrorHistory?.[index])
-      ? stats.tileErrorHistory[index]
-          .map(Number)
-          .filter(Number.isFinite)
-          .map((value) => clamp(value, 0, 1))
-          .slice(-BELIEF_TILE_HISTORY_LIMIT)
-      : [],
-  );
+  const roundErrorHistory = Array.isArray(stats.roundErrorHistory)
+    ? stats.roundErrorHistory
+        .map(Number)
+        .filter(Number.isFinite)
+        .map((value) => clamp(value, 0, 1))
+        .slice(-BELIEF_CHART_POINT_LIMIT)
+    : [];
   return {
     ...createBeliefStats(),
     trainSteps: Number(stats.trainSteps) || 0,
@@ -240,7 +240,9 @@ function normalizeBeliefStats(stats = {}) {
     tilePrecision: Number(stats.tilePrecision) || 0,
     tileRecall: Number(stats.tileRecall) || 0,
     closeness: Number(stats.closeness) || 0,
-    tileErrorHistory,
+    chartRoundErrorSum: Number(stats.chartRoundErrorSum) || 0,
+    chartRoundCount: Math.max(0, Math.min(BELIEF_CHART_ROUNDS_PER_POINT - 1, Number(stats.chartRoundCount) || 0)),
+    roundErrorHistory,
   };
 }
 
@@ -1756,12 +1758,10 @@ function beliefPredictionMetrics(prediction, actualHand) {
   let tp = 0;
   let fp = 0;
   let fn = 0;
-  const tileErrors = Array(TILE_IDS.length).fill(0);
   for (const item of prediction.tiles) {
     const target = actualIds.has(item.id) ? 1 : 0;
     const probability = clamp(item.probability, 0.000001, 0.999999);
     const tileError = Math.abs(item.probability - target);
-    tileErrors[item.index] = tileError;
     absoluteError += tileError;
     logLoss += -(target * Math.log(probability) + (1 - target) * Math.log(1 - probability));
     const predicted = item.probability >= 0.5;
@@ -1774,7 +1774,7 @@ function beliefPredictionMetrics(prediction, actualHand) {
     closeness: clamp(1 - absoluteError / TILE_IDS.length, 0, 1),
     tilePrecision: safeRatio(tp, tp + fp),
     tileRecall: safeRatio(tp, tp + fn),
-    tileErrors,
+    absoluteError: absoluteError / TILE_IDS.length,
   };
 }
 
@@ -1786,7 +1786,7 @@ function mergeBeliefMetrics(results) {
       tilePrecision: 0,
       tileRecall: 0,
       examples: 0,
-      tileErrors: Array(TILE_IDS.length).fill(0),
+      absoluteError: 1,
     };
   }
   return {
@@ -1795,7 +1795,7 @@ function mergeBeliefMetrics(results) {
     tilePrecision: average(results.map((result) => result.tilePrecision)),
     tileRecall: average(results.map((result) => result.tileRecall)),
     examples: results.length * TILE_IDS.length,
-    tileErrors: TILE_IDS.map((_, index) => average(results.map((result) => result.tileErrors[index]))),
+    absoluteError: average(results.map((result) => result.absoluteError)),
   };
 }
 
@@ -1820,9 +1820,13 @@ function updateSharedBeliefStats(result) {
     stats.closeness = stats.closeness * 0.985 + result.closeness * 0.015;
   }
   if (state.predictionChartEnabled) {
-    for (let index = 0; index < TILE_IDS.length; index += 1) {
-      stats.tileErrorHistory[index].push(clamp(result.tileErrors[index] || 0, 0, 1));
-      stats.tileErrorHistory[index] = stats.tileErrorHistory[index].slice(-BELIEF_TILE_HISTORY_LIMIT);
+    stats.chartRoundErrorSum += clamp(result.absoluteError, 0, 1);
+    stats.chartRoundCount += 1;
+    if (stats.chartRoundCount >= BELIEF_CHART_ROUNDS_PER_POINT) {
+      stats.roundErrorHistory.push(stats.chartRoundErrorSum / stats.chartRoundCount);
+      stats.roundErrorHistory = stats.roundErrorHistory.slice(-BELIEF_CHART_POINT_LIMIT);
+      stats.chartRoundErrorSum = 0;
+      stats.chartRoundCount = 0;
     }
   }
   syncSharedPredictionReferences();
@@ -2251,62 +2255,41 @@ function predictionErrorsHtml() {
 
 function predictionChartsHtml() {
   const stats = normalizeBeliefStats(state.sharedBeliefStats);
+  const chart = predictionChartGeometry(stats.roundErrorHistory, 900, 190);
+  const latest = stats.roundErrorHistory.length
+    ? stats.roundErrorHistory[stats.roundErrorHistory.length - 1]
+    : null;
   return `
-    <section class="prediction-chart-panel" id="prediction-chart-live" aria-label="Erro por pedra">
+    <section class="prediction-chart-panel" id="prediction-chart-live" aria-label="Erro médio de previsão">
       <div class="prediction-chart-header">
         <div>
-          <h3>Erro de probabilidade por pedra</h3>
-          <span>erro absoluto, média móvel de ${BELIEF_CHART_WINDOW} medições</span>
+          <h3>Erro médio de previsão por rodada</h3>
+          <span>cada ponto reúne ${BELIEF_CHART_ROUNDS_PER_POINT} rodadas · últimos ${BELIEF_CHART_POINT_LIMIT} pontos</span>
         </div>
-        <strong>0% ideal · 100% pior</strong>
+        <strong>${latest === null ? "aguardando 20 rodadas" : `último ${formatPercent(latest)}`}</strong>
       </div>
-      <div class="prediction-chart-grid">
-        ${TILE_IDS.map((id, index) => predictionTileChartHtml(id, stats.tileErrorHistory[index] || [])).join("")}
+      <div class="prediction-round-progress">
+        <span>Próximo ponto</span>
+        <strong>${stats.chartRoundCount}/${BELIEF_CHART_ROUNDS_PER_POINT} rodadas</strong>
       </div>
-    </section>
-  `;
-}
-
-function predictionTileChartHtml(id, history) {
-  const series = movingAverage(history, BELIEF_CHART_WINDOW);
-  const chart = predictionChartGeometry(series, 160, 72);
-  const tile = tileFromId(id);
-  const latest = series.length ? series[series.length - 1] : null;
-  return `
-    <article class="prediction-tile-chart">
-      <header>
-        <span class="truth-tile" title="${id}">
-          <i class="pip-${tile.a}">${tile.a}</i>
-          <i class="pip-${tile.b}">${tile.b}</i>
-        </span>
-        <strong>${latest === null ? "--" : formatPercent(latest)}</strong>
-      </header>
-      <div class="prediction-chart-canvas">
-        <svg viewBox="0 0 160 72" role="img" aria-label="Erro da pedra ${id}">
-          <line x1="5" y1="8" x2="155" y2="8"></line>
-          <line x1="5" y1="26" x2="155" y2="26"></line>
-          <line x1="5" y1="44" x2="155" y2="44"></line>
-          <line x1="5" y1="62" x2="155" y2="62"></line>
+      <div class="prediction-chart-canvas prediction-chart-main">
+        <svg viewBox="0 0 900 190" role="img" aria-label="Evolução do erro médio de previsão">
+          <line x1="8" y1="12" x2="892" y2="12"></line>
+          <line x1="8" y1="54" x2="892" y2="54"></line>
+          <line x1="8" y1="96" x2="892" y2="96"></line>
+          <line x1="8" y1="138" x2="892" y2="138"></line>
+          <line x1="8" y1="180" x2="892" y2="180"></line>
           ${chart.points ? `<polyline points="${chart.points}"></polyline>` : ""}
         </svg>
         <span>${formatPercent(chart.max)}</span>
         <span>${formatPercent(chart.min)}</span>
       </div>
-      <small>${history.length} medições</small>
-    </article>
+      <div class="prediction-chart-foot">
+        <span>0% = previsão perfeita</span>
+        <span>${stats.roundErrorHistory.length} pontos registrados</span>
+      </div>
+    </section>
   `;
-}
-
-function movingAverage(values, windowSize) {
-  if (!Array.isArray(values) || values.length === 0) return [];
-  const result = [];
-  let sum = 0;
-  for (let index = 0; index < values.length; index += 1) {
-    sum += Number(values[index]) || 0;
-    if (index >= windowSize) sum -= Number(values[index - windowSize]) || 0;
-    result.push(sum / Math.min(index + 1, windowSize));
-  }
-  return result;
 }
 
 function predictionChartGeometry(values, width, height) {

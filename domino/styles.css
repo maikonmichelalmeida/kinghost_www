@@ -1120,30 +1120,22 @@ p,
   font-size: 0.68rem;
 }
 
-.prediction-chart-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(112px, 1fr));
-  gap: 6px;
-}
-
-.prediction-tile-chart {
-  min-width: 0;
-  border: 1px solid #dfe7e1;
-  border-radius: 6px;
-  background: #f9fbfa;
-  padding: 5px;
-}
-
-.prediction-tile-chart header {
+.prediction-round-progress,
+.prediction-chart-foot {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 5px;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
 }
 
-.prediction-tile-chart header strong {
-  color: #315e82;
-  font-size: 0.7rem;
+.prediction-round-progress {
+  margin-bottom: 5px;
+}
+
+.prediction-round-progress strong {
+  color: var(--ink);
 }
 
 .prediction-chart-canvas {
@@ -1157,6 +1149,10 @@ p,
   height: 72px;
   border-radius: 4px;
   background: #fff;
+}
+
+.prediction-chart-main svg {
+  height: 190px;
 }
 
 .prediction-chart-canvas line {
@@ -1189,12 +1185,8 @@ p,
   bottom: 2px;
 }
 
-.prediction-tile-chart > small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.56rem;
-  text-align: right;
+.prediction-chart-foot {
+  margin-top: 5px;
 }
 
 .revealed-hands {
@@ -1278,10 +1270,6 @@ p,
 
   .prediction-errors {
     grid-template-columns: 1fr;
-  }
-
-  .prediction-chart-grid {
-    grid-template-columns: repeat(2, minmax(112px, 1fr));
   }
 
   .prediction-matrix {
