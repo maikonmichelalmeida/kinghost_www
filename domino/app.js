@@ -86,8 +86,10 @@ const state = {
   botTimer: null,
   resultTimer: null,
   brainSaveInFlight: false,
+  brainSavePromise: null,
   lastBrainSaveAt: 0,
   lastBrainTrainingClock: 0,
+  lastPredictionChartRenderAt: 0,
   lastMoveId: null,
   moveSequence: 0,
   handHistoryId: 0,
@@ -105,6 +107,7 @@ const state = {
   sharedBeliefStats: createBeliefStats(),
   brains: Array.from({ length: PLAYERS }, createBrain),
   brainNames: Array.from({ length: PLAYERS }, (_, i) => `${DEFAULT_BRAIN_BASE_NAME}J${i + 1}`),
+  brainIds: Array(PLAYERS).fill(0),
   brainOptions: Array.from({ length: PLAYERS }, () => []),
   brainTrainMs: Array(PLAYERS).fill(0),
   brainGames: 0,
@@ -305,6 +308,7 @@ function resetAllBrainsLocally() {
   state.sharedPredictionLoaded = false;
   state.brains = Array.from({ length: PLAYERS }, createBrain);
   state.brainNames = Array.from({ length: PLAYERS }, (_, player) => `${DEFAULT_BRAIN_BASE_NAME}J${player + 1}`);
+  state.brainIds = Array(PLAYERS).fill(0);
   state.brainTrainMs = Array(PLAYERS).fill(0);
   syncSharedPredictionReferences();
 }
@@ -320,6 +324,7 @@ function resetDeletedBrainSlotsLocally(baseName) {
     freshBrain.games = 0;
     state.brains[player] = freshBrain;
     state.brainNames[player] = `${DEFAULT_BRAIN_BASE_NAME}J${player + 1}`;
+    state.brainIds[player] = 0;
     state.brainTrainMs[player] = 0;
   }
   if (affectedPlayers.length) {
@@ -357,6 +362,7 @@ async function loadBrainFromDatabase(player, baseName) {
   brain.beliefStats = state.sharedBeliefStats;
   state.brains[player] = brain;
   state.brainNames[player] = payload.nome;
+  state.brainIds[player] = Number(payload.id) || 0;
   state.brainTrainMs[player] = Number(payload.tempoTreino) || 0;
   renderBrainSelectors();
 }
@@ -381,6 +387,7 @@ async function createBrainInDatabase(player, rawName) {
 
 async function deleteBrainsByBaseName(rawName) {
   const baseName = sanitizeBrainBaseName(rawName);
+  await waitForPendingBrainSave();
   const payload = await fetchJson(`${DOMINO_BRAIN_API}/${encodeURIComponent(baseName)}`, {
     method: "DELETE",
     body: JSON.stringify({ confirmName: baseName }),
@@ -399,31 +406,41 @@ async function deleteBrainsByBaseName(rawName) {
 }
 
 async function saveSelectedBrains(force = false) {
-  if (state.brainSaveInFlight) return;
+  if (state.brainSavePromise) return state.brainSavePromise;
   syncSharedPredictionReferences();
   const now = Date.now();
   accrueTrainingTime(now);
   if (!force && now - state.lastBrainSaveAt < BRAIN_SAVE_INTERVAL_MS) return;
   syncBrainTrainingCounters();
   state.brainSaveInFlight = true;
-  try {
-    await fetchJson(DOMINO_BRAIN_API, {
-      method: "PUT",
-      body: JSON.stringify({
-        items: state.brains.map((brain, player) => ({
-          player: player + 1,
-          nome: state.brainNames[player],
-          brain,
-          tempoTreino: Math.round(state.brainTrainMs[player]),
-        })),
-      }),
+  const payload = {
+    items: state.brains.map((brain, player) => ({
+      id: state.brainIds[player],
+      player: player + 1,
+      nome: state.brainNames[player],
+      brain,
+      tempoTreino: Math.round(state.brainTrainMs[player]),
+    })),
+  };
+  state.brainSavePromise = fetchJson(DOMINO_BRAIN_API, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+    .then(() => {
+      state.lastBrainSaveAt = now;
+    })
+    .catch((error) => {
+      console.error(error);
+    })
+    .finally(() => {
+      state.brainSaveInFlight = false;
+      state.brainSavePromise = null;
     });
-    state.lastBrainSaveAt = now;
-  } catch (error) {
-    console.error(error);
-  } finally {
-    state.brainSaveInFlight = false;
-  }
+  return state.brainSavePromise;
+}
+
+async function waitForPendingBrainSave() {
+  if (state.brainSavePromise) await state.brainSavePromise;
 }
 
 function syncBrainTrainingCounters() {
@@ -1199,7 +1216,7 @@ function startTrainingMode() {
 }
 
 function stopTrainingMode(restoreAgents = true) {
-  saveSelectedBrains(true);
+  void saveSelectedBrains(true);
   state.training = false;
   state.predictionTrainingEnabled = false;
   state.predictionChartEnabled = false;
@@ -2021,7 +2038,17 @@ function trainFast() {
   }
   saveSelectedBrains(false);
   render();
+  refreshPredictionChartsDuringTraining();
   requestAnimationFrame(trainFast);
+}
+
+function refreshPredictionChartsDuringTraining() {
+  if (!state.training || !state.predictionChartEnabled) return;
+  const now = Date.now();
+  if (now - state.lastPredictionChartRenderAt < 1000) return;
+  state.lastPredictionChartRenderAt = now;
+  const current = document.querySelector("#prediction-chart-live");
+  if (current) current.outerHTML = predictionChartsHtml();
 }
 
 function render(message = "") {
@@ -2225,7 +2252,7 @@ function predictionErrorsHtml() {
 function predictionChartsHtml() {
   const stats = normalizeBeliefStats(state.sharedBeliefStats);
   return `
-    <section class="prediction-chart-panel" aria-label="Erro por pedra">
+    <section class="prediction-chart-panel" id="prediction-chart-live" aria-label="Erro por pedra">
       <div class="prediction-chart-header">
         <div>
           <h3>Erro de probabilidade por pedra</h3>
