@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <title>Fixar vocabulario</title>
-    <link rel="stylesheet" href="fixar.css?v=20260622-11">
+    <link rel="stylesheet" href="fixar.css?v=20260625-learning-factor">
   </head>
   <body class="is-loading">
     <div class="page-decor" aria-hidden="true">
@@ -27,6 +27,8 @@
           <form id="settingsForm" class="daily-settings" autocomplete="off">
             <label for="wordsPerDayInput">Palavras por nivel</label>
             <input id="wordsPerDayInput" type="number" min="1" max="50" step="1" value="5">
+            <label for="learningFactorInput" title="Acertos perfeitos estimados para avancar no nivel 0">Fator</label>
+            <input id="learningFactorInput" type="number" min="3" max="20" step="1" value="10">
             <label class="narration-option" for="narrationCheckbox">
               <input id="narrationCheckbox" type="checkbox" checked>
               <span>Narrar respostas</span>
@@ -101,6 +103,6 @@
     </main>
 
     <a class="factory-vocabulary-link" href="./fabrica/palavra.htm">Processar vocabulario</a>
-    <script src="fixar.js?v=20260623-level-4"></script>
+    <script src="fixar.js?v=20260625-learning-factor"></script>
   </body>
 </html>

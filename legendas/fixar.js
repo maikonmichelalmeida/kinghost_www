@@ -35,6 +35,7 @@ const elements = {
   feedbackContinueButton: document.getElementById("feedbackContinueButton"),
   settingsForm: document.getElementById("settingsForm"),
   wordsPerDayInput: document.getElementById("wordsPerDayInput"),
+  learningFactorInput: document.getElementById("learningFactorInput"),
   narrationCheckbox: document.getElementById("narrationCheckbox"),
   saveSettingsButton: document.getElementById("saveSettingsButton"),
   feedbackRepeatButton: document.getElementById("feedbackRepeatButton")
@@ -101,15 +102,22 @@ async function loadTraining() {
 async function loadSettings() {
   const data = await requestJson("/api/user/vocabulary-settings");
   elements.wordsPerDayInput.value = String(data.wordsPerDay || 5);
+  elements.learningFactorInput.value = String(data.learningFactor || 10);
   elements.narrationCheckbox.checked = data.narrationEnabled !== false;
 }
 
 async function saveSettings(event) {
   event.preventDefault();
   const wordsPerDay = Number(elements.wordsPerDayInput.value);
+  const learningFactor = Number(elements.learningFactorInput.value);
   if (!Number.isInteger(wordsPerDay) || wordsPerDay < 1 || wordsPerDay > 50) {
     setStatus("Escolha entre 1 e 50 palavras por nivel.", true);
     elements.wordsPerDayInput.focus();
+    return;
+  }
+  if (!Number.isInteger(learningFactor) || learningFactor < 3 || learningFactor > 20) {
+    setStatus("Escolha um fator de aprendizado entre 3 e 20.", true);
+    elements.learningFactorInput.focus();
     return;
   }
 
@@ -120,6 +128,7 @@ async function saveSettings(event) {
       method: "PUT",
       body: JSON.stringify({
         wordsPerDay,
+        learningFactor,
         narrationEnabled: elements.narrationCheckbox.checked
       })
     });
