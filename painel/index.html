@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel de temperatura</title>
+    <link rel="stylesheet" href="style.css?v=20260626-painel">
+  </head>
+  <body>
+    <main class="shell">
+      <section id="loginView" class="login-view" aria-label="Login do painel">
+        <div class="login-card">
+          <p class="eyebrow">ESP32</p>
+          <h1>Painel de temperatura</h1>
+          <p class="login-copy">Acompanhe o sensor e ajuste os limites do microcontrolador.</p>
+          <form id="loginForm" class="login-form">
+            <label>
+              <span>Chave</span>
+              <input id="passwordInput" type="password" autocomplete="current-password" required>
+            </label>
+            <button type="submit">Entrar</button>
+          </form>
+          <p id="loginStatus" class="status-message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="panelView" class="panel-view is-hidden" aria-label="Painel do sensor">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Controle termico</p>
+            <h1>Painel ESP32</h1>
+          </div>
+          <div class="top-actions">
+            <p id="statusMessage" class="status-message" role="status">Conectando...</p>
+            <button id="refreshButton" type="button">Atualizar</button>
+            <button id="logoutButton" type="button">Sair</button>
+          </div>
+        </header>
+
+        <section class="temperature-stage" aria-label="Temperatura atual">
+          <div class="heat-grid" aria-hidden="true"></div>
+          <div class="temperature-copy">
+            <p id="rangeLabel" class="range-label">Aguardando leitura</p>
+            <output id="temperatureValue" class="temperature-value">--.-</output>
+            <span class="temperature-unit">&deg;C</span>
+            <p id="lastReading" class="last-reading">Nenhuma leitura recebida ainda.</p>
+          </div>
+          <div id="rangeBadge" class="range-badge range-waiting">sem dados</div>
+        </section>
+
+        <section class="settings-grid" aria-label="Configuracoes sincronizadas">
+          <article class="setting-card">
+            <div class="setting-icon">T</div>
+            <label for="tempoLeituraInput">
+              <span>Tempo de leitura</span>
+              <small>intervalo em segundos</small>
+            </label>
+            <input id="tempoLeituraInput" type="number" min="1" max="86400" step="1" inputmode="numeric">
+          </article>
+
+          <article class="setting-card cold">
+            <div class="setting-icon">↓</div>
+            <label for="pointDownInput">
+              <span>point_down</span>
+              <small>pisca a 2 Hz abaixo disso</small>
+            </label>
+            <input id="pointDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
+
+          <article class="setting-card hot">
+            <div class="setting-icon">↑</div>
+            <label for="pointUpInput">
+              <span>point_up</span>
+              <small>pisca a 20 Hz acima disso</small>
+            </label>
+            <input id="pointUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="painel.js?v=20260626-painel"></script>
+  </body>
+</html>
