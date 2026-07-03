@@ -1,0 +1,230 @@
+:root {
+  color-scheme: light;
+  --paper: #f8f5ee;
+  --ink: #201f1d;
+  --muted: #756f66;
+  --line: #d4cab9;
+  --panel: #fffdf8;
+  --accent: #2f7d68;
+  --accent-strong: #185a4d;
+  --danger: #b84a3b;
+  --path: #1d4f8f;
+  --candidate: #f0eadf;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(248, 245, 238, 0.96), rgba(236, 231, 220, 0.96)),
+    repeating-linear-gradient(90deg, transparent 0 15px, rgba(32, 31, 29, 0.03) 15px 16px);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell {
+  width: min(100% - 28px, 1180px);
+  margin: 0 auto;
+  padding: 18px 0 24px;
+}
+
+.control-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(32, 31, 29, 0.08);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.control-group.compact {
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+}
+
+label {
+  color: var(--ink);
+}
+
+input[type="number"] {
+  width: 58px;
+  height: 30px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 0 0 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+}
+
+.percent-control {
+  flex: 1 1 230px;
+  min-width: 210px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+}
+
+.speed-control {
+  flex: 0 1 220px;
+  min-width: 190px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+
+output {
+  width: 42px;
+  color: var(--ink);
+  text-align: right;
+}
+
+.line-toggle {
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+  cursor: pointer;
+  text-transform: none;
+}
+
+button {
+  min-width: 92px;
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+#bfsButton,
+#astarButton {
+  min-width: 148px;
+  background: #7c4d9f;
+}
+
+#bfsButton:hover,
+#astarButton:hover {
+  background: #633884;
+}
+
+#astarButton {
+  min-width: 158px;
+  background: #bd6b22;
+}
+
+#astarButton:hover {
+  background: #9d5317;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button:hover {
+  background: var(--accent-strong);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.board-wrap {
+  overflow: auto;
+  width: 100%;
+  max-height: calc(100vh - 145px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #e7ded0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  background: #fffaf0;
+}
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.readout span {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 253, 248, 0.78);
+}
+
+@media (max-width: 620px) {
+  .app-shell {
+    width: min(100% - 18px, 1180px);
+    padding-top: 10px;
+  }
+
+  .control-panel {
+    gap: 8px;
+  }
+
+  .control-group.compact {
+    flex: 1 1 calc(33.33% - 8px);
+    justify-content: space-between;
+  }
+
+  input[type="number"] {
+    width: 50px;
+  }
+
+  button {
+    flex: 1 1 100%;
+  }
+}

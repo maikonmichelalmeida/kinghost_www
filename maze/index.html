@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Experimento Maze</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="control-panel" aria-label="Painel de configuracao do labirinto">
+        <div class="control-group compact">
+          <label for="cellSize">G</label>
+          <input id="cellSize" type="number" min="8" max="40" step="1" value="16">
+          <span>px</span>
+        </div>
+
+        <div class="control-group compact">
+          <label for="mazeWidth">W</label>
+          <input id="mazeWidth" type="number" min="1" max="60" step="1" value="10">
+        </div>
+
+        <div class="control-group compact">
+          <label for="mazeHeight">H</label>
+          <input id="mazeHeight" type="number" min="1" max="60" step="1" value="7">
+        </div>
+
+        <div class="control-group percent-control">
+          <label for="extraPercent">%</label>
+          <input id="extraPercent" type="range" min="0" max="50" step="1" value="0">
+          <output id="percentValue" for="extraPercent">0%</output>
+        </div>
+
+        <label class="control-group line-toggle" for="showLines">
+          <input id="showLines" type="checkbox" checked>
+          <span>Linhas</span>
+        </label>
+
+        <button id="generateButton" type="button">Gerar</button>
+        <button id="bfsButton" type="button">Temperatura BFS</button>
+        <button id="astarButton" type="button">Greedy checkpoint</button>
+
+        <div class="control-group speed-control">
+          <label for="animationSpeed">Busca</label>
+          <input id="animationSpeed" type="range" min="1" max="100" step="1" value="45">
+          <output id="animationSpeedValue" for="animationSpeed">45</output>
+        </div>
+
+        <div class="control-group speed-control">
+          <label for="movementSpeed">A</label>
+          <input id="movementSpeed" type="range" min="1" max="300" step="1" value="120">
+          <output id="movementSpeedValue" for="movementSpeed">120</output>
+        </div>
+      </section>
+
+      <section class="board-wrap" aria-label="Tela do labirinto">
+        <canvas id="mazeCanvas" width="337" height="241"></canvas>
+      </section>
+
+      <aside class="readout" aria-live="polite">
+        <span id="gridReadout">x: 21 g | y: 15 g</span>
+        <span id="pathReadout">caminho: aguardando gerar</span>
+        <span id="statusReadout">paredes certas: g impar, impar</span>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
