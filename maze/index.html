@@ -12,18 +12,18 @@
       <section class="control-panel" aria-label="Painel de configuracao do labirinto">
         <div class="control-group compact">
           <label for="cellSize">G</label>
-          <input id="cellSize" type="number" min="8" max="40" step="1" value="16">
+          <input id="cellSize" type="number" min="1" max="40" step="1" value="16">
           <span>px</span>
         </div>
 
         <div class="control-group compact">
           <label for="mazeWidth">W</label>
-          <input id="mazeWidth" type="number" min="1" max="60" step="1" value="10">
+          <input id="mazeWidth" type="number" min="1" max="1000" step="1" value="10">
         </div>
 
         <div class="control-group compact">
           <label for="mazeHeight">H</label>
-          <input id="mazeHeight" type="number" min="1" max="60" step="1" value="7">
+          <input id="mazeHeight" type="number" min="1" max="1000" step="1" value="7">
         </div>
 
         <div class="control-group percent-control">
@@ -38,8 +38,16 @@
         </label>
 
         <button id="generateButton" type="button">Gerar</button>
-        <button id="bfsButton" type="button">Temperatura BFS</button>
-        <button id="astarButton" type="button">Greedy checkpoint</button>
+
+        <div class="control-group algorithm-control">
+          <label for="algorithmSelect">Alg</label>
+          <select id="algorithmSelect">
+            <option value="">Escolher</option>
+            <option value="bfs">Temperatura BFS</option>
+            <option value="greedy">Greedy checkpoint</option>
+            <option value="bibfs">Bidirectional BFS</option>
+          </select>
+        </div>
 
         <div class="control-group speed-control">
           <label for="animationSpeed">Busca</label>

@@ -110,6 +110,20 @@ input[type="checkbox"] {
   accent-color: var(--accent);
 }
 
+select {
+  height: 30px;
+  min-width: 160px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 26px 0 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
 output {
   width: 42px;
   color: var(--ink);
@@ -125,6 +139,14 @@ output {
   text-transform: none;
 }
 
+.algorithm-control {
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbf8f1;
+  text-transform: none;
+}
+
 button {
   min-width: 92px;
   height: 40px;
@@ -136,26 +158,6 @@ button {
   font-weight: 800;
   cursor: pointer;
   transition: transform 120ms ease, background 120ms ease;
-}
-
-#bfsButton,
-#astarButton {
-  min-width: 148px;
-  background: #7c4d9f;
-}
-
-#bfsButton:hover,
-#astarButton:hover {
-  background: #633884;
-}
-
-#astarButton {
-  min-width: 158px;
-  background: #bd6b22;
-}
-
-#astarButton:hover {
-  background: #9d5317;
 }
 
 button:disabled {

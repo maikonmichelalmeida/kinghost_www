@@ -8,8 +8,7 @@ const controls = {
   percentValue: document.querySelector("#percentValue"),
   showLines: document.querySelector("#showLines"),
   generate: document.querySelector("#generateButton"),
-  bfs: document.querySelector("#bfsButton"),
-  astar: document.querySelector("#astarButton"),
+  algorithm: document.querySelector("#algorithmSelect"),
   animationSpeed: document.querySelector("#animationSpeed"),
   animationSpeedValue: document.querySelector("#animationSpeedValue"),
   movementSpeed: document.querySelector("#movementSpeed"),
@@ -59,6 +58,12 @@ function createState() {
     aStarClosed: new Map(),
     aStarCurrent: null,
     aStarPath: [],
+    biVisitedA: new Map(),
+    biVisitedB: new Map(),
+    biFrontA: new Set(),
+    biFrontB: new Set(),
+    biMeet: null,
+    biPath: [],
     traveler: null,
     targetLength: 0,
     requestedLength: 0,
@@ -79,9 +84,9 @@ function loadSavedControls() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
     if (!saved || typeof saved !== "object") return;
 
-    controls.cellSize.value = clampInt(saved.cellSize, 8, 40, 16);
-    controls.width.value = clampInt(saved.logicalWidth, 1, 60, 10);
-    controls.height.value = clampInt(saved.logicalHeight, 1, 60, 7);
+    controls.cellSize.value = clampInt(saved.cellSize, 1, 40, 16);
+    controls.width.value = clampInt(saved.logicalWidth, 1, 1000, 10);
+    controls.height.value = clampInt(saved.logicalHeight, 1, 1000, 7);
     controls.percent.value = clampInt(saved.percent, 0, 50, 0);
     controls.animationSpeed.value = clampInt(saved.animationSpeed, 1, 100, 45);
     controls.movementSpeed.value = clampInt(saved.movementSpeed, 1, 300, 120);
@@ -109,9 +114,9 @@ function saveControls() {
 }
 
 function syncStateFromControls() {
-  state.cellSize = clampInt(controls.cellSize.value, 8, 40, 16);
-  state.logicalWidth = clampInt(controls.width.value, 1, 60, 10);
-  state.logicalHeight = clampInt(controls.height.value, 1, 60, 7);
+  state.cellSize = clampInt(controls.cellSize.value, 1, 40, 16);
+  state.logicalWidth = clampInt(controls.width.value, 1, 1000, 10);
+  state.logicalHeight = clampInt(controls.height.value, 1, 1000, 7);
   state.percent = clampInt(controls.percent.value, 0, 50, 0);
   state.animationSpeed = clampInt(controls.animationSpeed.value, 1, 100, 45);
   state.movementSpeed = clampInt(controls.movementSpeed.value, 1, 300, 120);
@@ -1548,6 +1553,13 @@ function getMovementDelay() {
   return Math.round(clamp(96 - state.movementSpeed * 0.315, 1, 120));
 }
 
+function setAlgorithmControlDisabled(disabled) {
+  controls.algorithm.disabled = disabled;
+  if (!disabled) {
+    controls.algorithm.value = "";
+  }
+}
+
 function clearSearchAnimation() {
   state.animationRun += 1;
   state.isAnimating = false;
@@ -1558,9 +1570,14 @@ function clearSearchAnimation() {
   state.aStarClosed = new Map();
   state.aStarCurrent = null;
   state.aStarPath = [];
+  state.biVisitedA = new Map();
+  state.biVisitedB = new Map();
+  state.biFrontA = new Set();
+  state.biFrontB = new Set();
+  state.biMeet = null;
+  state.biPath = [];
   state.traveler = null;
-  controls.bfs.disabled = false;
-  controls.astar.disabled = false;
+  setAlgorithmControlDisabled(false);
 }
 
 function reconstructPath(previous, startIndex, endIndex) {
@@ -1589,8 +1606,7 @@ async function runBfsTemperatureAnimation() {
   clearSearchAnimation();
   const runId = ++state.animationRun;
   state.isAnimating = true;
-  controls.bfs.disabled = true;
-  controls.astar.disabled = true;
+  setAlgorithmControlDisabled(true);
   state.message = "BFS: espalhando temperatura a partir de A";
 
   const total = state.cols * state.rows;
@@ -1646,8 +1662,7 @@ async function runBfsTemperatureAnimation() {
 
   if (!found) {
     state.isAnimating = false;
-    controls.bfs.disabled = false;
-    controls.astar.disabled = false;
+    setAlgorithmControlDisabled(false);
     state.message = "BFS: B nao foi alcancado";
     draw();
     return;
@@ -1714,8 +1729,7 @@ async function runAStarAnimation() {
   clearSearchAnimation();
   const runId = ++state.animationRun;
   state.isAnimating = true;
-  controls.bfs.disabled = true;
-  controls.astar.disabled = true;
+  setAlgorithmControlDisabled(true);
   state.message = "Greedy checkpoint: escolhendo o checkpoint com menor h";
 
   const startKey = pointKey(state.start);
@@ -1792,8 +1806,7 @@ async function runAStarAnimation() {
 
   if (!found) {
     state.isAnimating = false;
-    controls.bfs.disabled = false;
-    controls.astar.disabled = false;
+    setAlgorithmControlDisabled(false);
     state.message = "Greedy checkpoint: B nao foi alcancado";
     draw();
     return;
@@ -1805,6 +1818,139 @@ async function runAStarAnimation() {
   await sleep(Math.max(80, delay * 2));
 
   await animateTravelerOnPath(runId, state.aStarPath, "Greedy checkpoint: A chegou em B");
+}
+
+function reconstructBidirectionalPath(parentsA, parentsB, startKey, endKey, meetKey) {
+  const startToMeet = [];
+  let walker = meetKey;
+
+  while (walker) {
+    startToMeet.push(pointFromKey(walker));
+    if (walker === startKey) break;
+    walker = parentsA.get(walker);
+  }
+
+  startToMeet.reverse();
+
+  const meetToEnd = [];
+  walker = parentsB.get(meetKey);
+  while (walker) {
+    meetToEnd.push(pointFromKey(walker));
+    if (walker === endKey) break;
+    walker = parentsB.get(walker);
+  }
+
+  return startToMeet.concat(meetToEnd);
+}
+
+function expandBidirectionalFront(front, ownVisited, otherVisited, ownParents, depth) {
+  const nextFront = new Set();
+  let meetKey = null;
+
+  for (const currentKey of front) {
+    const current = pointFromKey(currentKey);
+
+    for (const next of getSearchNeighbors(current)) {
+      const nextKey = pointKey(next);
+      if (ownVisited.has(nextKey)) continue;
+
+      ownVisited.set(nextKey, {
+        ...next,
+        d: depth
+      });
+      ownParents.set(nextKey, currentKey);
+      nextFront.add(nextKey);
+
+      if (otherVisited.has(nextKey)) {
+        meetKey = nextKey;
+        break;
+      }
+    }
+
+    if (meetKey) break;
+  }
+
+  return {
+    front: nextFront,
+    meetKey
+  };
+}
+
+async function runBidirectionalBfsAnimation() {
+  syncStateFromControls();
+  saveControls();
+
+  if (!state.start || !state.end) {
+    generate();
+  }
+
+  if (!state.start || !state.end || state.isAnimating) return;
+
+  clearSearchAnimation();
+  const runId = ++state.animationRun;
+  state.isAnimating = true;
+  setAlgorithmControlDisabled(true);
+  state.message = "Bidirectional BFS: duas ondas procurando o encontro";
+
+  const startKey = pointKey(state.start);
+  const endKey = pointKey(state.end);
+  const visitedA = new Map([[startKey, { ...state.start, d: 0 }]]);
+  const visitedB = new Map([[endKey, { ...state.end, d: 0 }]]);
+  const parentsA = new Map();
+  const parentsB = new Map();
+  let frontA = new Set([startKey]);
+  let frontB = new Set([endKey]);
+  let meetKey = startKey === endKey ? startKey : null;
+  let depthA = 0;
+  let depthB = 0;
+  const delay = getAnimationDelay();
+
+  state.biVisitedA = new Map(visitedA);
+  state.biVisitedB = new Map(visitedB);
+  state.biFrontA = new Set(frontA);
+  state.biFrontB = new Set(frontB);
+  draw();
+
+  while (!meetKey && frontA.size && frontB.size && runId === state.animationRun) {
+    if (frontA.size <= frontB.size) {
+      depthA += 1;
+      const expanded = expandBidirectionalFront(frontA, visitedA, visitedB, parentsA, depthA);
+      frontA = expanded.front;
+      meetKey = expanded.meetKey;
+    } else {
+      depthB += 1;
+      const expanded = expandBidirectionalFront(frontB, visitedB, visitedA, parentsB, depthB);
+      frontB = expanded.front;
+      meetKey = expanded.meetKey;
+    }
+
+    state.biVisitedA = new Map(visitedA);
+    state.biVisitedB = new Map(visitedB);
+    state.biFrontA = new Set(frontA);
+    state.biFrontB = new Set(frontB);
+    state.biMeet = meetKey ? pointFromKey(meetKey) : null;
+    state.message = `Bidirectional BFS: A=${visitedA.size} B=${visitedB.size}${meetKey ? " | encontro" : ""}`;
+    draw();
+    await sleep(delay);
+  }
+
+  if (runId !== state.animationRun) return;
+
+  if (!meetKey) {
+    state.isAnimating = false;
+    setAlgorithmControlDisabled(false);
+    state.message = "Bidirectional BFS: encontro nao encontrado";
+    draw();
+    return;
+  }
+
+  state.biPath = reconstructBidirectionalPath(parentsA, parentsB, startKey, endKey, meetKey);
+  state.biMeet = pointFromKey(meetKey);
+  state.message = `Bidirectional BFS: encontro em ${meetKey} | caminho ${state.biPath.length - 1} passos`;
+  draw();
+  await sleep(Math.max(80, delay * 2));
+
+  await animateTravelerOnPath(runId, state.biPath, "Bidirectional BFS: A chegou em B");
 }
 
 async function animateTravelerOnPath(runId, path, doneMessage = "BFS: A chegou em B") {
@@ -1835,8 +1981,7 @@ async function animateTravelerOnPath(runId, path, doneMessage = "BFS: A chegou e
 
   state.traveler = state.end;
   state.isAnimating = false;
-  controls.bfs.disabled = false;
-  controls.astar.disabled = false;
+  setAlgorithmControlDisabled(false);
   state.message = doneMessage;
   draw();
 }
@@ -1912,6 +2057,7 @@ function draw() {
   drawCells();
   drawTemperature();
   drawAStarSearch();
+  drawBidirectionalSearch();
   if (state.showLines) {
     drawSecondaryPaths();
     drawPath();
@@ -1919,6 +2065,7 @@ function draw() {
   }
   drawBfsPath();
   drawAStarPath();
+  drawBidirectionalPath();
   drawPoints();
   drawTraveler();
   drawGridLines();
@@ -1997,6 +2144,41 @@ function drawAStarSearch() {
       ctx.fillText(`h${node.h}`, x, top + state.cellSize * 0.33);
       ctx.fillText(`d${node.g}`, x, top + state.cellSize * 0.68);
     }
+  }
+
+  ctx.restore();
+}
+
+function drawBidirectionalSearch() {
+  if (!state.biVisitedA.size && !state.biVisitedB.size) return;
+
+  ctx.save();
+
+  for (const node of state.biVisitedA.values()) {
+    ctx.fillStyle = "rgba(46, 126, 220, 0.46)";
+    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+  }
+
+  for (const node of state.biVisitedB.values()) {
+    ctx.fillStyle = "rgba(220, 78, 154, 0.46)";
+    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+  }
+
+  for (const key of state.biFrontA) {
+    const point = pointFromKey(key);
+    ctx.fillStyle = "rgba(21, 99, 214, 0.82)";
+    ctx.fillRect(point.x * state.cellSize, point.y * state.cellSize, state.cellSize, state.cellSize);
+  }
+
+  for (const key of state.biFrontB) {
+    const point = pointFromKey(key);
+    ctx.fillStyle = "rgba(202, 41, 139, 0.82)";
+    ctx.fillRect(point.x * state.cellSize, point.y * state.cellSize, state.cellSize, state.cellSize);
+  }
+
+  if (state.biMeet) {
+    ctx.fillStyle = "rgba(255, 218, 58, 0.94)";
+    ctx.fillRect(state.biMeet.x * state.cellSize, state.biMeet.y * state.cellSize, state.cellSize, state.cellSize);
   }
 
   ctx.restore();
@@ -2144,6 +2326,29 @@ function drawAStarPath() {
   ctx.restore();
 }
 
+function drawBidirectionalPath() {
+  if (!state.biPath || state.biPath.length < 2) return;
+
+  ctx.save();
+  ctx.beginPath();
+  state.biPath.forEach((point, index) => {
+    const x = point.x * state.cellSize + state.cellSize / 2;
+    const y = point.y * state.cellSize + state.cellSize / 2;
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = "#62f08f";
+  ctx.lineWidth = Math.max(2.7, Math.min(5.5, state.cellSize * 0.3));
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(19, 88, 44, 0.68)";
+  ctx.lineWidth = Math.max(1.1, Math.min(2.2, state.cellSize * 0.11));
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPoints() {
   if (state.start && !state.traveler) drawMarker(state.start, "#2f7d68", "A");
   if (state.end) drawMarker(state.end, "#b84a3b", "B");
@@ -2197,8 +2402,12 @@ function updateReadout() {
 
 controls.generate.addEventListener("click", generate);
 
-controls.bfs.addEventListener("click", runBfsTemperatureAnimation);
-controls.astar.addEventListener("click", runAStarAnimation);
+controls.algorithm.addEventListener("change", () => {
+  const selected = controls.algorithm.value;
+  if (selected === "bfs") runBfsTemperatureAnimation();
+  if (selected === "greedy") runAStarAnimation();
+  if (selected === "bibfs") runBidirectionalBfsAnimation();
+});
 
 controls.showLines.addEventListener("change", () => {
   syncStateFromControls();
