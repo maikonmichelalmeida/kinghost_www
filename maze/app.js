@@ -1876,6 +1876,90 @@ function expandBidirectionalFront(front, ownVisited, otherVisited, ownParents, d
   };
 }
 
+function getSearchWallKeys() {
+  const keys = [];
+
+  for (let y = 0; y < state.rows; y += 1) {
+    for (let x = 0; x < state.cols; x += 1) {
+      if (isSearchWall(x, y)) keys.push(`${x},${y}`);
+    }
+  }
+
+  return keys;
+}
+
+function runBidirectionalWorkerJob() {
+  if (!window.Worker) return null;
+
+  return new Promise((resolve, reject) => {
+    const worker = new Worker("bidirectional-worker.js");
+    worker.onmessage = (event) => {
+      worker.terminate();
+      resolve(event.data);
+    };
+    worker.onerror = (error) => {
+      worker.terminate();
+      reject(error);
+    };
+    worker.postMessage({
+      cols: state.cols,
+      rows: state.rows,
+      start: state.start,
+      end: state.end,
+      wallKeys: getSearchWallKeys()
+    });
+  });
+}
+
+function runBidirectionalLocalJob() {
+  const startKey = pointKey(state.start);
+  const endKey = pointKey(state.end);
+  const visitedA = new Map([[startKey, { ...state.start, d: 0 }]]);
+  const visitedB = new Map([[endKey, { ...state.end, d: 0 }]]);
+  const parentsA = new Map();
+  const parentsB = new Map();
+  let frontA = new Set([startKey]);
+  let frontB = new Set([endKey]);
+  let meetKey = startKey === endKey ? startKey : null;
+  let depthA = 0;
+  let depthB = 0;
+  const frames = [{
+    visitedA: Array.from(visitedA.values()),
+    visitedB: Array.from(visitedB.values()),
+    frontA: Array.from(frontA),
+    frontB: Array.from(frontB),
+    meet: meetKey ? pointFromKey(meetKey) : null
+  }];
+
+  while (!meetKey && frontA.size && frontB.size) {
+    depthA += 1;
+    const expandedA = expandBidirectionalFront(frontA, visitedA, visitedB, parentsA, depthA);
+    frontA = expandedA.front;
+    meetKey = expandedA.meetKey;
+
+    if (!meetKey) {
+      depthB += 1;
+      const expandedB = expandBidirectionalFront(frontB, visitedB, visitedA, parentsB, depthB);
+      frontB = expandedB.front;
+      meetKey = expandedB.meetKey;
+    }
+
+    frames.push({
+      visitedA: Array.from(visitedA.values()),
+      visitedB: Array.from(visitedB.values()),
+      frontA: Array.from(frontA),
+      frontB: Array.from(frontB),
+      meet: meetKey ? pointFromKey(meetKey) : null
+    });
+  }
+
+  return {
+    frames,
+    path: meetKey ? reconstructBidirectionalPath(parentsA, parentsB, startKey, endKey, meetKey) : [],
+    meet: meetKey ? pointFromKey(meetKey) : null
+  };
+}
+
 async function runBidirectionalBfsAnimation() {
   syncStateFromControls();
   saveControls();
@@ -1892,51 +1976,33 @@ async function runBidirectionalBfsAnimation() {
   setAlgorithmControlDisabled(true);
   state.message = "Bidirectional BFS: duas ondas procurando o encontro";
 
-  const startKey = pointKey(state.start);
-  const endKey = pointKey(state.end);
-  const visitedA = new Map([[startKey, { ...state.start, d: 0 }]]);
-  const visitedB = new Map([[endKey, { ...state.end, d: 0 }]]);
-  const parentsA = new Map();
-  const parentsB = new Map();
-  let frontA = new Set([startKey]);
-  let frontB = new Set([endKey]);
-  let meetKey = startKey === endKey ? startKey : null;
-  let depthA = 0;
-  let depthB = 0;
   const delay = getAnimationDelay();
+  let result = null;
 
-  state.biVisitedA = new Map(visitedA);
-  state.biVisitedB = new Map(visitedB);
-  state.biFrontA = new Set(frontA);
-  state.biFrontB = new Set(frontB);
-  draw();
+  try {
+    result = await runBidirectionalWorkerJob();
+    state.message = "Bidirectional BFS: frames preparados em worker";
+  } catch (error) {
+    result = runBidirectionalLocalJob();
+    state.message = "Bidirectional BFS: fallback local paralelo";
+  }
 
-  while (!meetKey && frontA.size && frontB.size && runId === state.animationRun) {
-    if (frontA.size <= frontB.size) {
-      depthA += 1;
-      const expanded = expandBidirectionalFront(frontA, visitedA, visitedB, parentsA, depthA);
-      frontA = expanded.front;
-      meetKey = expanded.meetKey;
-    } else {
-      depthB += 1;
-      const expanded = expandBidirectionalFront(frontB, visitedB, visitedA, parentsB, depthB);
-      frontB = expanded.front;
-      meetKey = expanded.meetKey;
-    }
+  for (const frame of result.frames) {
+    if (runId !== state.animationRun) return;
 
-    state.biVisitedA = new Map(visitedA);
-    state.biVisitedB = new Map(visitedB);
-    state.biFrontA = new Set(frontA);
-    state.biFrontB = new Set(frontB);
-    state.biMeet = meetKey ? pointFromKey(meetKey) : null;
-    state.message = `Bidirectional BFS: A=${visitedA.size} B=${visitedB.size}${meetKey ? " | encontro" : ""}`;
+    state.biVisitedA = new Map(frame.visitedA.map((point) => [pointKey(point), point]));
+    state.biVisitedB = new Map(frame.visitedB.map((point) => [pointKey(point), point]));
+    state.biFrontA = new Set(frame.frontA);
+    state.biFrontB = new Set(frame.frontB);
+    state.biMeet = frame.meet;
+    state.message = `Bidirectional BFS: A=${state.biVisitedA.size} B=${state.biVisitedB.size}${frame.meet ? " | encontro" : ""}`;
     draw();
     await sleep(delay);
   }
 
   if (runId !== state.animationRun) return;
 
-  if (!meetKey) {
+  if (!result.path.length) {
     state.isAnimating = false;
     setAlgorithmControlDisabled(false);
     state.message = "Bidirectional BFS: encontro nao encontrado";
@@ -1944,9 +2010,9 @@ async function runBidirectionalBfsAnimation() {
     return;
   }
 
-  state.biPath = reconstructBidirectionalPath(parentsA, parentsB, startKey, endKey, meetKey);
-  state.biMeet = pointFromKey(meetKey);
-  state.message = `Bidirectional BFS: encontro em ${meetKey} | caminho ${state.biPath.length - 1} passos`;
+  state.biPath = result.path;
+  state.biMeet = result.meet;
+  state.message = `Bidirectional BFS: encontro | caminho ${state.biPath.length - 1} passos`;
   draw();
   await sleep(Math.max(80, delay * 2));
 
