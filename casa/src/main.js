@@ -48,7 +48,7 @@ const STORAGE_KEYS = {
   checkpoint: "casa-ai-checkpoint-v1",
 };
 const PROJECT_JSON_NAME = "casa-agentes-ia";
-const PROJECT_JSON_API = "http://127.0.0.1:21106/api/project-json/" + PROJECT_JSON_NAME;
+const PROJECT_JSON_API = projectJsonApiUrl(PROJECT_JSON_NAME);
 const ELITE_BRAIN_LIMIT = 12;
 const STORED_GENOME_LIMIT = 80;
 const SURVIVAL_SAMPLE_SIZE = 10;
@@ -120,6 +120,15 @@ function centerOf(rect) {
     x: rect.x + rect.w / 2,
     y: rect.y + rect.h / 2,
   };
+}
+
+function projectJsonApiUrl(projectName) {
+  const encodedName = encodeURIComponent(projectName);
+  const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  if (isLocalHost && window.location.port !== "21106") {
+    return `http://127.0.0.1:21106/api/project-json/${encodedName}`;
+  }
+  return `/api/project-json/${encodedName}`;
 }
 
 class NeuralNetwork {
