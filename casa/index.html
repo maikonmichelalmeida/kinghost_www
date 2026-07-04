@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Casa - Agentes IA</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="simulation">
+        <canvas id="world" width="960" height="640" aria-label="Mapa da simulação"></canvas>
+      </section>
+
+      <aside class="panel" aria-label="Painel de configuração">
+        <header class="panel-header">
+          <h1>Agentes IA</h1>
+          <div class="run-buttons">
+            <button id="toggleRun" type="button">Pausar</button>
+            <button id="toggleTurbo" type="button">Turbo</button>
+          </div>
+        </header>
+
+        <div class="stats">
+          <div>
+            <span>Agentes</span>
+            <strong id="agentCount">0</strong>
+          </div>
+          <div>
+            <span>Comida</span>
+            <strong id="foodCount">0</strong>
+          </div>
+          <div>
+            <span>Geração</span>
+            <strong id="generationCount">1</strong>
+          </div>
+          <div>
+            <span>Comida/frame</span>
+            <strong id="foodRate">0</strong>
+          </div>
+          <div>
+            <span>Rodada</span>
+            <strong id="roundCount">1/10</strong>
+          </div>
+          <div>
+            <span>Toques/frame</span>
+            <strong id="bestWallTouchRate">0</strong>
+          </div>
+          <div>
+            <span>Frames/toque</span>
+            <strong id="bestFramesPerTouch">0</strong>
+          </div>
+        </div>
+
+        <section class="chart-panel" aria-label="Gráfico de sobrevivência">
+          <div class="chart-heading">
+            <span>Sobrevivencia</span>
+            <strong id="survivalAverage">0</strong>
+          </div>
+          <div class="chart-legend">
+            <span><i class="best-line"></i> melhor <strong id="bestSurvivalAverage">0</strong></span>
+            <span><i class="mean-line"></i> media <strong id="meanSurvivalAverage">0</strong></span>
+            <span><i class="median-line"></i> mediana <strong id="medianSurvivalAverage">0</strong></span>
+          </div>
+          <canvas id="survivalChart" width="284" height="120"></canvas>
+        </section>
+
+        <form id="settings" class="controls">
+          <label>
+            Quantidade de comida
+            <input id="targetFood" name="targetFood" type="number" min="0" max="400" step="1" value="18" />
+          </label>
+
+          <label>
+            Elites preservados
+            <input id="minAgents" name="minAgents" type="number" min="1" max="200" step="1" value="10" />
+          </label>
+
+          <label>
+            Máximo de agentes
+            <input id="maxAgents" name="maxAgents" type="number" min="1" max="500" step="1" value="30" />
+          </label>
+
+          <label>
+            Energia máxima
+            <input id="maxEnergy" name="maxEnergy" type="number" min="100" max="10000" step="50" value="1800" />
+          </label>
+
+          <label>
+            Energia da comida
+            <input id="foodEnergy" name="foodEnergy" type="number" min="20" max="5000" step="10" value="720" />
+          </label>
+
+          <label>
+            Velocidade máxima
+            <input id="maxSpeed" name="maxSpeed" type="number" min="0.2" max="20" step="0.1" value="6" />
+          </label>
+
+          <label>
+            Autonomia parado (frames)
+            <input id="idleEnergyFrames" name="idleEnergyFrames" type="number" min="100" max="30000" step="100" value="3600" />
+          </label>
+
+          <label>
+            Custo extra acelerando
+            <input id="accelerationCostMultiplier" name="accelerationCostMultiplier" type="number" min="0" max="4" step="0.05" value="0.75" />
+          </label>
+
+          <label>
+            Esquecimento da memória
+            <input id="memoryTau" name="memoryTau" type="number" min="10" max="2000" step="10" value="220" />
+          </label>
+
+          <label>
+            Chance de mutação
+            <input id="mutationChance" name="mutationChance" type="number" min="0" max="1" step="0.05" value="0.25" />
+          </label>
+
+          <label>
+            Intensidade da mutação
+            <input id="mutationStrength" name="mutationStrength" type="number" min="0" max="1" step="0.01" value="0.04" />
+          </label>
+
+          <div class="actions">
+            <button id="applySettings" type="submit">Aplicar</button>
+            <button id="resetWorld" type="button">Reiniciar</button>
+          </div>
+
+          <button id="clearEverything" class="danger-link" type="button">Limpar tudo</button>
+        </form>
+
+        <div class="legend">
+          <span><i class="agent-swatch"></i> agente</span>
+          <span><i class="food-swatch"></i> comida</span>
+          <span><i class="home-swatch"></i> casa</span>
+          <span><i class="wall-swatch"></i> parede</span>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="./src/main.js?v=20260704-db-save-2"></script>
+  </body>
+</html>
