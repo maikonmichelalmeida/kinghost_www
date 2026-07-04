@@ -131,6 +131,16 @@ function projectJsonApiUrl(projectName) {
   return `/api/project-json/${encodedName}`;
 }
 
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "Erro na comunicacao com o banco.");
+  return payload;
+}
+
 class NeuralNetwork {
   constructor(inputSize = INPUT_SIZE, hiddenSize = HIDDEN_SIZE, outputSize = OUTPUT_SIZE) {
     this.inputSize = inputSize;
@@ -1069,10 +1079,11 @@ function queueProjectSave() {
 }
 
 async function saveProjectStateNow(options = {}) {
-  const body = JSON.stringify({
+  const payload = {
     json: buildProjectState(),
     tempoTreino: generation,
-  });
+  };
+  const body = JSON.stringify(payload);
 
   try {
     if (options.keepalive && navigator.sendBeacon) {
@@ -1081,9 +1092,8 @@ async function saveProjectStateNow(options = {}) {
       return;
     }
 
-    await fetch(PROJECT_JSON_API, {
+    await fetchJson(PROJECT_JSON_API, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body,
       keepalive: Boolean(options.keepalive),
     });
@@ -1094,10 +1104,7 @@ async function saveProjectStateNow(options = {}) {
 
 async function loadProjectStateFromDatabase() {
   try {
-    const response = await fetch(PROJECT_JSON_API, { method: "GET" });
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+    const data = await fetchJson(PROJECT_JSON_API);
     return data.json || null;
   } catch (error) {
     console.warn("Nao foi possivel carregar o JSON do projeto no banco.", error);
@@ -1156,7 +1163,7 @@ async function clearStorage() {
   }
 
   try {
-    await fetch(PROJECT_JSON_API, { method: "DELETE" });
+    await fetchJson(PROJECT_JSON_API, { method: "DELETE" });
   } catch (error) {
     console.warn("Nao foi possivel limpar o JSON do projeto no banco.", error);
   }
