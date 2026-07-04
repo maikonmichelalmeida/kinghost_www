@@ -2157,7 +2157,6 @@ function draw() {
   drawBidirectionalPath();
   drawPoints();
   drawTraveler();
-  drawGridLines();
   updateReadout();
 }
 
@@ -2283,30 +2282,6 @@ function drawBidirectionalSearch() {
   }
 
   ctx.restore();
-}
-
-function drawGridLines() {
-  const width = visualWidth();
-  const height = visualHeight();
-  const totalCols = state.cols + VISUAL_BORDER * 2;
-  const totalRows = state.rows + VISUAL_BORDER * 2;
-  ctx.beginPath();
-  ctx.strokeStyle = "rgba(117, 111, 102, 0.3)";
-  ctx.lineWidth = 1;
-
-  for (let x = 0; x <= totalCols; x += 1) {
-    const px = x * state.cellSize + 0.5;
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, height);
-  }
-
-  for (let y = 0; y <= totalRows; y += 1) {
-    const py = y * state.cellSize + 0.5;
-    ctx.moveTo(0, py);
-    ctx.lineTo(width, py);
-  }
-
-  ctx.stroke();
 }
 
 function drawSecondaryPaths() {
