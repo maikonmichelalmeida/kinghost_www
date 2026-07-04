@@ -921,18 +921,18 @@ function applySettingsToPanel(values) {
   }
 }
 
-function loadSettingsFromStorage() {
+function legacyLoadSettingsFromStorage() {
   const storedSettings = loadJson(STORAGE_KEYS.settings);
   if (storedSettings && typeof storedSettings === "object") {
     applySettingsToPanel({ ...defaults, ...storedSettings });
   }
 }
 
-function saveSettings() {
+function legacySaveSettings() {
   saveJson(STORAGE_KEYS.settings, settings);
 }
 
-function clearStorage() {
+function legacyClearStorage() {
   try {
     localStorage.removeItem(STORAGE_KEYS.settings);
     localStorage.removeItem(STORAGE_KEYS.checkpoint);
@@ -973,7 +973,7 @@ function rankedGenomesForPersistence() {
     );
 }
 
-function saveCheckpoint(reason = "manual") {
+function legacySaveCheckpoint(reason = "manual") {
   const rankedGenomes = rankedGenomesForPersistence();
   const eliteGenomes = rankedGenomes.slice(0, Math.max(1, settings.minAgents));
 
@@ -983,7 +983,7 @@ function saveCheckpoint(reason = "manual") {
   });
 }
 
-function restoreCheckpoint() {
+function legacyRestoreCheckpoint() {
   const checkpoint = loadJson(STORAGE_KEYS.checkpoint);
   if (!checkpoint || !Array.isArray(checkpoint.eliteBrains)) return false;
 
