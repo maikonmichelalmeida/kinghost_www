@@ -128,7 +128,7 @@ function projectJsonApiUrl(projectName) {
   if (isLocalHost && window.location.port !== "21106") {
     return `http://127.0.0.1:21106/api/project-json/${encodedName}`;
   }
-  return `/api/project-json/${encodedName}`;
+  return `api/project-json/${encodedName}`;
 }
 
 class NeuralNetwork {
