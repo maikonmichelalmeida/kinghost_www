@@ -9,7 +9,7 @@
   --accent-strong: #185a4d;
   --danger: #b84a3b;
   --path: #1d4f8f;
-  --candidate: #f0eadf;
+  --candidate: #fff;
 }
 
 * {
@@ -187,7 +187,7 @@ button:active {
 canvas {
   display: block;
   image-rendering: pixelated;
-  background: #fffaf0;
+  background: #fff;
 }
 
 .readout {

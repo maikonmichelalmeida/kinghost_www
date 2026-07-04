@@ -20,9 +20,8 @@ const controls = {
 };
 
 const ctx = controls.canvas.getContext("2d");
-const wallSprite = new Image();
-wallSprite.src = "assets/wall.png";
 const STORAGE_KEY = "mazeExperimentSettings";
+const VISUAL_BORDER = 1;
 
 let state = createState();
 
@@ -205,6 +204,30 @@ function manhattan(a, b) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function visualX(x) {
+  return (x + VISUAL_BORDER) * state.cellSize;
+}
+
+function visualY(y) {
+  return (y + VISUAL_BORDER) * state.cellSize;
+}
+
+function visualCenterX(x) {
+  return visualX(x) + state.cellSize / 2;
+}
+
+function visualCenterY(y) {
+  return visualY(y) + state.cellSize / 2;
+}
+
+function visualWidth() {
+  return (state.cols + VISUAL_BORDER * 2) * state.cellSize;
+}
+
+function visualHeight() {
+  return (state.rows + VISUAL_BORDER * 2) * state.cellSize;
 }
 
 function getFreeCells() {
@@ -2101,8 +2124,8 @@ function generate() {
 }
 
 function resizeCanvas() {
-  const width = state.cols * state.cellSize;
-  const height = state.rows * state.cellSize;
+  const width = visualWidth();
+  const height = visualHeight();
   const dpr = window.devicePixelRatio || 1;
   controls.canvas.width = Math.ceil(width * dpr);
   controls.canvas.height = Math.ceil(height * dpr);
@@ -2114,10 +2137,10 @@ function resizeCanvas() {
 function draw() {
   resizeCanvas();
 
-  const width = state.cols * state.cellSize;
-  const height = state.rows * state.cellSize;
+  const width = visualWidth();
+  const height = visualHeight();
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#fffaf0";
+  ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, width, height);
 
   drawCells();
@@ -2139,23 +2162,35 @@ function draw() {
 }
 
 function drawCells() {
+  drawOuterWalls();
+
   for (let y = 0; y < state.rows; y += 1) {
     for (let x = 0; x < state.cols; x += 1) {
-      const left = x * state.cellSize;
-      const top = y * state.cellSize;
+      const left = visualX(x);
+      const top = visualY(y);
 
       if (isCertainWall(x, y) || state.secondaryWallKeys.has(`${x},${y}`)) {
-        if (wallSprite.complete && wallSprite.naturalWidth > 0) {
-          ctx.drawImage(wallSprite, left, top, state.cellSize, state.cellSize);
-        } else {
-          ctx.fillStyle = "#74695f";
-          ctx.fillRect(left, top, state.cellSize, state.cellSize);
-        }
-      } else if ((x % 2 === 1) !== (y % 2 === 1)) {
-        ctx.fillStyle = "#f0eadf";
+        ctx.fillStyle = "#000";
         ctx.fillRect(left, top, state.cellSize, state.cellSize);
       }
     }
+  }
+}
+
+function drawOuterWalls() {
+  const totalCols = state.cols + VISUAL_BORDER * 2;
+  const totalRows = state.rows + VISUAL_BORDER * 2;
+
+  ctx.fillStyle = "#000";
+
+  for (let x = 0; x < totalCols; x += 1) {
+    ctx.fillRect(x * state.cellSize, 0, state.cellSize, state.cellSize);
+    ctx.fillRect(x * state.cellSize, (totalRows - 1) * state.cellSize, state.cellSize, state.cellSize);
+  }
+
+  for (let y = 1; y < totalRows - 1; y += 1) {
+    ctx.fillRect(0, y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect((totalCols - 1) * state.cellSize, y * state.cellSize, state.cellSize, state.cellSize);
   }
 }
 
@@ -2170,7 +2205,7 @@ function drawTemperature() {
     const hue = 205 - ratio * 165;
     const lightness = 68 - ratio * 18;
     ctx.fillStyle = `hsla(${hue}, 88%, ${lightness}%, 0.72)`;
-    ctx.fillRect(x * state.cellSize, y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(x), visualY(y), state.cellSize, state.cellSize);
   }
 
   ctx.restore();
@@ -2183,19 +2218,19 @@ function drawAStarSearch() {
 
   for (const node of state.aStarClosed.values()) {
     ctx.fillStyle = "rgba(90, 94, 104, 0.42)";
-    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(node.x), visualY(node.y), state.cellSize, state.cellSize);
   }
 
   for (const node of state.aStarOpen.values()) {
     const closeness = 1 - node.h / Math.max(1, manhattan(state.start, state.end));
     ctx.fillStyle = `hsla(${190 - closeness * 95}, 86%, ${62 - closeness * 18}%, 0.62)`;
-    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(node.x), visualY(node.y), state.cellSize, state.cellSize);
   }
 
   if (state.aStarCurrent) {
     const node = state.aStarCurrent;
     ctx.fillStyle = "rgba(255, 171, 46, 0.9)";
-    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(node.x), visualY(node.y), state.cellSize, state.cellSize);
   }
 
   if (state.cellSize >= 18) {
@@ -2204,8 +2239,8 @@ function drawAStarSearch() {
     ctx.textBaseline = "middle";
 
     for (const node of [...state.aStarOpen.values(), ...state.aStarClosed.values()]) {
-      const x = node.x * state.cellSize + state.cellSize / 2;
-      const top = node.y * state.cellSize;
+      const x = visualCenterX(node.x);
+      const top = visualY(node.y);
       ctx.fillStyle = "rgba(255, 255, 255, 0.86)";
       ctx.fillText(`h${node.h}`, x, top + state.cellSize * 0.33);
       ctx.fillText(`d${node.g}`, x, top + state.cellSize * 0.68);
@@ -2222,48 +2257,50 @@ function drawBidirectionalSearch() {
 
   for (const node of state.biVisitedA.values()) {
     ctx.fillStyle = "rgba(46, 126, 220, 0.46)";
-    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(node.x), visualY(node.y), state.cellSize, state.cellSize);
   }
 
   for (const node of state.biVisitedB.values()) {
     ctx.fillStyle = "rgba(220, 78, 154, 0.46)";
-    ctx.fillRect(node.x * state.cellSize, node.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(node.x), visualY(node.y), state.cellSize, state.cellSize);
   }
 
   for (const key of state.biFrontA) {
     const point = pointFromKey(key);
     ctx.fillStyle = "rgba(21, 99, 214, 0.82)";
-    ctx.fillRect(point.x * state.cellSize, point.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(point.x), visualY(point.y), state.cellSize, state.cellSize);
   }
 
   for (const key of state.biFrontB) {
     const point = pointFromKey(key);
     ctx.fillStyle = "rgba(202, 41, 139, 0.82)";
-    ctx.fillRect(point.x * state.cellSize, point.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(point.x), visualY(point.y), state.cellSize, state.cellSize);
   }
 
   if (state.biMeet) {
     ctx.fillStyle = "rgba(255, 218, 58, 0.94)";
-    ctx.fillRect(state.biMeet.x * state.cellSize, state.biMeet.y * state.cellSize, state.cellSize, state.cellSize);
+    ctx.fillRect(visualX(state.biMeet.x), visualY(state.biMeet.y), state.cellSize, state.cellSize);
   }
 
   ctx.restore();
 }
 
 function drawGridLines() {
-  const width = state.cols * state.cellSize;
-  const height = state.rows * state.cellSize;
+  const width = visualWidth();
+  const height = visualHeight();
+  const totalCols = state.cols + VISUAL_BORDER * 2;
+  const totalRows = state.rows + VISUAL_BORDER * 2;
   ctx.beginPath();
   ctx.strokeStyle = "rgba(117, 111, 102, 0.3)";
   ctx.lineWidth = 1;
 
-  for (let x = 0; x <= state.cols; x += 1) {
+  for (let x = 0; x <= totalCols; x += 1) {
     const px = x * state.cellSize + 0.5;
     ctx.moveTo(px, 0);
     ctx.lineTo(px, height);
   }
 
-  for (let y = 0; y <= state.rows; y += 1) {
+  for (let y = 0; y <= totalRows; y += 1) {
     const py = y * state.cellSize + 0.5;
     ctx.moveTo(0, py);
     ctx.lineTo(width, py);
@@ -2281,18 +2318,18 @@ function drawSecondaryPaths() {
     const markerSize = Math.max(2, state.cellSize * 0.22);
     ctx.fillStyle = "rgba(209, 47, 47, 0.46)";
     for (const point of state.secondaryPoints) {
-      const x = point.x * state.cellSize + state.cellSize / 2 - markerSize / 2;
-      const y = point.y * state.cellSize + state.cellSize / 2 - markerSize / 2;
+      const x = visualCenterX(point.x) - markerSize / 2;
+      const y = visualCenterY(point.y) - markerSize / 2;
       ctx.fillRect(x, y, markerSize, markerSize);
     }
   }
 
   ctx.beginPath();
   for (const segment of state.secondarySegments) {
-    const ax = segment.a.x * state.cellSize + state.cellSize / 2;
-    const ay = segment.a.y * state.cellSize + state.cellSize / 2;
-    const bx = segment.b.x * state.cellSize + state.cellSize / 2;
-    const by = segment.b.y * state.cellSize + state.cellSize / 2;
+    const ax = visualCenterX(segment.a.x);
+    const ay = visualCenterY(segment.a.y);
+    const bx = visualCenterX(segment.b.x);
+    const by = visualCenterY(segment.b.y);
     ctx.moveTo(ax, ay);
     ctx.lineTo(bx, by);
   }
@@ -2311,8 +2348,8 @@ function drawPath() {
   ctx.save();
   ctx.beginPath();
   state.path.forEach((point, index) => {
-    const x = point.x * state.cellSize + state.cellSize / 2;
-    const y = point.y * state.cellSize + state.cellSize / 2;
+    const x = visualCenterX(point.x);
+    const y = visualCenterY(point.y);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -2330,10 +2367,10 @@ function drawCorrectLoops() {
   ctx.save();
   ctx.beginPath();
   for (const segment of state.correctLoopSegments) {
-    const ax = segment.a.x * state.cellSize + state.cellSize / 2;
-    const ay = segment.a.y * state.cellSize + state.cellSize / 2;
-    const bx = segment.b.x * state.cellSize + state.cellSize / 2;
-    const by = segment.b.y * state.cellSize + state.cellSize / 2;
+    const ax = visualCenterX(segment.a.x);
+    const ay = visualCenterY(segment.a.y);
+    const bx = visualCenterX(segment.b.x);
+    const by = visualCenterY(segment.b.y);
     ctx.moveTo(ax, ay);
     ctx.lineTo(bx, by);
   }
@@ -2351,8 +2388,8 @@ function drawBfsPath() {
   ctx.save();
   ctx.beginPath();
   state.bfsPath.forEach((point, index) => {
-    const x = point.x * state.cellSize + state.cellSize / 2;
-    const y = point.y * state.cellSize + state.cellSize / 2;
+    const x = visualCenterX(point.x);
+    const y = visualCenterY(point.y);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -2375,8 +2412,8 @@ function drawAStarPath() {
   ctx.save();
   ctx.beginPath();
   state.aStarPath.forEach((point, index) => {
-    const x = point.x * state.cellSize + state.cellSize / 2;
-    const y = point.y * state.cellSize + state.cellSize / 2;
+    const x = visualCenterX(point.x);
+    const y = visualCenterY(point.y);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -2398,8 +2435,8 @@ function drawBidirectionalPath() {
   ctx.save();
   ctx.beginPath();
   state.biPath.forEach((point, index) => {
-    const x = point.x * state.cellSize + state.cellSize / 2;
-    const y = point.y * state.cellSize + state.cellSize / 2;
+    const x = visualCenterX(point.x);
+    const y = visualCenterY(point.y);
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -2427,8 +2464,8 @@ function drawTraveler() {
 
 function drawMarker(point, color, label) {
   const radius = Math.max(4, state.cellSize * 0.35);
-  const x = point.x * state.cellSize + state.cellSize / 2;
-  const y = point.y * state.cellSize + state.cellSize / 2;
+  const x = visualCenterX(point.x);
+  const y = visualCenterY(point.y);
 
   ctx.save();
   ctx.beginPath();
@@ -2521,7 +2558,6 @@ controls.movementSpeed.addEventListener("input", () => {
   controls.movementSpeedValue.value = `${controls.movementSpeed.value}`;
 });
 
-wallSprite.addEventListener("load", draw);
 loadSavedControls();
 syncStateFromControls();
 draw();
