@@ -31,7 +31,7 @@ const WORLD = {
   maxAcceleration: 0.01,
   friction: 0.999,
   bounce: 0.65,
-  home: { x: 44, y: 44, w: 116, h: 96 },
+  home: { x: 40, y: 40, w: 80, h: 80 },
 };
 
 const SENSOR_TYPES = ["obstacle", "energy", "enemy", "ally"];
@@ -359,6 +359,20 @@ function createWalls() {
   return wallsList.concat(dynamicObstacleBlocks);
 }
 
+function createRandomHomeArea() {
+  const s = WORLD.wallSize;
+  const areaSize = s * 4;
+  const maxGridX = Math.floor((WORLD.width - s - areaSize) / s);
+  const maxGridY = Math.floor((WORLD.height - s - areaSize) / s);
+
+  return {
+    x: randomInt(1, maxGridX) * s,
+    y: randomInt(1, maxGridY) * s,
+    w: areaSize,
+    h: areaSize,
+  };
+}
+
 function createDynamicObstacle() {
   const s = WORLD.wallSize;
   const areaSize = s * 4;
@@ -522,6 +536,7 @@ function spawnAgentForGenome(genome) {
 
 function startEvaluationRound() {
   currentRoundResults = [];
+  WORLD.home = createRandomHomeArea();
   dynamicObstacleBlocks = createDynamicObstacle();
   walls = createWalls();
   agents = genomes.map(spawnAgentForGenome);
