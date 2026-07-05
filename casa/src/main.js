@@ -64,6 +64,7 @@ const defaults = {
   maxSpeed: 6,
   idleEnergyFrames: 3600,
   accelerationCostMultiplier: 0.75,
+  collisionEnergyLossPercent: 10,
   memoryTau: 220,
   mutationChance: 0.25,
   mutationStrength: 0.04,
@@ -300,7 +301,7 @@ class Agent {
     if (collided) {
       this.collisions += 1;
       totalCollisions += 1;
-      this.energy -= settings.maxEnergy * 0.1;
+      this.energy -= settings.maxEnergy * (settings.collisionEnergyLossPercent / 100);
       this.collisionFlash = 12;
     }
 
@@ -1242,6 +1243,11 @@ function readSettings(persist = false) {
       numberField("accelerationCostMultiplier", defaults.accelerationCostMultiplier),
       0,
       4
+    ),
+    collisionEnergyLossPercent: clamp(
+      numberField("collisionEnergyLossPercent", defaults.collisionEnergyLossPercent),
+      0,
+      100
     ),
     memoryTau: clamp(numberField("memoryTau", defaults.memoryTau), 10, 2000),
     mutationChance: clamp(numberField("mutationChance", defaults.mutationChance), 0, 1),
