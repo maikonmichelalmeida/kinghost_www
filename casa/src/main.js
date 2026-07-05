@@ -82,6 +82,7 @@ let running = true;
 let turboMode = false;
 let nextAgentId = 1;
 let nextGenomeId = 1;
+let nextLineageId = 1;
 let evaluationRound = 1;
 let lastReproductionFrame = 0;
 let survivalEpochBatch = [];
@@ -89,6 +90,7 @@ let survivalSamples = [];
 let currentRoundResults = [];
 let totalFoodEaten = 0;
 let totalCollisions = 0;
+let championMetrics = createChampionMetrics();
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -435,6 +437,7 @@ function resetSimulation() {
   generation = 1;
   nextAgentId = 1;
   nextGenomeId = 1;
+  nextLineageId = 1;
   evaluationRound = 1;
   lastReproductionFrame = 0;
   survivalEpochBatch = [];
@@ -442,6 +445,7 @@ function resetSimulation() {
   currentRoundResults = [];
   totalFoodEaten = 0;
   totalCollisions = 0;
+  championMetrics = createChampionMetrics();
   walls = createWalls();
   genomes = [];
   for (let i = 0; i < settings.maxAgents; i += 1) {
@@ -453,16 +457,28 @@ function resetSimulation() {
   updateStats();
 }
 
-function createGenome(brain = new NeuralNetwork(), id = nextGenomeId) {
+function createGenome(brain = new NeuralNetwork(), id = nextGenomeId, lineageId = null) {
   nextGenomeId = Math.max(nextGenomeId, id + 1);
+  const resolvedLineageId = lineageId ?? nextLineageId;
+  nextLineageId = Math.max(nextLineageId, resolvedLineageId + 1);
   return {
     id,
+    lineageId: resolvedLineageId,
     brain,
     evaluation: createEmptyEvaluation(),
     lastAverageScore: 0,
     lastAverageSurvival: 0,
     lastAverageFood: 0,
     lastAverageCollisions: 0,
+  };
+}
+
+function createChampionMetrics(lineageId = null, seed = {}) {
+  return {
+    lineageId,
+    frames: seed.frames ?? 0,
+    foods: seed.foods ?? 0,
+    collisions: seed.collisions ?? 0,
   };
 }
 
@@ -728,6 +744,8 @@ function collectGenomeResult(agent) {
   const genome = genomes.find((candidate) => candidate.id === agent.genomeId);
   if (!genome) return;
 
+  recordChampionTrial(agent, genome);
+
   const score = scoreAgent(agent);
   const evaluation = genome.evaluation;
   evaluation.trials += 1;
@@ -738,6 +756,36 @@ function collectGenomeResult(agent) {
   evaluation.distanceSum += agent.distanceTraveled;
   evaluation.bestSurvival = Math.max(evaluation.bestSurvival, agent.age);
   evaluation.bestScore = Math.max(evaluation.bestScore, score);
+}
+
+function recordChampionTrial(agent, genome) {
+  if (championMetrics.lineageId !== genome.lineageId) return;
+  championMetrics.frames += agent.age;
+  championMetrics.foods += agent.foodsEaten;
+  championMetrics.collisions += agent.collisions;
+}
+
+function metricsFromGenomeEvaluation(genome) {
+  return {
+    frames: genome.evaluation.ageSum,
+    foods: genome.evaluation.foodSum,
+    collisions: genome.evaluation.collisionSum,
+  };
+}
+
+function syncChampionMetricsAfterCompetition(rankedGenomes, elites) {
+  if (rankedGenomes.length === 0) {
+    championMetrics = createChampionMetrics();
+    return;
+  }
+
+  const championStillPreserved =
+    championMetrics.lineageId !== null &&
+    elites.some((genome) => genome.lineageId === championMetrics.lineageId);
+  if (championStillPreserved) return;
+
+  const winner = rankedGenomes[0];
+  championMetrics = createChampionMetrics(winner.lineageId, metricsFromGenomeEvaluation(winner));
 }
 
 function finalizeRound() {
@@ -778,8 +826,9 @@ function evolveGenomes() {
     .sort((a, b) => averageGenomeScore(b) - averageGenomeScore(a));
   const eliteCount = clamp(settings.minAgents, 1, Math.max(1, settings.maxAgents - 1));
   const elites = rankedGenomes.slice(0, eliteCount);
+  syncChampionMetricsAfterCompetition(rankedGenomes, elites);
   const nextGenomes = elites.map((genome) => {
-    const preserved = createGenome(NeuralNetwork.clone(genome.brain));
+    const preserved = createGenome(NeuralNetwork.clone(genome.brain), nextGenomeId, genome.lineageId);
     preserved.lastAverageScore = genome.lastAverageScore;
     preserved.lastAverageSurvival = genome.lastAverageSurvival;
     preserved.lastAverageFood = genome.lastAverageFood;
@@ -791,10 +840,11 @@ function evolveGenomes() {
   while (nextGenomes.length < settings.maxAgents) {
     const parent = elites[parentIndex % elites.length] ?? rankedGenomes[0];
     const childBrain = NeuralNetwork.clone(parent.brain);
-    if (Math.random() < settings.mutationChance) {
+    const mutated = Math.random() < settings.mutationChance;
+    if (mutated) {
       childBrain.mutate(settings.mutationStrength);
     }
-    const child = createGenome(childBrain);
+    const child = createGenome(childBrain, nextGenomeId, mutated ? null : parent.lineageId);
     child.lastAverageScore = parent.lastAverageScore;
     child.lastAverageSurvival = parent.lastAverageSurvival;
     child.lastAverageFood = parent.lastAverageFood;
@@ -963,6 +1013,7 @@ function legacyClearStorage() {
 function genomeToData(genome) {
   return {
     id: genome.id,
+    lineageId: genome.lineageId,
     brain: genome.brain.toData(),
     evaluation: { ...genome.evaluation },
     lastAverageScore: genome.lastAverageScore,
@@ -973,7 +1024,7 @@ function genomeToData(genome) {
 }
 
 function genomeFromData(data) {
-  const genome = createGenome(NeuralNetwork.fromData(data.brain), data.id ?? nextGenomeId);
+  const genome = createGenome(NeuralNetwork.fromData(data.brain), data.id ?? nextGenomeId, data.lineageId ?? null);
   genome.evaluation = data.evaluation ? { ...createEmptyEvaluation(), ...data.evaluation } : createEmptyEvaluation();
   genome.lastAverageScore = data.lastAverageScore ?? 0;
   genome.lastAverageSurvival = data.lastAverageSurvival ?? 0;
@@ -1010,6 +1061,7 @@ function legacyRestoreCheckpoint() {
   generation = 1;
   nextAgentId = 1;
   nextGenomeId = 1;
+  nextLineageId = 1;
   evaluationRound = 1;
   lastReproductionFrame = 0;
   survivalEpochBatch = [];
@@ -1017,6 +1069,7 @@ function legacyRestoreCheckpoint() {
   currentRoundResults = [];
   totalFoodEaten = 0;
   totalCollisions = 0;
+  championMetrics = createChampionMetrics();
   genomes = [];
 
   if (Array.isArray(checkpoint.eliteBrains)) {
@@ -1031,7 +1084,7 @@ function legacyRestoreCheckpoint() {
 
   while (genomes.length < settings.maxAgents) {
     const parent = genomes[genomes.length % Math.max(1, genomes.length)];
-    genomes.push(parent ? createGenome(NeuralNetwork.clone(parent.brain)) : createGenome());
+    genomes.push(parent ? createGenome(NeuralNetwork.clone(parent.brain), nextGenomeId, parent.lineageId) : createGenome());
   }
   if (genomes.length > settings.maxAgents) {
     genomes = rankedGenomesForPersistence().slice(0, settings.maxAgents);
@@ -1125,6 +1178,7 @@ async function restoreProjectFromDatabase() {
   generation = Number.isFinite(checkpoint.training?.generation) ? checkpoint.training.generation : 1;
   nextAgentId = 1;
   nextGenomeId = 1;
+  nextLineageId = 1;
   evaluationRound = 1;
   lastReproductionFrame = 0;
   survivalEpochBatch = [];
@@ -1134,6 +1188,7 @@ async function restoreProjectFromDatabase() {
   currentRoundResults = [];
   totalFoodEaten = Number.isFinite(checkpoint.training?.totalFoodEaten) ? checkpoint.training.totalFoodEaten : 0;
   totalCollisions = Number.isFinite(checkpoint.training?.totalCollisions) ? checkpoint.training.totalCollisions : 0;
+  championMetrics = createChampionMetrics();
   genomes = [];
 
   for (const brainData of checkpoint.eliteBrains.slice(0, settings.maxAgents)) {
@@ -1144,7 +1199,7 @@ async function restoreProjectFromDatabase() {
 
   while (genomes.length < settings.maxAgents) {
     const parent = genomes[genomes.length % Math.max(1, genomes.length)];
-    genomes.push(parent ? createGenome(NeuralNetwork.clone(parent.brain)) : createGenome());
+    genomes.push(parent ? createGenome(NeuralNetwork.clone(parent.brain), nextGenomeId, parent.lineageId) : createGenome());
   }
 
   resetGenomeEvaluations();
@@ -1207,10 +1262,11 @@ function readSettings(persist = false) {
     const ranked = rankedGenomesForPersistence();
     const parent = ranked[genomes.length % ranked.length];
     const brain = parent ? NeuralNetwork.clone(parent.brain) : new NeuralNetwork();
-    if (parent && Math.random() < settings.mutationChance) {
+    const mutated = Boolean(parent && Math.random() < settings.mutationChance);
+    if (mutated) {
       brain.mutate(settings.mutationStrength);
     }
-    genomes.push(createGenome(brain));
+    genomes.push(createGenome(brain, nextGenomeId, parent && !mutated ? parent.lineageId : null));
   }
 
   for (const agent of agents) {
@@ -1483,17 +1539,15 @@ function drawAgents() {
 }
 
 function updateStats() {
-  const bestAgent = bestObservedAgent();
-  const bestAge = bestAgent ? Math.max(1, bestAgent.age) : 1;
-  const bestCollisions = bestAgent ? bestAgent.collisions : 0;
+  const bestTotals = currentChampionMetricTotals();
 
   ui.agentCount.textContent = String(agents.length);
   ui.foodCount.textContent = String(foods.length);
   ui.generationCount.textContent = String(generation);
-  ui.foodRate.textContent = formatRate(totalFoodEaten / Math.max(1, frame));
+  ui.foodRate.textContent = formatFramesPerEvent(bestTotals.frames, bestTotals.foods);
   ui.roundCount.textContent = `${evaluationRound}/${EVALUATION_ROUNDS}`;
-  ui.bestWallTouchRate.textContent = formatRate(bestCollisions / bestAge);
-  ui.bestFramesPerTouch.textContent = bestCollisions > 0 ? String(Math.round(bestAge / bestCollisions)) : "inf";
+  ui.bestWallTouchRate.textContent = formatFramesPerEvent(bestTotals.frames, bestTotals.collisions);
+  ui.bestFramesPerTouch.textContent = formatFrameSample(bestTotals.frames);
   drawPopulationSurvivalChart();
 }
 
@@ -1501,6 +1555,47 @@ function bestObservedAgent() {
   const observed = agents.concat(currentRoundResults);
   if (observed.length === 0) return null;
   return observed.slice().sort((a, b) => scoreAgent(b) - scoreAgent(a))[0];
+}
+
+function currentChampionMetricTotals() {
+  const totals = {
+    frames: championMetrics.frames,
+    foods: championMetrics.foods,
+    collisions: championMetrics.collisions,
+  };
+  if (championMetrics.lineageId === null) {
+    return totals;
+  }
+
+  for (const agent of agents) {
+    const genome = genomes.find((candidate) => candidate.id === agent.genomeId);
+    if (genome?.lineageId !== championMetrics.lineageId) continue;
+    totals.frames += agent.age;
+    totals.foods += agent.foodsEaten;
+    totals.collisions += agent.collisions;
+  }
+  return totals;
+}
+
+function formatFramesPerEvent(frames, events) {
+  if (!Number.isFinite(frames) || frames <= 0) return "0";
+  if (!Number.isFinite(events) || events <= 0) return "inf";
+  return formatCompactNumber(frames / events);
+}
+
+function formatFrameSample(frames) {
+  if (!Number.isFinite(frames) || frames <= 0) return "0f";
+  return `${formatCompactNumber(frames)}f`;
+}
+
+function formatCompactNumber(value) {
+  if (!Number.isFinite(value)) return "0";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 10_000) return `${Math.round(value / 1000)}k`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  if (value >= 100) return String(Math.round(value));
+  if (value >= 10) return value.toFixed(1);
+  return value.toFixed(2);
 }
 
 function formatRate(value) {
