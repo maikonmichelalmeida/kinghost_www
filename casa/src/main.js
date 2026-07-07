@@ -1480,7 +1480,7 @@ function drawPopulationSurvivalChart() {
     return;
   }
 
-  const drawPanel = (top, label, values, averageValues, rawColor, averageColor) => {
+  const drawPanel = (top, label, values, averageValues, rawColor, averageColor, rawLineWidth, averageLineWidth) => {
     const chartWidth = width - padding * 2;
     const finiteValues = values.concat(averageValues).filter((value) => Number.isFinite(value));
     const maxValue = Math.max(...finiteValues, 1);
@@ -1503,8 +1503,8 @@ function drawPopulationSurvivalChart() {
     survivalCtx.fillText(`${Math.round(maxValue)}f`, width - padding - 46, top + 9);
     survivalCtx.fillText(`${Math.round(minValue)}f`, width - padding - 46, top + panelHeight);
 
-    drawChartSeries(values, top, panelHeight, minValue, range, rawColor, 1.1);
-    drawChartSeries(averageValues, top, panelHeight, minValue, range, averageColor, 2.2);
+    drawChartSeries(values, top, panelHeight, minValue, range, rawColor, rawLineWidth);
+    drawChartSeries(averageValues, top, panelHeight, minValue, range, averageColor, averageLineWidth);
   };
 
   const drawChartSeries = (values, top, chartHeight, minValue, range, color, lineWidth) => {
@@ -1527,8 +1527,8 @@ function drawPopulationSurvivalChart() {
     survivalCtx.stroke();
   };
 
-  drawPanel(padding, "melhor", bestValues, bestMovingAverage, "rgba(100, 212, 135, 0.35)", "#64d487");
-  drawPanel(padding + panelHeight + gap, "media", meanValues, meanMovingAverage, "rgba(240, 180, 91, 0.35)", "#f0b45b");
+  drawPanel(padding, "melhor", bestValues, bestMovingAverage, "#d9ffe4", "#64d487", 1.4, 2.2);
+  drawPanel(padding + panelHeight + gap, "media", meanValues, meanMovingAverage, "rgba(240, 180, 91, 0.38)", "#f0b45b", 0.9, 1.7);
 }
 
 function movingAverage(values, windowSize) {
