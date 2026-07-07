@@ -17,7 +17,6 @@ const ui = {
   survivalAverage: document.querySelector("#survivalAverage"),
   bestSurvivalAverage: document.querySelector("#bestSurvivalAverage"),
   meanSurvivalAverage: document.querySelector("#meanSurvivalAverage"),
-  medianSurvivalAverage: document.querySelector("#medianSurvivalAverage"),
   survivalChart: document.querySelector("#survivalChart"),
 };
 const survivalCtx = ui.survivalChart.getContext("2d");
@@ -932,19 +931,12 @@ function recordSurvivalEpoch(parents) {
   const scores = parents.map(scoreAgent);
   const bestSurvival = ages[ages.length - 1] ?? 0;
   const meanSurvival = ages.length > 0 ? ages.reduce((sum, age) => sum + age, 0) / ages.length : 0;
-  const medianSurvival =
-    ages.length === 0
-      ? 0
-      : ages.length % 2 === 1
-        ? ages[Math.floor(ages.length / 2)]
-        : (ages[ages.length / 2 - 1] + ages[ages.length / 2]) / 2;
   const epochLength = Math.max(1, frame - lastReproductionFrame);
   lastReproductionFrame = frame;
 
   survivalEpochBatch.push({
     bestSurvival,
     meanSurvival,
-    medianSurvival,
     epochLength,
     bestFood: Math.max(0, ...foodCounts),
     meanFood: foodCounts.length > 0 ? foodCounts.reduce((sum, value) => sum + value, 0) / foodCounts.length : 0,
@@ -964,7 +956,6 @@ function recordSurvivalEpoch(parents) {
       generation,
       best: Math.round(averageMetric("bestSurvival")),
       mean: Math.round(averageMetric("meanSurvival")),
-      median: Math.round(averageMetric("medianSurvival")),
       value: Math.round(averageMetric("bestSurvival")),
       averageEpochLength: Math.round(averageMetric("epochLength")),
       bestFood: Number(averageMetric("bestFood").toFixed(2)),
@@ -1465,34 +1456,22 @@ function drawPopulationSurvivalChart() {
   const width = ui.survivalChart.width;
   const height = ui.survivalChart.height;
   const padding = 10;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
+  const gap = 12;
+  const panelHeight = (height - padding * 2 - gap) / 2;
   const bestValues = survivalSamples.map((sample) => sample.best ?? sample.value ?? 0);
   const meanValues = survivalSamples.map((sample) => sample.mean ?? sample.value ?? 0);
-  const medianValues = survivalSamples.map((sample) => sample.median ?? sample.value ?? 0);
-  const allValues = bestValues.concat(meanValues, medianValues).filter((value) => Number.isFinite(value));
+  const bestMovingAverage = movingAverage(bestValues, 10);
+  const meanMovingAverage = movingAverage(meanValues, 10);
   const latestBest = bestValues.length > 0 ? bestValues[bestValues.length - 1] : 0;
   const latestMean = meanValues.length > 0 ? meanValues[meanValues.length - 1] : 0;
-  const latestMedian = medianValues.length > 0 ? medianValues[medianValues.length - 1] : 0;
 
   ui.survivalAverage.textContent = latestBest > 0 ? `${latestBest}f` : "0";
   ui.bestSurvivalAverage.textContent = latestBest > 0 ? `${latestBest}f` : "0";
   ui.meanSurvivalAverage.textContent = latestMean > 0 ? `${latestMean}f` : "0";
-  ui.medianSurvivalAverage.textContent = latestMedian > 0 ? `${latestMedian}f` : "0";
 
   survivalCtx.clearRect(0, 0, width, height);
   survivalCtx.fillStyle = "#101412";
   survivalCtx.fillRect(0, 0, width, height);
-  survivalCtx.strokeStyle = "rgba(255,255,255,0.08)";
-  survivalCtx.lineWidth = 1;
-
-  for (let i = 0; i <= 4; i += 1) {
-    const y = padding + (chartHeight / 4) * i;
-    survivalCtx.beginPath();
-    survivalCtx.moveTo(padding, y);
-    survivalCtx.lineTo(width - padding, y);
-    survivalCtx.stroke();
-  }
 
   if (bestValues.length === 0) {
     survivalCtx.fillStyle = "rgba(237,243,238,0.48)";
@@ -1501,11 +1480,34 @@ function drawPopulationSurvivalChart() {
     return;
   }
 
-  const maxValue = Math.max(...allValues, 1);
-  const minValue = Math.min(...allValues, maxValue);
-  const range = Math.max(1, maxValue - minValue);
+  const drawPanel = (top, label, values, averageValues, rawColor, averageColor) => {
+    const chartWidth = width - padding * 2;
+    const finiteValues = values.concat(averageValues).filter((value) => Number.isFinite(value));
+    const maxValue = Math.max(...finiteValues, 1);
+    const minValue = Math.min(...finiteValues, maxValue);
+    const range = Math.max(1, maxValue - minValue);
 
-  const drawSeries = (values, color, lineWidth) => {
+    survivalCtx.strokeStyle = "rgba(255,255,255,0.08)";
+    survivalCtx.lineWidth = 1;
+    for (let i = 0; i <= 2; i += 1) {
+      const y = top + (panelHeight / 2) * i;
+      survivalCtx.beginPath();
+      survivalCtx.moveTo(padding, y);
+      survivalCtx.lineTo(width - padding, y);
+      survivalCtx.stroke();
+    }
+
+    survivalCtx.fillStyle = "rgba(237,243,238,0.68)";
+    survivalCtx.font = "10px Arial, Helvetica, sans-serif";
+    survivalCtx.fillText(label, padding, top + 9);
+    survivalCtx.fillText(`${Math.round(maxValue)}f`, width - padding - 46, top + 9);
+    survivalCtx.fillText(`${Math.round(minValue)}f`, width - padding - 46, top + panelHeight);
+
+    drawChartSeries(values, top, panelHeight, minValue, range, rawColor, 1.1);
+    drawChartSeries(averageValues, top, panelHeight, minValue, range, averageColor, 2.2);
+  };
+
+  const drawChartSeries = (values, top, chartHeight, minValue, range, color, lineWidth) => {
     survivalCtx.strokeStyle = color;
     survivalCtx.lineWidth = lineWidth;
     survivalCtx.beginPath();
@@ -1514,8 +1516,8 @@ function drawPopulationSurvivalChart() {
       const x =
         values.length === 1
           ? padding
-          : padding + (index / (values.length - 1)) * chartWidth;
-      const y = height - padding - ((value - minValue) / range) * chartHeight;
+          : padding + (index / (values.length - 1)) * (width - padding * 2);
+      const y = top + chartHeight - ((value - minValue) / range) * chartHeight;
       if (index === 0) {
         survivalCtx.moveTo(x, y);
       } else {
@@ -1525,14 +1527,16 @@ function drawPopulationSurvivalChart() {
     survivalCtx.stroke();
   };
 
-  drawSeries(bestValues, "#64d487", 2);
-  drawSeries(meanValues, "#f0b45b", 1.7);
-  drawSeries(medianValues, "#75a7ff", 1.7);
+  drawPanel(padding, "melhor", bestValues, bestMovingAverage, "rgba(100, 212, 135, 0.35)", "#64d487");
+  drawPanel(padding + panelHeight + gap, "media", meanValues, meanMovingAverage, "rgba(240, 180, 91, 0.35)", "#f0b45b");
+}
 
-  survivalCtx.fillStyle = "rgba(237,243,238,0.68)";
-  survivalCtx.font = "11px Arial, Helvetica, sans-serif";
-  survivalCtx.fillText(`${maxValue}f`, padding, padding + 4);
-  survivalCtx.fillText(`${minValue}f`, padding, height - padding);
+function movingAverage(values, windowSize) {
+  return values.map((_, index) => {
+    const start = Math.max(0, index - windowSize + 1);
+    const windowValues = values.slice(start, index + 1);
+    return windowValues.reduce((sum, value) => sum + value, 0) / windowValues.length;
+  });
 }
 
 function drawAgents() {
