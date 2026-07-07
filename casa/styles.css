@@ -197,7 +197,7 @@ label {
 #survivalChart {
   display: block;
   width: 100%;
-  height: 120px;
+  height: 220px;
   background: #101412;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }

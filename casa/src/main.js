@@ -1455,8 +1455,8 @@ function drawSurvivalChart() {
 function drawPopulationSurvivalChart() {
   const width = ui.survivalChart.width;
   const height = ui.survivalChart.height;
-  const padding = 10;
-  const gap = 12;
+  const padding = 12;
+  const gap = 28;
   const panelHeight = (height - padding * 2 - gap) / 2;
   const bestValues = survivalSamples.map((sample) => sample.best ?? sample.value ?? 0);
   const meanValues = survivalSamples.map((sample) => sample.mean ?? sample.value ?? 0);
@@ -1480,9 +1480,10 @@ function drawPopulationSurvivalChart() {
     return;
   }
 
-  const drawPanel = (top, label, values, averageValues, rawColor, averageColor, rawLineWidth, averageLineWidth) => {
-    const chartWidth = width - padding * 2;
-    const finiteValues = values.concat(averageValues).filter((value) => Number.isFinite(value));
+  const drawPanel = (top, label, seriesList) => {
+    const finiteValues = seriesList
+      .flatMap((series) => series.values)
+      .filter((value) => Number.isFinite(value));
     const maxValue = Math.max(...finiteValues, 1);
     const minValue = Math.min(...finiteValues, maxValue);
     const range = Math.max(1, maxValue - minValue);
@@ -1498,13 +1499,14 @@ function drawPopulationSurvivalChart() {
     }
 
     survivalCtx.fillStyle = "rgba(237,243,238,0.68)";
-    survivalCtx.font = "10px Arial, Helvetica, sans-serif";
-    survivalCtx.fillText(label, padding, top + 9);
-    survivalCtx.fillText(`${Math.round(maxValue)}f`, width - padding - 46, top + 9);
+    survivalCtx.font = "11px Arial, Helvetica, sans-serif";
+    survivalCtx.fillText(label, padding, top + 10);
+    survivalCtx.fillText(`${Math.round(maxValue)}f`, width - padding - 46, top + 10);
     survivalCtx.fillText(`${Math.round(minValue)}f`, width - padding - 46, top + panelHeight);
 
-    drawChartSeries(values, top, panelHeight, minValue, range, rawColor, rawLineWidth);
-    drawChartSeries(averageValues, top, panelHeight, minValue, range, averageColor, averageLineWidth);
+    for (const series of seriesList) {
+      drawChartSeries(series.values, top, panelHeight, minValue, range, series.color, series.lineWidth);
+    }
   };
 
   const drawChartSeries = (values, top, chartHeight, minValue, range, color, lineWidth) => {
@@ -1527,8 +1529,13 @@ function drawPopulationSurvivalChart() {
     survivalCtx.stroke();
   };
 
-  drawPanel(padding, "melhor", bestValues, bestMovingAverage, "#d9ffe4", "#64d487", 1.4, 2.2);
-  drawPanel(padding + panelHeight + gap, "media", meanValues, meanMovingAverage, "rgba(240, 180, 91, 0.38)", "#f0b45b", 0.9, 1.7);
+  drawPanel(padding, "melhor", [
+    { values: bestValues, color: "#69b7ff", lineWidth: 1 },
+    { values: bestMovingAverage, color: "#67e08a", lineWidth: 1.25 },
+  ]);
+  drawPanel(padding + panelHeight + gap, "media", [
+    { values: meanMovingAverage, color: "#f0b45b", lineWidth: 1.25 },
+  ]);
 }
 
 function movingAverage(values, windowSize) {
