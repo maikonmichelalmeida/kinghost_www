@@ -1877,12 +1877,12 @@ function renderClickableOriginalText(text) {
 }
 
 function appendVocabularyPart(part) {
-  const normalizedPart = String(part || "").trim();
+  const normalizedPart = normalizeVocabularyWriting(part);
   if (!normalizedPart || appMode !== "study") {
     return;
   }
 
-  const current = elements.vocabularyInput.value.trim();
+  const current = normalizeVocabularyWriting(elements.vocabularyInput.value);
   elements.vocabularyInput.value = current ? `${current} ${normalizedPart}` : normalizedPart;
   moveVocabularyCursorToEnd();
   updateVocabularyComposer();
@@ -1906,7 +1906,12 @@ function insertVocabularyWildcard() {
 }
 
 function updateVocabularyComposer() {
-  const hasContent = Boolean(elements.vocabularyInput.value.trim());
+  const draft = normalizeVocabularyDraft(elements.vocabularyInput.value);
+  if (elements.vocabularyInput.value !== draft) {
+    elements.vocabularyInput.value = draft;
+  }
+  const normalized = normalizeVocabularyWriting(draft);
+  const hasContent = Boolean(normalized);
   const disabled = !hasContent || appMode !== "study" || isSubmittingVocabulary;
   elements.vocabularyInput.disabled = isSubmittingVocabulary;
   elements.wildcardButton.disabled = disabled;
@@ -1948,7 +1953,8 @@ function handleVocabularyShortcut(event) {
 }
 
 async function prepareVocabularyStudy() {
-  const expression = elements.vocabularyInput.value.trim();
+  const expression = normalizeVocabularyWriting(elements.vocabularyInput.value);
+  elements.vocabularyInput.value = expression;
   if (!expression || appMode !== "study" || isSubmittingVocabulary) {
     return;
   }
@@ -1989,6 +1995,32 @@ async function prepareVocabularyStudy() {
     updateVocabularyComposer();
     elements.vocabularyInput.focus({ preventScroll: true });
   }
+}
+
+function normalizeVocabularyWriting(value) {
+  const text = String(value || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase("en-US")
+    .replace(/[^\p{L}\p{N}*\s]/gu, " ")
+    .replace(/\s*\*\s*/g, " * ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const tokens = text.split(" ").filter(Boolean);
+  const normalizedTokens = [];
+  tokens.forEach((token) => {
+    if (token === "*" && normalizedTokens[normalizedTokens.length - 1] === "*") {
+      return;
+    }
+    normalizedTokens.push(token);
+  });
+  return normalizedTokens.join(" ");
+}
+
+function normalizeVocabularyDraft(value) {
+  const source = String(value || "");
+  const keepTrailingSpace = /\s$/.test(source);
+  const normalized = normalizeVocabularyWriting(source);
+  return keepTrailingSpace && normalized ? `${normalized} ` : normalized;
 }
 
 function playBlock(index) {
