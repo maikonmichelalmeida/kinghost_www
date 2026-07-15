@@ -18,6 +18,7 @@ const ui = {
   bestSurvivalAverage: document.querySelector("#bestSurvivalAverage"),
   meanSurvivalAverage: document.querySelector("#meanSurvivalAverage"),
   survivalChart: document.querySelector("#survivalChart"),
+  resetChart: document.querySelector("#resetChart"),
 };
 const survivalCtx = ui.survivalChart.getContext("2d");
 
@@ -53,6 +54,7 @@ const STORED_GENOME_LIMIT = 80;
 const SURVIVAL_SAMPLE_SIZE = 10;
 const SURVIVAL_SAMPLE_LIMIT = 1000;
 const EVALUATION_ROUNDS = 10;
+const FOOD_REPOSITION_INTERVAL = 400;
 
 const defaults = {
   targetFood: 18,
@@ -115,6 +117,12 @@ function distanceBetweenCenters(a, b) {
   const bx = b.x + b.w / 2;
   const by = b.y + b.h / 2;
   return Math.hypot(ax - bx, ay - by);
+}
+
+function distanceBetweenRects(a, b) {
+  const dx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w), 0);
+  const dy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h), 0);
+  return Math.hypot(dx, dy);
 }
 
 function centerOf(rect) {
@@ -468,6 +476,14 @@ function resetSimulation() {
 
   resetGenomeEvaluations();
   startEvaluationRound();
+  updateStats();
+}
+
+function resetSurvivalChart() {
+  survivalEpochBatch = [];
+  survivalSamples = [];
+  drawPopulationSurvivalChart();
+  queueProjectSave();
   updateStats();
 }
 
@@ -887,6 +903,29 @@ function maintainFood() {
   }
 }
 
+function respawnWorstPositionedFood() {
+  if (foods.length === 0 || walls.length === 0) return;
+
+  let worstIndex = -1;
+  let closestObstacleDistance = Infinity;
+  for (let i = 0; i < foods.length; i += 1) {
+    const food = foods[i];
+    const nearestObstacleDistance = walls.reduce(
+      (nearest, wall) => Math.min(nearest, distanceBetweenRects(food, wall)),
+      Infinity
+    );
+
+    if (nearestObstacleDistance < closestObstacleDistance) {
+      closestObstacleDistance = nearestObstacleDistance;
+      worstIndex = i;
+    }
+  }
+
+  if (worstIndex < 0) return;
+  foods.splice(worstIndex, 1);
+  pendingFood += 1;
+}
+
 function fillFoodQuickly() {
   let safety = settings.targetFood * 30 + 200;
   while (foods.length < settings.targetFood && safety > 0) {
@@ -1304,6 +1343,9 @@ function update() {
   if (agents.length === 0) {
     finalizeRound();
   }
+  if (frame % FOOD_REPOSITION_INTERVAL === 0) {
+    respawnWorstPositionedFood();
+  }
   maintainFood();
 }
 
@@ -1674,6 +1716,10 @@ ui.settings.addEventListener("change", () => {
 ui.resetWorld.addEventListener("click", () => {
   readSettings(true);
   resetSimulation();
+});
+
+ui.resetChart.addEventListener("click", () => {
+  resetSurvivalChart();
 });
 
 ui.clearEverything.addEventListener("click", async () => {
