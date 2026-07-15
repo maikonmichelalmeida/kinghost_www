@@ -55,6 +55,8 @@ const SURVIVAL_SAMPLE_SIZE = 10;
 const SURVIVAL_SAMPLE_LIMIT = 1000;
 const EVALUATION_ROUNDS = 10;
 const FOOD_REPOSITION_INTERVAL = 400;
+const RARE_STRONG_MUTATION_CHANCE = 0.04;
+const RARE_STRONG_MUTATION_MULTIPLIER = 8;
 
 const defaults = {
   targetFood: 18,
@@ -252,6 +254,13 @@ function gaussianRandom() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
+function mutateBrain(brain) {
+  const rareStrongMutation = Math.random() < RARE_STRONG_MUTATION_CHANCE;
+  const strength = settings.mutationStrength * (rareStrongMutation ? RARE_STRONG_MUTATION_MULTIPLIER : 1);
+  brain.mutate(clamp(strength, 0, 1));
+  return rareStrongMutation;
+}
+
 class Agent {
   constructor(x, y, brain = new NeuralNetwork(), generationBorn = generation, genomeId = null) {
     this.id = nextAgentId;
@@ -319,7 +328,7 @@ class Agent {
   reproduce() {
     const childBrain = NeuralNetwork.clone(this.brain);
     if (Math.random() < settings.mutationChance) {
-      childBrain.mutate(settings.mutationStrength);
+      mutateBrain(childBrain);
     }
     return new Agent(
       randomBetween(WORLD.home.x + 8, WORLD.home.x + WORLD.home.w - WORLD.agentSize - 8),
@@ -873,7 +882,7 @@ function evolveGenomes() {
     const childBrain = NeuralNetwork.clone(parent.brain);
     const mutated = Math.random() < settings.mutationChance;
     if (mutated) {
-      childBrain.mutate(settings.mutationStrength);
+      mutateBrain(childBrain);
     }
     const child = createGenome(childBrain, nextGenomeId, mutated ? null : parent.lineageId);
     child.lastAverageScore = parent.lastAverageScore;
@@ -1315,7 +1324,7 @@ function readSettings(persist = false) {
     const brain = parent ? NeuralNetwork.clone(parent.brain) : new NeuralNetwork();
     const mutated = Boolean(parent && Math.random() < settings.mutationChance);
     if (mutated) {
-      brain.mutate(settings.mutationStrength);
+      mutateBrain(brain);
     }
     genomes.push(createGenome(brain, nextGenomeId, parent && !mutated ? parent.lineageId : null));
   }
