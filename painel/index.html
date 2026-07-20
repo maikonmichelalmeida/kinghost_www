@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel de temperatura</title>
-    <link rel="stylesheet" href="style.css?v=20260626-painel">
+    <link rel="stylesheet" href="style.css?v=20260720-smart">
   </head>
   <body>
     <main class="shell">
@@ -48,6 +48,24 @@
           <div id="rangeBadge" class="range-badge range-waiting">sem dados</div>
         </section>
 
+        <section class="chart-panel" aria-label="Grafico de temperatura por tempo">
+          <div class="chart-header">
+            <div>
+              <p class="eyebrow">Historico</p>
+              <h2>Temperatura por tempo</h2>
+            </div>
+            <div class="chart-legend" aria-label="Legenda do grafico">
+              <span><i class="legend-line temperature-line"></i>temperatura</span>
+              <span><i class="legend-line smart-line"></i>faixa ideal</span>
+              <span><i class="legend-line control-line"></i>acionamento</span>
+            </div>
+          </div>
+          <svg id="temperatureChart" class="temperature-chart" viewBox="0 0 920 260" role="img" aria-labelledby="chartTitle chartDesc">
+            <title id="chartTitle">Grafico da temperatura no tempo</title>
+            <desc id="chartDesc">A linha mostra as amostras coletadas de temperatura e os limites do controle.</desc>
+          </svg>
+        </section>
+
         <section class="settings-grid" aria-label="Configuracoes sincronizadas">
           <article class="setting-card">
             <div class="setting-icon">T</div>
@@ -58,8 +76,21 @@
             <input id="tempoLeituraInput" type="number" min="1" max="86400" step="1" inputmode="numeric">
           </article>
 
-          <article class="setting-card cold">
-            <div class="setting-icon">↓</div>
+          <article class="setting-card smart-mode-card">
+            <div class="setting-icon">AI</div>
+            <label for="smartModeInput">
+              <span>Modo inteligente</span>
+              <small>calcula os pontos internos automaticamente</small>
+            </label>
+            <label class="switch-row">
+              <input id="smartModeInput" type="checkbox">
+              <span id="smartModeText">desativado</span>
+            </label>
+            <p id="smartStatus" class="smart-status">Usando point_down e point_up manuais.</p>
+          </article>
+
+          <article class="setting-card cold manual-setting">
+            <div class="setting-icon">DN</div>
             <label for="pointDownInput">
               <span>point_down</span>
               <small>pisca a 2 Hz abaixo disso</small>
@@ -67,18 +98,36 @@
             <input id="pointDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
           </article>
 
-          <article class="setting-card hot">
-            <div class="setting-icon">↑</div>
+          <article class="setting-card hot manual-setting">
+            <div class="setting-icon">UP</div>
             <label for="pointUpInput">
               <span>point_up</span>
               <small>pisca a 20 Hz acima disso</small>
             </label>
             <input id="pointUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
           </article>
+
+          <article class="setting-card cold smart-setting is-hidden">
+            <div class="setting-icon">SD</div>
+            <label for="smartDownInput">
+              <span>smart_down</span>
+              <small>limite minimo real desejado</small>
+            </label>
+            <input id="smartDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
+
+          <article class="setting-card hot smart-setting is-hidden">
+            <div class="setting-icon">SU</div>
+            <label for="smartUpInput">
+              <span>smart_up</span>
+              <small>limite maximo real desejado</small>
+            </label>
+            <input id="smartUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
         </section>
       </section>
     </main>
 
-    <script src="painel.js?v=20260626-painel"></script>
+    <script src="painel.js?v=20260720-smart"></script>
   </body>
 </html>
