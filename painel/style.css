@@ -10,6 +10,8 @@
   --muted: #aab8c8;
   --accent: #55efd3;
   --gold: #ffd35a;
+  --relay-on: #ff5e55;
+  --relay-off: #a46bff;
   --hot: #ff765f;
   --cold: #6ab9ff;
   --ok: #5ff0ad;
@@ -355,8 +357,12 @@ p {
   background: var(--accent);
 }
 
-.temperature-line {
-  background: var(--gold);
+.relay-on-line {
+  background: var(--relay-on);
+}
+
+.relay-off-line {
+  background: var(--relay-off);
 }
 
 .smart-line {
@@ -390,14 +396,31 @@ p {
 
 .temperature-path {
   fill: none;
-  stroke: var(--gold);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3.5;
 }
 
-.temperature-dot {
+.temperature-path.relay-on,
+.temperature-dot.relay-on {
+  stroke: var(--relay-on);
+  fill: var(--relay-on);
+}
+
+.temperature-path.relay-off,
+.temperature-dot.relay-off {
+  stroke: var(--relay-off);
+  fill: var(--relay-off);
+}
+
+.temperature-path.relay-unknown,
+.temperature-dot.relay-unknown {
+  stroke: var(--gold);
   fill: var(--gold);
+}
+
+.temperature-dot {
+  stroke-width: 0;
 }
 
 .smart-limit {

@@ -1,6 +1,9 @@
 const TOKEN_KEY = "shadowing_factory_token";
-const SMART_CONTROL_KEY = "shadowing_factory_smart_control_v2";
-const LEGACY_SMART_CONTROL_KEY = "shadowing_factory_smart_control_v1";
+const SMART_CONTROL_KEY = "shadowing_factory_smart_control_v3";
+const LEGACY_SMART_CONTROL_KEYS = [
+  "shadowing_factory_smart_control_v2",
+  "shadowing_factory_smart_control_v1"
+];
 const REMOTE_API_HOST = "uergs2024.kinghost.net";
 const REMOTE_API_PORT = "21106";
 const API_BASES = getApiBases();
@@ -13,6 +16,7 @@ const SMART_PREDICTION_WEIGHT = 0.9;
 const SMART_RELAX_AFTER_CYCLES = 2;
 const SMART_MAX_RELAX_RATIO = 0.035;
 const SMART_TREND_DEADBAND = 0.004;
+const SMART_DELAY_GAIN = 0.25;
 
 const elements = {
   loginView: document.getElementById("loginView"),
@@ -161,11 +165,11 @@ function applyState(data, forceInputs) {
 
   setInputValue(elements.tempoLeituraInput, remoteConfig.tempoLeitura, forceInputs);
   ensureSmartDefaults(remoteConfig, forceInputs);
-  pushTemperatureSample(latestTemperature, latestTemperatureUpdatedAt);
 
   let renderConfig = remoteConfig;
+  let relayForSample = null;
   if (smartState.enabled) {
-    learnSmartControl(latestTemperature, latestTemperatureUpdatedAt, remoteConfig);
+    relayForSample = learnSmartControl(latestTemperature, latestTemperatureUpdatedAt, remoteConfig, data);
     const smartConfig = computeSmartConfig(latestTemperature, remoteConfig);
     if (smartConfig) {
       renderConfig = smartConfig;
@@ -176,8 +180,16 @@ function applyState(data, forceInputs) {
   } else {
     setInputValue(elements.pointDownInput, remoteConfig.pointDown, forceInputs);
     setInputValue(elements.pointUpInput, remoteConfig.pointUp, forceInputs);
+    relayForSample = updateRelayObservation(
+      latestTemperature,
+      getSampleTime(latestTemperatureUpdatedAt),
+      remoteConfig,
+      data,
+      false
+    );
   }
 
+  pushTemperatureSample(latestTemperature, latestTemperatureUpdatedAt, relayForSample);
   latestConfig = renderConfig;
   renderSmartControls(renderConfig);
   renderTemperature(latestTemperature, latestTemperatureUpdatedAt, renderConfig);
@@ -305,6 +317,10 @@ function ensureSmartDefaults(config, forceInputs) {
     resetSmartDiffs();
     saveSmartState();
   }
+  if (hasSmartTargets) {
+    if (!Number.isFinite(smartState.heatDelaySeconds)) smartState.heatDelaySeconds = estimateInitialDelay(config);
+    if (!Number.isFinite(smartState.coolDelaySeconds)) smartState.coolDelaySeconds = estimateInitialDelay(config);
+  }
 
   setInputValue(elements.smartDownInput, smartState.smartDown, forceInputs);
   setInputValue(elements.smartUpInput, smartState.smartUp, forceInputs);
@@ -331,10 +347,20 @@ function resetSmartDiffs() {
   smartState.coldValley = null;
   smartState.hotLastPeak = null;
   smartState.coldLastValley = null;
+  smartState.relayOn = null;
+  smartState.relayChangedAt = null;
+  smartState.relayOnSeconds = 0;
+  smartState.relayOffSeconds = 0;
+  smartState.pendingHeatSince = null;
+  smartState.pendingCoolSince = null;
+  smartState.heatDelaySeconds = estimateInitialDelay();
+  smartState.coolDelaySeconds = estimateInitialDelay();
+  smartState.heatRateCPerSecond = null;
+  smartState.coolRateCPerSecond = null;
 }
 
-function learnSmartControl(temperature, updatedAt, config) {
-  if (!Number.isFinite(temperature)) return;
+function learnSmartControl(temperature, updatedAt, config, data) {
+  if (!Number.isFinite(temperature)) return null;
   const timeMs = getSampleTime(updatedAt);
 
   if (Number.isFinite(smartState.lastTemperature) && Number.isFinite(smartState.lastTimestamp)) {
@@ -349,11 +375,18 @@ function learnSmartControl(temperature, updatedAt, config) {
   smartState.lastTimestamp = timeMs;
 
   const limits = getSmartLimits();
-  if (!limits) return;
+  if (!limits) return null;
   const controlConfig = computeSmartConfig(temperature, config, { silent: true });
   const pointDown = controlConfig ? controlConfig.pointDown : smartState.smartDown + smartState.diffDown;
   const pointUp = controlConfig ? controlConfig.pointUp : smartState.smartUp - smartState.diffUp;
   const trend = Number.isFinite(smartState.trendCPerSecond) ? smartState.trendCPerSecond : 0;
+  const relayOn = updateRelayObservation(
+    temperature,
+    timeMs,
+    { ...config, pointDown, pointUp },
+    data,
+    true
+  );
 
   if (trend >= SMART_TREND_DEADBAND && temperature >= pointUp) {
     smartState.hotTracking = true;
@@ -401,6 +434,7 @@ function learnSmartControl(temperature, updatedAt, config) {
   smartState.diffUp = clamp(smartState.diffUp, 0, limits.maxDiff);
   smartState.tauSeconds = clamp((smartState.tauSeconds || estimateInitialTau()) * 0.999, 12, 420);
   saveSmartState();
+  return relayOn;
 }
 
 function finishHotCycle(peak, limits) {
@@ -440,6 +474,103 @@ function finishColdCycle(valley, limits) {
     const missedTarget = Math.abs(error);
     const maxRelax = limits.maxDiff * SMART_MAX_RELAX_RATIO;
     smartState.diffDown -= Math.min(missedTarget * SMART_RELAX_GAIN, maxRelax);
+  }
+}
+
+function updateRelayObservation(temperature, timeMs, config, data, learnDelays) {
+  const relayOn = inferRelayState(temperature, config, data);
+  if (relayOn === null) return null;
+
+  if (smartState.relayOn !== relayOn || !Number.isFinite(smartState.relayChangedAt)) {
+    smartState.relayOn = relayOn;
+    smartState.relayChangedAt = timeMs;
+    if (relayOn) {
+      smartState.pendingHeatSince = timeMs;
+      smartState.pendingCoolSince = null;
+    } else {
+      smartState.pendingCoolSince = timeMs;
+      smartState.pendingHeatSince = null;
+    }
+  }
+
+  const elapsedSeconds = Math.max((timeMs - smartState.relayChangedAt) / 1000, 0);
+  smartState.relayOnSeconds = relayOn ? elapsedSeconds : 0;
+  smartState.relayOffSeconds = relayOn ? 0 : elapsedSeconds;
+
+  if (learnDelays) {
+    learnDelayAndRates(timeMs, relayOn);
+  }
+
+  return relayOn;
+}
+
+function inferRelayState(temperature, config, data) {
+  const remoteRelay = readRemoteRelayState(data);
+  if (remoteRelay !== null) return remoteRelay;
+  if (!Number.isFinite(temperature)) return smartState.relayOn === null ? null : Boolean(smartState.relayOn);
+
+  const pointDown = Number(config.pointDown);
+  const pointUp = Number(config.pointUp);
+  if (Number.isFinite(pointDown) && temperature <= pointDown) return true;
+  if (Number.isFinite(pointUp) && temperature >= pointUp) return false;
+  if (smartState.relayOn !== null) return Boolean(smartState.relayOn);
+  return false;
+}
+
+function readRemoteRelayState(data) {
+  if (!data || typeof data !== "object") return null;
+  const candidates = [
+    data.relayOn,
+    data.releLigado,
+    data.resistenciaLigada,
+    data.heaterOn,
+    data.relay,
+    data.rele,
+    data.resistencia,
+    data.outputOn,
+    data.status && data.status.relayOn,
+    data.status && data.status.releLigado,
+    data.status && data.status.resistenciaLigada,
+    data.state && data.state.relayOn,
+    data.state && data.state.releLigado,
+    data.state && data.state.resistenciaLigada
+  ];
+  for (const value of candidates) {
+    const normalized = normalizeRelayValue(value);
+    if (normalized !== null) return normalized;
+  }
+  return null;
+}
+
+function normalizeRelayValue(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value > 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "on", "true", "ligado", "ligada", "sim"].includes(normalized)) return true;
+    if (["0", "off", "false", "desligado", "desligada", "nao", "não"].includes(normalized)) return false;
+  }
+  return null;
+}
+
+function learnDelayAndRates(timeMs, relayOn) {
+  const trend = Number.isFinite(smartState.trendCPerSecond) ? smartState.trendCPerSecond : 0;
+  if (relayOn && trend >= SMART_TREND_DEADBAND) {
+    if (Number.isFinite(smartState.pendingHeatSince)) {
+      const delay = clamp((timeMs - smartState.pendingHeatSince) / 1000, 0, 420);
+      smartState.heatDelaySeconds = smoothValue(smartState.heatDelaySeconds, delay, SMART_DELAY_GAIN);
+      smartState.pendingHeatSince = null;
+    }
+    smartState.heatRateCPerSecond = smoothValue(smartState.heatRateCPerSecond, trend, 0.18);
+  }
+
+  if (!relayOn && trend <= -SMART_TREND_DEADBAND) {
+    if (Number.isFinite(smartState.pendingCoolSince)) {
+      const delay = clamp((timeMs - smartState.pendingCoolSince) / 1000, 0, 420);
+      smartState.coolDelaySeconds = smoothValue(smartState.coolDelaySeconds, delay, SMART_DELAY_GAIN);
+      smartState.pendingCoolSince = null;
+    }
+    smartState.coolRateCPerSecond = smoothValue(smartState.coolRateCPerSecond, Math.abs(trend), 0.18);
   }
 }
 
@@ -503,7 +634,9 @@ function estimateExponentialProjection(config = {}) {
   const tau = clamp(smartState.tauSeconds || estimateInitialTau(config), 12, 420);
   const interval = getReadingInterval(config);
   const horizon = clamp(interval * 3, 6, 180);
-  const delta = trend * tau * (1 - Math.exp(-horizon / tau));
+  const baseDelta = trend * tau * (1 - Math.exp(-horizon / tau));
+  const timeDelta = estimateRelayTimeDelta(horizon);
+  const delta = baseDelta + timeDelta;
   return {
     delta,
     rise: Math.max(0, delta),
@@ -511,8 +644,33 @@ function estimateExponentialProjection(config = {}) {
   };
 }
 
+function estimateRelayTimeDelta(horizon) {
+  if (smartState.relayOn === null) return 0;
+
+  const heatDelay = clamp(smartState.heatDelaySeconds || estimateInitialDelay(), 0, 420);
+  const coolDelay = clamp(smartState.coolDelaySeconds || estimateInitialDelay(), 0, 420);
+  const heatRate = clamp(smartState.heatRateCPerSecond || Math.max(smartState.trendCPerSecond || 0, 0.018), 0.004, 2);
+  const coolRate = clamp(smartState.coolRateCPerSecond || Math.max(-(smartState.trendCPerSecond || 0), 0.012), 0.003, 2);
+
+  if (smartState.relayOn) {
+    const onSeconds = clamp(smartState.relayOnSeconds || 0, 0, 3600);
+    const activeHeatingSeconds = Math.max(0, horizon - Math.max(heatDelay - onSeconds, 0));
+    return heatRate * activeHeatingSeconds * 0.75;
+  }
+
+  const offSeconds = clamp(smartState.relayOffSeconds || 0, 0, 3600);
+  const remainingStoredHeat = Math.max(coolDelay - offSeconds, 0);
+  const delayedRiseSeconds = Math.min(horizon, remainingStoredHeat);
+  const coolingSeconds = Math.max(0, horizon - delayedRiseSeconds);
+  return heatRate * delayedRiseSeconds * 0.65 - coolRate * coolingSeconds * 0.45;
+}
+
 function estimateInitialTau(config = {}) {
   return clamp(getReadingInterval(config) * 8, 24, 240);
+}
+
+function estimateInitialDelay(config = {}) {
+  return clamp(getReadingInterval(config) * 8, 12, 90);
 }
 
 function getReadingInterval(config = {}) {
@@ -553,19 +711,21 @@ function renderSmartControls(config = {}) {
   const trend = Number.isFinite(smartState.trendCPerSecond) ? smartState.trendCPerSecond : 0;
   const hotCycles = smartState.hotCycles || 0;
   const coldCycles = smartState.coldCycles || 0;
+  const relayText = smartState.relayOn === null ? "rele --" : `rele ${smartState.relayOn ? "ligado" : "desligado"}`;
+  const delayText = `delay aquece/resfria ${formatSeconds(smartState.heatDelaySeconds)} / ${formatSeconds(smartState.coolDelaySeconds)}`;
   elements.smartStatus.textContent =
     `point_down ${pointDown}, point_up ${pointUp}. ` +
     `diff_down ${diffDown.toFixed(2)}, diff_up ${diffUp.toFixed(2)}, ` +
     `tendencia ${trend.toFixed(3)} C/s, previsao ${projection.delta.toFixed(2)} C, ` +
-    `ciclos up/down ${hotCycles}/${coldCycles}.`;
+    `${relayText}, ${delayText}, ciclos up/down ${hotCycles}/${coldCycles}.`;
 }
 
-function pushTemperatureSample(temperature, updatedAt) {
+function pushTemperatureSample(temperature, updatedAt, relayOn) {
   if (!Number.isFinite(temperature)) return;
   const time = getSampleTime(updatedAt);
   const last = temperatureSamples[temperatureSamples.length - 1];
   if (last && last.time === time && last.temperature === temperature) return;
-  temperatureSamples.push({ time, temperature });
+  temperatureSamples.push({ time, temperature, relayOn });
   if (temperatureSamples.length > MAX_CHART_SAMPLES) {
     temperatureSamples = temperatureSamples.slice(-MAX_CHART_SAMPLES);
   }
@@ -612,9 +772,7 @@ function renderTemperatureChart(config = {}) {
 
   const xScale = (time) => padding.left + ((time - timeMin) / Math.max(timeMax - timeMin, 1)) * plotWidth;
   const yScale = (value) => padding.top + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
-  const path = temperatureSamples
-    .map((sample, index) => `${index === 0 ? "M" : "L"} ${xScale(sample.time).toFixed(2)} ${yScale(sample.temperature).toFixed(2)}`)
-    .join(" ");
+  const temperaturePaths = buildTemperaturePaths(temperatureSamples, xScale, yScale);
   const yTicks = createTicks(yMin, yMax, 5);
   const xTicks = createTimeTicks(timeMin, timeMax, 4);
   const lines = [];
@@ -637,9 +795,44 @@ function renderTemperatureChart(config = {}) {
       ${xTicks.map((tick) => `<text x="${xScale(tick).toFixed(2)}" y="${height - 10}" text-anchor="middle">${formatChartTime(tick)}</text>`).join("")}
     </g>
     <g class="chart-limits">${lines.join("")}</g>
-    <path class="temperature-path" d="${path}"></path>
-    ${temperatureSamples.length === 1 ? `<circle class="temperature-dot" cx="${xScale(temperatureSamples[0].time)}" cy="${yScale(temperatureSamples[0].temperature)}" r="4"></circle>` : ""}
+    ${temperaturePaths}
+    ${temperatureSamples.length === 1 ? `<circle class="temperature-dot ${getRelayClass(temperatureSamples[0].relayOn)}" cx="${xScale(temperatureSamples[0].time)}" cy="${yScale(temperatureSamples[0].temperature)}" r="4"></circle>` : ""}
   `;
+}
+
+function buildTemperaturePaths(samples, xScale, yScale) {
+  const segments = [];
+  let current = null;
+
+  samples.forEach((sample, index) => {
+    const relayClass = getRelayClass(sample.relayOn);
+    if (!current || current.relayClass !== relayClass) {
+      if (current && current.points.length > 1) segments.push(current);
+      const points = index > 0
+        ? [samples[index - 1], sample]
+        : [sample];
+      current = { relayClass, points };
+      return;
+    }
+    current.points.push(sample);
+  });
+
+  if (current) segments.push(current);
+
+  return segments
+    .map((segment) => {
+      const path = segment.points
+        .map((sample, index) => `${index === 0 ? "M" : "L"} ${xScale(sample.time).toFixed(2)} ${yScale(sample.temperature).toFixed(2)}`)
+        .join(" ");
+      return `<path class="temperature-path ${segment.relayClass}" d="${path}"></path>`;
+    })
+    .join("");
+}
+
+function getRelayClass(relayOn) {
+  if (relayOn === true) return "relay-on";
+  if (relayOn === false) return "relay-off";
+  return "relay-unknown";
 }
 
 function limitLine(yScale, value, className, label) {
@@ -788,6 +981,11 @@ function formatChartTime(value) {
   });
 }
 
+function formatSeconds(value) {
+  if (!Number.isFinite(value)) return "--s";
+  return `${Math.round(value)}s`;
+}
+
 function getSampleTime(value) {
   const time = value ? new Date(value).getTime() : Date.now();
   return Number.isFinite(time) ? time : Date.now();
@@ -812,6 +1010,12 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function smoothValue(current, next, gain) {
+  if (!Number.isFinite(next)) return current;
+  if (!Number.isFinite(current)) return next;
+  return current * (1 - gain) + next * gain;
+}
+
 function loadSmartState() {
   const emptyState = {
     enabled: false,
@@ -829,13 +1033,25 @@ function loadSmartState() {
     coldValley: null,
     hotLastPeak: null,
     coldLastValley: null,
+    relayOn: null,
+    relayChangedAt: null,
+    relayOnSeconds: 0,
+    relayOffSeconds: 0,
+    pendingHeatSince: null,
+    pendingCoolSince: null,
+    heatDelaySeconds: null,
+    coolDelaySeconds: null,
+    heatRateCPerSecond: null,
+    coolRateCPerSecond: null,
     lastTemperature: null,
     lastTimestamp: null
   };
 
   try {
     const stored = localStorage.getItem(SMART_CONTROL_KEY);
-    const legacyStored = localStorage.getItem(LEGACY_SMART_CONTROL_KEY);
+    const legacyStored = LEGACY_SMART_CONTROL_KEYS
+      .map((key) => localStorage.getItem(key))
+      .find((value) => Boolean(value));
     const parsed = JSON.parse(stored || legacyStored || "{}");
     const isLegacy = !stored && Boolean(legacyStored);
     return {
@@ -854,6 +1070,16 @@ function loadSmartState() {
       coldValley: null,
       hotLastPeak: isLegacy ? null : parseFiniteNumber(parsed.hotLastPeak),
       coldLastValley: isLegacy ? null : parseFiniteNumber(parsed.coldLastValley),
+      relayOn: normalizeRelayValue(parsed.relayOn),
+      relayChangedAt: null,
+      relayOnSeconds: 0,
+      relayOffSeconds: 0,
+      pendingHeatSince: null,
+      pendingCoolSince: null,
+      heatDelaySeconds: isLegacy ? null : parseFiniteNumber(parsed.heatDelaySeconds),
+      coolDelaySeconds: isLegacy ? null : parseFiniteNumber(parsed.coolDelaySeconds),
+      heatRateCPerSecond: isLegacy ? null : parseFiniteNumber(parsed.heatRateCPerSecond),
+      coolRateCPerSecond: isLegacy ? null : parseFiniteNumber(parsed.coolRateCPerSecond),
       lastTemperature: null,
       lastTimestamp: null
     };
@@ -874,6 +1100,11 @@ function saveSmartState() {
     hotCycles: smartState.hotCycles || 0,
     coldCycles: smartState.coldCycles || 0,
     hotLastPeak: smartState.hotLastPeak,
-    coldLastValley: smartState.coldLastValley
+    coldLastValley: smartState.coldLastValley,
+    relayOn: smartState.relayOn,
+    heatDelaySeconds: smartState.heatDelaySeconds,
+    coolDelaySeconds: smartState.coolDelaySeconds,
+    heatRateCPerSecond: smartState.heatRateCPerSecond,
+    coolRateCPerSecond: smartState.coolRateCPerSecond
   }));
 }
