@@ -1,14 +1,18 @@
 const TOKEN_KEY = "shadowing_factory_token";
-const SMART_CONTROL_KEY = "shadowing_factory_smart_control_v1";
+const SMART_CONTROL_KEY = "shadowing_factory_smart_control_v2";
+const LEGACY_SMART_CONTROL_KEY = "shadowing_factory_smart_control_v1";
 const REMOTE_API_HOST = "uergs2024.kinghost.net";
 const REMOTE_API_PORT = "21106";
 const API_BASES = getApiBases();
 const MAX_CHART_SAMPLES = 240;
-const SMART_SAFE_GAP_RATIO = 0.08;
-const SMART_START_DIFF_RATIO = 0.92;
-const SMART_ERROR_GAIN = 0.55;
-const SMART_RELAX_GAIN = 0.015;
+const SMART_SAFE_GAP_RATIO = 0.1;
+const SMART_START_DIFF_RATIO = 1;
+const SMART_ERROR_GAIN = 0.75;
+const SMART_RELAX_GAIN = 0.08;
 const SMART_PREDICTION_WEIGHT = 0.9;
+const SMART_RELAX_AFTER_CYCLES = 2;
+const SMART_MAX_RELAX_RATIO = 0.035;
+const SMART_TREND_DEADBAND = 0.004;
 
 const elements = {
   loginView: document.getElementById("loginView"),
@@ -297,6 +301,10 @@ function ensureSmartDefaults(config, forceInputs) {
     resetSmartDiffs();
     saveSmartState();
   }
+  if (hasSmartTargets && (!Number.isFinite(smartState.diffDown) || !Number.isFinite(smartState.diffUp))) {
+    resetSmartDiffs();
+    saveSmartState();
+  }
 
   setInputValue(elements.smartDownInput, smartState.smartDown, forceInputs);
   setInputValue(elements.smartUpInput, smartState.smartUp, forceInputs);
@@ -315,6 +323,14 @@ function resetSmartDiffs() {
   smartState.diffDown = limits.maxDiff * SMART_START_DIFF_RATIO;
   smartState.diffUp = limits.maxDiff * SMART_START_DIFF_RATIO;
   smartState.tauSeconds = estimateInitialTau();
+  smartState.hotCycles = 0;
+  smartState.coldCycles = 0;
+  smartState.hotTracking = false;
+  smartState.coldTracking = false;
+  smartState.hotPeak = null;
+  smartState.coldValley = null;
+  smartState.hotLastPeak = null;
+  smartState.coldLastValley = null;
 }
 
 function learnSmartControl(temperature, updatedAt, config) {
@@ -334,24 +350,51 @@ function learnSmartControl(temperature, updatedAt, config) {
 
   const limits = getSmartLimits();
   if (!limits) return;
-  const projection = estimateExponentialProjection(config);
-  const projectedTemperature = temperature + projection.delta;
-  const safeBand = limits.span * 0.12;
+  const controlConfig = computeSmartConfig(temperature, config, { silent: true });
+  const pointDown = controlConfig ? controlConfig.pointDown : smartState.smartDown + smartState.diffDown;
+  const pointUp = controlConfig ? controlConfig.pointUp : smartState.smartUp - smartState.diffUp;
+  const trend = Number.isFinite(smartState.trendCPerSecond) ? smartState.trendCPerSecond : 0;
+
+  if (trend >= SMART_TREND_DEADBAND && temperature >= pointUp) {
+    smartState.hotTracking = true;
+    smartState.hotPeak = Number.isFinite(smartState.hotPeak)
+      ? Math.max(smartState.hotPeak, temperature)
+      : temperature;
+  } else if (smartState.hotTracking) {
+    smartState.hotPeak = Number.isFinite(smartState.hotPeak)
+      ? Math.max(smartState.hotPeak, temperature)
+      : temperature;
+    if (trend <= -SMART_TREND_DEADBAND || temperature <= pointUp) {
+      finishHotCycle(smartState.hotPeak, limits);
+    }
+  }
+
+  if (trend <= -SMART_TREND_DEADBAND && temperature <= pointDown) {
+    smartState.coldTracking = true;
+    smartState.coldValley = Number.isFinite(smartState.coldValley)
+      ? Math.min(smartState.coldValley, temperature)
+      : temperature;
+  } else if (smartState.coldTracking) {
+    smartState.coldValley = Number.isFinite(smartState.coldValley)
+      ? Math.min(smartState.coldValley, temperature)
+      : temperature;
+    if (trend >= SMART_TREND_DEADBAND || temperature >= pointDown) {
+      finishColdCycle(smartState.coldValley, limits);
+    }
+  }
 
   if (temperature > smartState.smartUp) {
     const overshoot = temperature - smartState.smartUp;
-    smartState.diffUp += overshoot * SMART_ERROR_GAIN + Math.max(0, projection.delta) * 0.25;
+    smartState.diffUp += overshoot * SMART_ERROR_GAIN + limits.maxDiff * 0.04;
+    smartState.hotLastPeak = Math.max(smartState.hotLastPeak || temperature, temperature);
     smartState.tauSeconds = clamp((smartState.tauSeconds || estimateInitialTau()) + overshoot * 4, 12, 420);
-  } else if (projectedTemperature < smartState.smartUp - safeBand && projection.delta >= 0) {
-    smartState.diffUp -= (smartState.smartUp - safeBand - projectedTemperature) * SMART_RELAX_GAIN;
   }
 
   if (temperature < smartState.smartDown) {
     const undershoot = smartState.smartDown - temperature;
-    smartState.diffDown += undershoot * SMART_ERROR_GAIN + Math.max(0, -projection.delta) * 0.25;
+    smartState.diffDown += undershoot * SMART_ERROR_GAIN + limits.maxDiff * 0.04;
+    smartState.coldLastValley = Math.min(smartState.coldLastValley || temperature, temperature);
     smartState.tauSeconds = clamp((smartState.tauSeconds || estimateInitialTau()) + undershoot * 4, 12, 420);
-  } else if (projectedTemperature > smartState.smartDown + safeBand && projection.delta <= 0) {
-    smartState.diffDown -= (projectedTemperature - smartState.smartDown - safeBand) * SMART_RELAX_GAIN;
   }
 
   smartState.diffDown = clamp(smartState.diffDown, 0, limits.maxDiff);
@@ -360,10 +403,52 @@ function learnSmartControl(temperature, updatedAt, config) {
   saveSmartState();
 }
 
-function computeSmartConfig(temperature, fallbackConfig = {}) {
+function finishHotCycle(peak, limits) {
+  smartState.hotTracking = false;
+  smartState.hotPeak = null;
+  if (!Number.isFinite(peak)) return;
+
+  smartState.hotCycles = (smartState.hotCycles || 0) + 1;
+  smartState.hotLastPeak = peak;
+  const error = peak - smartState.smartUp;
+  if (error > 0) {
+    smartState.diffUp += error * SMART_ERROR_GAIN + limits.maxDiff * 0.06;
+    return;
+  }
+
+  if (smartState.hotCycles >= SMART_RELAX_AFTER_CYCLES) {
+    const missedTarget = Math.abs(error);
+    const maxRelax = limits.maxDiff * SMART_MAX_RELAX_RATIO;
+    smartState.diffUp -= Math.min(missedTarget * SMART_RELAX_GAIN, maxRelax);
+  }
+}
+
+function finishColdCycle(valley, limits) {
+  smartState.coldTracking = false;
+  smartState.coldValley = null;
+  if (!Number.isFinite(valley)) return;
+
+  smartState.coldCycles = (smartState.coldCycles || 0) + 1;
+  smartState.coldLastValley = valley;
+  const error = smartState.smartDown - valley;
+  if (error > 0) {
+    smartState.diffDown += error * SMART_ERROR_GAIN + limits.maxDiff * 0.06;
+    return;
+  }
+
+  if (smartState.coldCycles >= SMART_RELAX_AFTER_CYCLES) {
+    const missedTarget = Math.abs(error);
+    const maxRelax = limits.maxDiff * SMART_MAX_RELAX_RATIO;
+    smartState.diffDown -= Math.min(missedTarget * SMART_RELAX_GAIN, maxRelax);
+  }
+}
+
+function computeSmartConfig(temperature, fallbackConfig = {}, options = {}) {
   const limits = getSmartLimits();
   if (!limits) {
-    setStatus("No modo inteligente, smart_down precisa ser menor que smart_up.", true);
+    if (!options.silent) {
+      setStatus("No modo inteligente, smart_down precisa ser menor que smart_up.", true);
+    }
     return null;
   }
 
@@ -374,8 +459,14 @@ function computeSmartConfig(temperature, fallbackConfig = {}) {
   const projection = Number.isFinite(temperature)
     ? estimateExponentialProjection(fallbackConfig)
     : { rise: 0, drop: 0 };
-  const diffDown = clamp(smartState.diffDown + projection.drop * SMART_PREDICTION_WEIGHT, 0, limits.maxDiff);
-  const diffUp = clamp(smartState.diffUp + projection.rise * SMART_PREDICTION_WEIGHT, 0, limits.maxDiff);
+  const storedDiffDown = (smartState.coldCycles || 0) === 0
+    ? limits.maxDiff
+    : smartState.diffDown;
+  const storedDiffUp = (smartState.hotCycles || 0) === 0
+    ? limits.maxDiff
+    : smartState.diffUp;
+  const diffDown = clamp(storedDiffDown + projection.drop * SMART_PREDICTION_WEIGHT, 0, limits.maxDiff);
+  const diffUp = clamp(storedDiffUp + projection.rise * SMART_PREDICTION_WEIGHT, 0, limits.maxDiff);
   let pointDown = smartState.smartDown + diffDown;
   let pointUp = smartState.smartUp - diffUp;
 
@@ -460,10 +551,13 @@ function renderSmartControls(config = {}) {
   const pointDown = Number.isFinite(config.pointDown) ? `${Number(config.pointDown).toFixed(1)} C` : "--";
   const pointUp = Number.isFinite(config.pointUp) ? `${Number(config.pointUp).toFixed(1)} C` : "--";
   const trend = Number.isFinite(smartState.trendCPerSecond) ? smartState.trendCPerSecond : 0;
+  const hotCycles = smartState.hotCycles || 0;
+  const coldCycles = smartState.coldCycles || 0;
   elements.smartStatus.textContent =
     `point_down ${pointDown}, point_up ${pointUp}. ` +
     `diff_down ${diffDown.toFixed(2)}, diff_up ${diffUp.toFixed(2)}, ` +
-    `tendencia ${trend.toFixed(3)} C/s, previsao ${projection.delta.toFixed(2)} C.`;
+    `tendencia ${trend.toFixed(3)} C/s, previsao ${projection.delta.toFixed(2)} C, ` +
+    `ciclos up/down ${hotCycles}/${coldCycles}.`;
 }
 
 function pushTemperatureSample(temperature, updatedAt) {
@@ -704,6 +798,11 @@ function parseFiniteNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function parseStoredCount(value) {
+  const number = Number.parseInt(value, 10);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
 function roundTo(value, decimals) {
   const factor = 10 ** decimals;
   return Math.round(Number(value) * factor) / factor;
@@ -714,31 +813,52 @@ function clamp(value, min, max) {
 }
 
 function loadSmartState() {
+  const emptyState = {
+    enabled: false,
+    smartDown: null,
+    smartUp: null,
+    diffDown: null,
+    diffUp: null,
+    trendCPerSecond: null,
+    tauSeconds: null,
+    hotCycles: 0,
+    coldCycles: 0,
+    hotTracking: false,
+    coldTracking: false,
+    hotPeak: null,
+    coldValley: null,
+    hotLastPeak: null,
+    coldLastValley: null,
+    lastTemperature: null,
+    lastTimestamp: null
+  };
+
   try {
-    const parsed = JSON.parse(localStorage.getItem(SMART_CONTROL_KEY) || "{}");
+    const stored = localStorage.getItem(SMART_CONTROL_KEY);
+    const legacyStored = localStorage.getItem(LEGACY_SMART_CONTROL_KEY);
+    const parsed = JSON.parse(stored || legacyStored || "{}");
+    const isLegacy = !stored && Boolean(legacyStored);
     return {
       enabled: Boolean(parsed.enabled),
       smartDown: parseFiniteNumber(parsed.smartDown),
       smartUp: parseFiniteNumber(parsed.smartUp),
-      diffDown: parseFiniteNumber(parsed.diffDown),
-      diffUp: parseFiniteNumber(parsed.diffUp),
+      diffDown: isLegacy ? null : parseFiniteNumber(parsed.diffDown),
+      diffUp: isLegacy ? null : parseFiniteNumber(parsed.diffUp),
       trendCPerSecond: parseFiniteNumber(parsed.trendCPerSecond),
       tauSeconds: parseFiniteNumber(parsed.tauSeconds),
+      hotCycles: isLegacy ? 0 : parseStoredCount(parsed.hotCycles),
+      coldCycles: isLegacy ? 0 : parseStoredCount(parsed.coldCycles),
+      hotTracking: false,
+      coldTracking: false,
+      hotPeak: null,
+      coldValley: null,
+      hotLastPeak: isLegacy ? null : parseFiniteNumber(parsed.hotLastPeak),
+      coldLastValley: isLegacy ? null : parseFiniteNumber(parsed.coldLastValley),
       lastTemperature: null,
       lastTimestamp: null
     };
   } catch {
-    return {
-      enabled: false,
-      smartDown: null,
-      smartUp: null,
-      diffDown: null,
-      diffUp: null,
-      trendCPerSecond: null,
-      tauSeconds: null,
-      lastTemperature: null,
-      lastTimestamp: null
-    };
+    return emptyState;
   }
 }
 
@@ -750,6 +870,10 @@ function saveSmartState() {
     diffDown: smartState.diffDown,
     diffUp: smartState.diffUp,
     trendCPerSecond: smartState.trendCPerSecond,
-    tauSeconds: smartState.tauSeconds
+    tauSeconds: smartState.tauSeconds,
+    hotCycles: smartState.hotCycles || 0,
+    coldCycles: smartState.coldCycles || 0,
+    hotLastPeak: smartState.hotLastPeak,
+    coldLastValley: smartState.coldLastValley
   }));
 }
