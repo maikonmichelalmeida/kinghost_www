@@ -357,6 +357,18 @@ p {
   background: var(--accent);
 }
 
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255, 211, 90, 0.16);
+}
+
+.reversal-dot-legend {
+  background: var(--gold);
+}
+
 .relay-on-line {
   background: var(--relay-on);
 }
@@ -436,6 +448,20 @@ p {
 
 .temperature-dot {
   stroke-width: 0;
+}
+
+.reversal-dot {
+  fill: var(--gold);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.reversal-dot.upper {
+  fill: var(--hot);
+}
+
+.reversal-dot.lower {
+  fill: var(--cold);
 }
 
 .smart-limit {

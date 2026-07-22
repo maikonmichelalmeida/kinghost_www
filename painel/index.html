@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel de temperatura</title>
-    <link rel="stylesheet" href="style.css?v=20260722-smart8">
+    <link rel="stylesheet" href="style.css?v=20260722-tempo1">
   </head>
   <body>
     <main class="shell">
@@ -57,8 +57,9 @@
             <div class="chart-legend" aria-label="Legenda do grafico">
               <span><i class="legend-line relay-on-line"></i>resistencia ligada</span>
               <span><i class="legend-line relay-off-line"></i>resistencia desligada</span>
-              <span><i class="legend-line smart-line"></i>faixa ideal</span>
+              <span><i class="legend-line smart-line"></i>alvos</span>
               <span><i class="legend-line control-line"></i>acionamento</span>
+              <span><i class="legend-dot reversal-dot-legend"></i>inversao</span>
             </div>
           </div>
           <svg id="temperatureChart" class="temperature-chart" viewBox="0 0 920 260" role="img" aria-labelledby="chartTitle chartDesc">
@@ -81,7 +82,7 @@
             <div class="setting-icon">AI</div>
             <label for="smartModeInput">
               <span>Modo inteligente</span>
-              <small>calcula os pontos internos automaticamente</small>
+              <small>aprende tempo, reta e delay do sistema</small>
             </label>
             <label class="switch-row">
               <input id="smartModeInput" type="checkbox">
@@ -94,7 +95,7 @@
             <div class="setting-icon">DN</div>
             <label for="pointDownInput">
               <span>point_down</span>
-              <small>pisca a 2 Hz abaixo disso</small>
+              <small>alvo inferior no modo inteligente</small>
             </label>
             <input id="pointDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
           </article>
@@ -103,32 +104,14 @@
             <div class="setting-icon">UP</div>
             <label for="pointUpInput">
               <span>point_up</span>
-              <small>pisca a 20 Hz acima disso</small>
+              <small>alvo superior no modo inteligente</small>
             </label>
             <input id="pointUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
-          </article>
-
-          <article class="setting-card cold smart-setting is-hidden">
-            <div class="setting-icon">SD</div>
-            <label for="smartDownInput">
-              <span>smart_down</span>
-              <small>limite minimo real desejado</small>
-            </label>
-            <input id="smartDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
-          </article>
-
-          <article class="setting-card hot smart-setting is-hidden">
-            <div class="setting-icon">SU</div>
-            <label for="smartUpInput">
-              <span>smart_up</span>
-              <small>limite maximo real desejado</small>
-            </label>
-            <input id="smartUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
           </article>
         </section>
       </section>
     </main>
 
-    <script src="painel.js?v=20260722-smart8"></script>
+    <script src="painel.js?v=20260722-tempo1"></script>
   </body>
 </html>

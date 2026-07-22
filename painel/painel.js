@@ -1,6 +1,7 @@
 const TOKEN_KEY = "shadowing_factory_token";
-const SMART_CONTROL_KEY = "shadowing_factory_smart_control_v8";
+const SMART_CONTROL_KEY = "shadowing_factory_time_control_v1";
 const LEGACY_SMART_CONTROL_KEYS = [
+  "shadowing_factory_smart_control_v8",
   "shadowing_factory_smart_control_v7",
   "shadowing_factory_smart_control_v6",
   "shadowing_factory_smart_control_v5",
@@ -29,6 +30,8 @@ const SMART_ERROR_GAIN_FAST = 0.7;
 const SMART_ERROR_GAIN_SLOW = 0.05;
 const SMART_DELAY_GAIN = 0.28;
 const SMART_RATE_GAIN = 0.25;
+const FORCE_SETPOINT_OFFSET = 0.8;
+const MAX_REVERSAL_EVENTS = 80;
 
 const elements = {
   loginView: document.getElementById("loginView"),
@@ -49,8 +52,6 @@ const elements = {
   smartModeInput: document.getElementById("smartModeInput"),
   smartModeText: document.getElementById("smartModeText"),
   smartStatus: document.getElementById("smartStatus"),
-  smartDownInput: document.getElementById("smartDownInput"),
-  smartUpInput: document.getElementById("smartUpInput"),
   temperatureChart: document.getElementById("temperatureChart")
 };
 
@@ -62,6 +63,7 @@ let latestTemperature = null;
 let latestTemperatureUpdatedAt = null;
 let smartState = loadSmartState();
 let temperatureSamples = [];
+let reversalEvents = [];
 let manualRelayOn = null;
 
 elements.loginForm.addEventListener("submit", async (event) => {
@@ -88,30 +90,13 @@ elements.refreshButton.addEventListener("click", () => loadState(true));
 
 elements.smartModeInput.addEventListener("change", () => {
   smartState.enabled = elements.smartModeInput.checked;
-  syncSmartTargetsFromInputs();
-  resetSmartLearning();
+  if (smartState.enabled) {
+    syncTargetsFromManualSetpoints();
+    resetSmartLearning();
+  }
   saveSmartState();
   renderSmartControls(latestConfig);
   scheduleSettingsSave();
-});
-
-[
-  elements.smartDownInput,
-  elements.smartUpInput
-].forEach((input) => {
-  input.addEventListener("input", () => {
-    const oldDown = smartState.smartDown;
-    const oldUp = smartState.smartUp;
-    syncSmartTargetsFromInputs();
-    if (Math.abs((smartState.smartDown || 0) - (oldDown || 0)) > 0.01 ||
-        Math.abs((smartState.smartUp || 0) - (oldUp || 0)) > 0.01) {
-      resetSmartLearning();
-    }
-    saveSmartState();
-    renderSmartControls(latestConfig);
-    scheduleSettingsSave();
-  });
-  input.addEventListener("change", () => saveSettingsNow());
 });
 
 boot();
@@ -286,7 +271,6 @@ function readSettingsPayload() {
   }
 
   if (smartState.enabled) {
-    syncSmartTargetsFromInputs();
     ensureSmartDefaults({ tempoLeitura }, false);
     const smartConfig = computeSmartConfig(latestTemperature, { tempoLeitura });
     if (!smartConfig) return null;
@@ -315,30 +299,27 @@ function readSettingsPayload() {
 }
 
 function ensureSmartDefaults(config, forceInputs) {
-  const hasSmartTargets = Number.isFinite(smartState.smartDown) && Number.isFinite(smartState.smartUp);
+  const hasSmartTargets = Number.isFinite(smartState.targetDown) && Number.isFinite(smartState.targetUp);
   if (!hasSmartTargets && Number.isFinite(config.pointDown) && Number.isFinite(config.pointUp)) {
-    smartState.smartDown = config.pointDown;
-    smartState.smartUp = config.pointUp;
+    smartState.targetDown = config.pointDown;
+    smartState.targetUp = config.pointUp;
     resetSmartLearning();
     saveSmartState();
   }
 
-  if (Number.isFinite(smartState.smartDown) && Number.isFinite(smartState.smartUp)) {
+  if (Number.isFinite(smartState.targetDown) && Number.isFinite(smartState.targetUp)) {
     if (!Number.isFinite(smartState.upperCoast) || !Number.isFinite(smartState.lowerCoast)) {
       resetSmartLearning();
       saveSmartState();
     }
   }
-
-  setInputValue(elements.smartDownInput, smartState.smartDown, forceInputs);
-  setInputValue(elements.smartUpInput, smartState.smartUp, forceInputs);
 }
 
-function syncSmartTargetsFromInputs() {
-  const smartDown = Number(elements.smartDownInput.value);
-  const smartUp = Number(elements.smartUpInput.value);
-  if (Number.isFinite(smartDown)) smartState.smartDown = smartDown;
-  if (Number.isFinite(smartUp)) smartState.smartUp = smartUp;
+function syncTargetsFromManualSetpoints() {
+  const targetDown = Number(elements.pointDownInput.value);
+  const targetUp = Number(elements.pointUpInput.value);
+  if (Number.isFinite(targetDown)) smartState.targetDown = targetDown;
+  if (Number.isFinite(targetUp)) smartState.targetUp = targetUp;
 }
 
 function resetSmartLearning() {
@@ -377,10 +358,10 @@ function updateSmartControl(temperature, updatedAt, remoteConfig, data) {
 
   updateCycleLearning(temperature, timeMs);
 
-  if (temperature >= smartState.smartUp) {
+  if (temperature >= smartState.targetUp) {
     if (smartState.phase === "heating") startCoolingPhase(temperature, timeMs, true);
     smartState.phase = "cooling";
-  } else if (temperature <= smartState.smartDown) {
+  } else if (temperature <= smartState.targetDown) {
     if (smartState.phase === "cooling") startHeatingPhase(temperature, timeMs, true);
     smartState.phase = "heating";
   } else if (smartState.phase === "heating" && shouldSwitchToCooling(temperature, configBefore)) {
@@ -416,23 +397,22 @@ function updateTrendAndRates(temperature, timeMs) {
 function computeSmartConfig(temperature, fallbackConfig = {}) {
   const limits = getSmartLimits();
   if (!limits) {
-    setStatus("No modo inteligente, smart_down precisa ser menor que smart_up.", true);
+    setStatus("No modo inteligente, o alvo baixo precisa ser menor que o alvo alto.", true);
     return null;
   }
 
   const phase = smartState.phase || (Number.isFinite(temperature) && temperature <= getSmartCenter() ? "heating" : "cooling");
-  const margin = computePredictiveMargin(phase);
   const minGap = limits.minGap;
-  const bounds = getSmartBounds(limits);
+  const current = Number.isFinite(temperature) ? temperature : getSmartCenter();
   let pointDown;
   let pointUp;
 
   if (phase === "heating") {
-    pointUp = clamp(smartState.smartUp - margin, bounds.low + minGap, bounds.high);
-    pointDown = pointUp - minGap;
-  } else {
-    pointDown = clamp(smartState.smartDown + margin, bounds.low, bounds.high - minGap);
+    pointDown = current + FORCE_SETPOINT_OFFSET;
     pointUp = pointDown + minGap;
+  } else {
+    pointUp = current - FORCE_SETPOINT_OFFSET;
+    pointDown = pointUp - minGap;
   }
 
   return {
@@ -470,14 +450,14 @@ function shouldSwitchToCooling(temperature, config) {
   const rate = getModelRate("heating");
   const delay = smartState.upperDelay || estimateInitialDelay();
   const predicted = temperature + rate * delay;
-  return temperature >= config.pointUp || predicted >= smartState.smartUp;
+  return temperature >= config.pointUp || predicted >= smartState.targetUp;
 }
 
 function shouldSwitchToHeating(temperature, config) {
   const rate = getModelRate("cooling");
   const delay = smartState.lowerDelay || estimateInitialDelay();
   const predicted = temperature - rate * delay;
-  return temperature <= config.pointDown || predicted <= smartState.smartDown;
+  return temperature <= config.pointDown || predicted <= smartState.targetDown;
 }
 
 function startCoolingPhase(temperature, timeMs, hardLimit = false) {
@@ -487,6 +467,7 @@ function startCoolingPhase(temperature, timeMs, hardLimit = false) {
     switchTemp: temperature,
     switchTime: timeMs,
     peak: temperature,
+    peakTime: timeMs,
     hardLimit
   };
   smartState.lowerCycle = null;
@@ -499,6 +480,7 @@ function startHeatingPhase(temperature, timeMs, hardLimit = false) {
     switchTemp: temperature,
     switchTime: timeMs,
     valley: temperature,
+    valleyTime: timeMs,
     hardLimit
   };
   smartState.upperCycle = null;
@@ -508,7 +490,10 @@ function updateCycleLearning(temperature, timeMs) {
   const trend = computeRecentSlope(REVERSAL_WINDOW_MS);
 
   if (smartState.phase === "cooling" && smartState.upperCycle) {
-    smartState.upperCycle.peak = Math.max(smartState.upperCycle.peak, temperature);
+    if (temperature >= smartState.upperCycle.peak) {
+      smartState.upperCycle.peak = temperature;
+      smartState.upperCycle.peakTime = timeMs;
+    }
     const elapsed = (timeMs - smartState.upperCycle.switchTime) / 1000;
     const peaked = trend.sampleCount >= REVERSAL_MIN_SAMPLES &&
       elapsed >= REVERSAL_MIN_SECONDS &&
@@ -520,7 +505,10 @@ function updateCycleLearning(temperature, timeMs) {
   }
 
   if (smartState.phase === "heating" && smartState.lowerCycle) {
-    smartState.lowerCycle.valley = Math.min(smartState.lowerCycle.valley, temperature);
+    if (temperature <= smartState.lowerCycle.valley) {
+      smartState.lowerCycle.valley = temperature;
+      smartState.lowerCycle.valleyTime = timeMs;
+    }
     const elapsed = (timeMs - smartState.lowerCycle.switchTime) / 1000;
     const bottomed = trend.sampleCount >= REVERSAL_MIN_SAMPLES &&
       elapsed >= REVERSAL_MIN_SECONDS &&
@@ -536,10 +524,11 @@ function finishUpperCycle(timeMs) {
   const cycle = smartState.upperCycle;
   if (!cycle) return;
   const observedCoast = Math.max(cycle.peak - cycle.switchTemp, 0);
-  const error = cycle.peak - smartState.smartUp;
+  const error = cycle.peak - smartState.targetUp;
   smartState.lastUpperError = error;
   smartState.upperDelay = smoothValue(smartState.upperDelay, (timeMs - cycle.switchTime) / 1000, SMART_DELAY_GAIN);
   smartState.upperCoast = adjustCoast(smartState.upperCoast, observedCoast, error, cycle.hardLimit);
+  addReversalEvent(cycle.peakTime || timeMs, cycle.peak, "upper");
   smartState.upperCycle = null;
 }
 
@@ -547,11 +536,20 @@ function finishLowerCycle(timeMs) {
   const cycle = smartState.lowerCycle;
   if (!cycle) return;
   const observedCoast = Math.max(cycle.switchTemp - cycle.valley, 0);
-  const error = smartState.smartDown - cycle.valley;
+  const error = smartState.targetDown - cycle.valley;
   smartState.lastLowerError = error;
   smartState.lowerDelay = smoothValue(smartState.lowerDelay, (timeMs - cycle.switchTime) / 1000, SMART_DELAY_GAIN);
   smartState.lowerCoast = adjustCoast(smartState.lowerCoast, observedCoast, error, cycle.hardLimit);
+  addReversalEvent(cycle.valleyTime || timeMs, cycle.valley, "lower");
   smartState.lowerCycle = null;
+}
+
+function addReversalEvent(time, temperature, type) {
+  if (!Number.isFinite(time) || !Number.isFinite(temperature)) return;
+  reversalEvents.push({ time, temperature, type });
+  if (reversalEvents.length > MAX_REVERSAL_EVENTS) {
+    reversalEvents = reversalEvents.slice(-MAX_REVERSAL_EVENTS);
+  }
 }
 
 function adjustCoast(current, observedCoast, error, hardLimit = false) {
@@ -567,12 +565,12 @@ function adjustCoast(current, observedCoast, error, hardLimit = false) {
 }
 
 function getSmartLimits() {
-  if (!Number.isFinite(smartState.smartDown) ||
-      !Number.isFinite(smartState.smartUp) ||
-      smartState.smartDown >= smartState.smartUp) {
+  if (!Number.isFinite(smartState.targetDown) ||
+      !Number.isFinite(smartState.targetUp) ||
+      smartState.targetDown >= smartState.targetUp) {
     return null;
   }
-  const span = smartState.smartUp - smartState.smartDown;
+  const span = smartState.targetUp - smartState.targetDown;
   return {
     span,
     minGap: Math.max(0.4, span * SMART_MIN_GAP_RATIO)
@@ -582,14 +580,14 @@ function getSmartLimits() {
 function getSmartBounds(limits = getSmartLimits()) {
   const span = limits ? limits.span : 1;
   return {
-    low: smartState.smartDown - span,
-    high: smartState.smartUp + span
+    low: smartState.targetDown - span,
+    high: smartState.targetUp + span
   };
 }
 
 function getSmartCenter() {
-  if (!Number.isFinite(smartState.smartDown) || !Number.isFinite(smartState.smartUp)) return 0;
-  return (smartState.smartDown + smartState.smartUp) / 2;
+  if (!Number.isFinite(smartState.targetDown) || !Number.isFinite(smartState.targetUp)) return 0;
+  return (smartState.targetDown + smartState.targetUp) / 2;
 }
 
 function estimateInitialDelay(config = {}) {
@@ -629,16 +627,39 @@ function renderSmartControls(config = {}) {
   const phase = smartState.phase || "heating";
   const pointDown = Number.isFinite(config.pointDown) ? `${Number(config.pointDown).toFixed(1)} C` : "--";
   const pointUp = Number.isFinite(config.pointUp) ? `${Number(config.pointUp).toFixed(1)} C` : "--";
-  const target = phase === "heating" ? "smart_up" : "smart_down";
+  const target = phase === "heating" ? "alvo A" : "alvo B";
   const coast = phase === "heating" ? smartState.upperCoast : smartState.lowerCoast;
-  const delay = phase === "heating" ? smartState.upperDelay : smartState.lowerDelay;
-  const rate = phase === "heating" ? smartState.heatingRate : smartState.coolingRate;
+  const rate = phase === "heating" ? getModelRate("heating") : getModelRate("cooling");
   const error = phase === "heating" ? smartState.lastUpperError : smartState.lastLowerError;
+  const etaA = estimateTimeToTarget("heating", latestTemperature);
+  const etaB = estimateTimeToTarget("cooling", latestTemperature);
   elements.smartStatus.textContent =
     `fase ${phase === "heating" ? "aquecendo" : "resfriando"} ate ${target}. ` +
     `point_down ${pointDown}, point_up ${pointUp}. ` +
-    `margem ${formatNumber(coast)} C, delay ${formatSeconds(delay)}, ` +
-    `taxa ${formatNumber(rate)} C/s, erro ciclo ${formatNumber(error)} C.`;
+    `margem ${formatNumber(coast)} C, delay A ${formatSeconds(smartState.lowerDelay)}, delay B ${formatSeconds(smartState.upperDelay)}, ` +
+    `reta ${formatNumber(rate)} C/s, ETA A ${formatSeconds(etaA)}, ETA B ${formatSeconds(etaB)}, erro ciclo ${formatNumber(error)} C.`;
+}
+
+function estimateTimeToTarget(phase, temperature) {
+  if (!Number.isFinite(temperature)) return null;
+  if (phase === "heating") {
+    const rate = getModelRate("heating");
+    const remainingDelay = smartState.phase === "heating"
+      ? Math.max((smartState.lowerDelay || 0) - secondsSinceRelayChange(), 0)
+      : smartState.lowerDelay || 0;
+    return remainingDelay + Math.max((smartState.targetUp - temperature) / Math.max(rate, 0.001), 0);
+  }
+
+  const rate = getModelRate("cooling");
+  const remainingDelay = smartState.phase === "cooling"
+    ? Math.max((smartState.upperDelay || 0) - secondsSinceRelayChange(), 0)
+    : smartState.upperDelay || 0;
+  return remainingDelay + Math.max((temperature - smartState.targetDown) / Math.max(rate, 0.001), 0);
+}
+
+function secondsSinceRelayChange() {
+  if (!Number.isFinite(smartState.relayChangedAt)) return 0;
+  return Math.max((getSampleTime(latestTemperatureUpdatedAt) - smartState.relayChangedAt) / 1000, 0);
 }
 
 function pushTemperatureSample(temperature, updatedAt, relayOn) {
@@ -777,11 +798,14 @@ function renderTemperatureChart(config = {}) {
   const timeMin = temperatureSamples[0].time;
   const timeMax = temperatureSamples[temperatureSamples.length - 1].time || timeMin + 1;
   const values = temperatureSamples.map((sample) => sample.temperature);
+  reversalEvents.forEach((event) => {
+    if (Number.isFinite(event.temperature)) values.push(event.temperature);
+  });
   [
     config.pointDown,
     config.pointUp,
-    smartState.enabled ? smartState.smartDown : null,
-    smartState.enabled ? smartState.smartUp : null
+    smartState.enabled ? smartState.targetDown : null,
+    smartState.enabled ? smartState.targetUp : null
   ].forEach((value) => {
     if (Number.isFinite(value)) values.push(value);
   });
@@ -803,8 +827,8 @@ function renderTemperatureChart(config = {}) {
   const lines = [];
 
   if (smartState.enabled) {
-    lines.push(limitLine(yScale, smartState.smartDown, "smart-limit", "smart down"));
-    lines.push(limitLine(yScale, smartState.smartUp, "smart-limit", "smart up"));
+    lines.push(limitLine(yScale, smartState.targetDown, "smart-limit", "alvo B"));
+    lines.push(limitLine(yScale, smartState.targetUp, "smart-limit", "alvo A"));
   }
   lines.push(limitLine(yScale, config.pointDown, "control-limit", "point down"));
   lines.push(limitLine(yScale, config.pointUp, "control-limit", "point up"));
@@ -821,8 +845,18 @@ function renderTemperatureChart(config = {}) {
     </g>
     <g class="chart-limits">${lines.join("")}</g>
     ${buildTemperaturePaths(temperatureSamples, xScale, yScale)}
+    ${buildReversalDots(xScale, yScale, timeMin, timeMax)}
     ${temperatureSamples.length === 1 ? `<circle class="temperature-dot ${getRelayClass(temperatureSamples[0].relayOn)}" cx="${xScale(temperatureSamples[0].time)}" cy="${yScale(temperatureSamples[0].temperature)}" r="4"></circle>` : ""}
   `;
+}
+
+function buildReversalDots(xScale, yScale, timeMin, timeMax) {
+  return reversalEvents
+    .filter((event) => event.time >= timeMin && event.time <= timeMax)
+    .map((event) =>
+      `<circle class="reversal-dot ${event.type}" cx="${xScale(event.time).toFixed(2)}" cy="${yScale(event.temperature).toFixed(2)}" r="4.5"></circle>`
+    )
+    .join("");
 }
 
 function buildTemperaturePaths(samples, xScale, yScale) {
@@ -1049,8 +1083,8 @@ function average(values) {
 function loadSmartState() {
   const emptyState = {
     enabled: false,
-    smartDown: null,
-    smartUp: null,
+    targetDown: null,
+    targetUp: null,
     phase: null,
     upperCoast: null,
     lowerCoast: null,
@@ -1077,8 +1111,8 @@ function loadSmartState() {
     const isLegacy = !stored && Boolean(legacyStored);
     return {
       enabled: Boolean(parsed.enabled),
-      smartDown: parseFiniteNumber(parsed.smartDown),
-      smartUp: parseFiniteNumber(parsed.smartUp),
+      targetDown: parseFiniteNumber(parsed.targetDown ?? parsed.smartDown),
+      targetUp: parseFiniteNumber(parsed.targetUp ?? parsed.smartUp),
       phase: normalizePhase(parsed.phase),
       upperCoast: isLegacy ? null : parseStoredNumber(parsed.upperCoast),
       lowerCoast: isLegacy ? null : parseStoredNumber(parsed.lowerCoast),
@@ -1103,8 +1137,8 @@ function loadSmartState() {
 function saveSmartState() {
   localStorage.setItem(SMART_CONTROL_KEY, JSON.stringify({
     enabled: smartState.enabled,
-    smartDown: smartState.smartDown,
-    smartUp: smartState.smartUp,
+    targetDown: smartState.targetDown,
+    targetUp: smartState.targetUp,
     phase: smartState.phase,
     upperCoast: smartState.upperCoast,
     lowerCoast: smartState.lowerCoast,
