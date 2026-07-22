@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel de temperatura</title>
-    <link rel="stylesheet" href="style.css?v=20260722-tempo1">
+    <link rel="stylesheet" href="style.css?v=20260722-pid1">
   </head>
   <body>
     <main class="shell">
@@ -82,7 +82,7 @@
             <div class="setting-icon">AI</div>
             <label for="smartModeInput">
               <span>Modo inteligente</span>
-              <small>aprende tempo, reta e delay do sistema</small>
+              <small>PID por tempo dentro da faixa smart</small>
             </label>
             <label class="switch-row">
               <input id="smartModeInput" type="checkbox">
@@ -108,10 +108,28 @@
             </label>
             <input id="pointUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
           </article>
+
+          <article class="setting-card cold smart-setting is-hidden">
+            <div class="setting-icon">SD</div>
+            <label for="smartDownInput">
+              <span>smart_down</span>
+              <small>limite inferior desejado</small>
+            </label>
+            <input id="smartDownInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
+
+          <article class="setting-card hot smart-setting is-hidden">
+            <div class="setting-icon">SU</div>
+            <label for="smartUpInput">
+              <span>smart_up</span>
+              <small>limite superior desejado</small>
+            </label>
+            <input id="smartUpInput" type="number" min="-100" max="1000" step="0.1" inputmode="decimal">
+          </article>
         </section>
       </section>
     </main>
 
-    <script src="painel.js?v=20260722-tempo1"></script>
+    <script src="painel.js?v=20260722-pid1"></script>
   </body>
 </html>

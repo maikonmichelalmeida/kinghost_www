@@ -1,6 +1,7 @@
 const TOKEN_KEY = "shadowing_factory_token";
-const SMART_CONTROL_KEY = "shadowing_factory_time_control_v1";
+const SMART_CONTROL_KEY = "shadowing_factory_pid_control_v1";
 const LEGACY_SMART_CONTROL_KEYS = [
+  "shadowing_factory_time_control_v1",
   "shadowing_factory_smart_control_v8",
   "shadowing_factory_smart_control_v7",
   "shadowing_factory_smart_control_v6",
@@ -22,16 +23,16 @@ const DEAD_TREND = 0.003;
 const REVERSAL_MIN_SECONDS = 8;
 const REVERSAL_MIN_SAMPLES = 5;
 const SMOOTHING_GAIN = 0.25;
-const SMART_INITIAL_COAST_RATIO = 0.18;
 const SMART_MIN_GAP_RATIO = 0.12;
-const SMART_MIN_MARGIN = 0.25;
-const SMART_MAX_COAST_RATIO = 1.1;
-const SMART_ERROR_GAIN_FAST = 0.7;
-const SMART_ERROR_GAIN_SLOW = 0.05;
-const SMART_DELAY_GAIN = 0.28;
 const SMART_RATE_GAIN = 0.25;
 const FORCE_SETPOINT_OFFSET = 0.8;
 const MAX_REVERSAL_EVENTS = 80;
+const PID_WINDOW_SECONDS = 60;
+const PID_MIN_SWITCH_SECONDS = 8;
+const PID_FILTER_GAIN = 0.22;
+const PID_KP = 0.95;
+const PID_KI = 0.006;
+const PID_KD = 0.18;
 
 const elements = {
   loginView: document.getElementById("loginView"),
@@ -52,6 +53,8 @@ const elements = {
   smartModeInput: document.getElementById("smartModeInput"),
   smartModeText: document.getElementById("smartModeText"),
   smartStatus: document.getElementById("smartStatus"),
+  smartDownInput: document.getElementById("smartDownInput"),
+  smartUpInput: document.getElementById("smartUpInput"),
   temperatureChart: document.getElementById("temperatureChart")
 };
 
@@ -91,12 +94,31 @@ elements.refreshButton.addEventListener("click", () => loadState(true));
 elements.smartModeInput.addEventListener("change", () => {
   smartState.enabled = elements.smartModeInput.checked;
   if (smartState.enabled) {
-    syncTargetsFromManualSetpoints();
+    syncSmartTargetsFromInputs();
     resetSmartLearning();
   }
   saveSmartState();
   renderSmartControls(latestConfig);
   scheduleSettingsSave();
+});
+
+[
+  elements.smartDownInput,
+  elements.smartUpInput
+].forEach((input) => {
+  input.addEventListener("input", () => {
+    const oldDown = smartState.smartDown;
+    const oldUp = smartState.smartUp;
+    syncSmartTargetsFromInputs();
+    if (Math.abs((smartState.smartDown || 0) - (oldDown || 0)) > 0.01 ||
+        Math.abs((smartState.smartUp || 0) - (oldUp || 0)) > 0.01) {
+      resetSmartLearning();
+    }
+    saveSmartState();
+    renderSmartControls(latestConfig);
+    scheduleSettingsSave();
+  });
+  input.addEventListener("change", () => saveSettingsNow());
 });
 
 boot();
@@ -210,8 +232,12 @@ function renderTemperature(value, updatedAt, config) {
     ? `Ultima leitura: ${formatDate(updatedAt)}`
     : "Nenhuma leitura recebida ainda.";
 
-  const pointDown = Number(config.pointDown);
-  const pointUp = Number(config.pointUp);
+  const pointDown = smartState.enabled && Number.isFinite(smartState.smartDown)
+    ? Number(smartState.smartDown)
+    : Number(config.pointDown);
+  const pointUp = smartState.enabled && Number.isFinite(smartState.smartUp)
+    ? Number(smartState.smartUp)
+    : Number(config.pointUp);
   elements.rangeBadge.className = "range-badge";
 
   if (!hasTemperature || !Number.isFinite(pointDown) || !Number.isFinite(pointUp)) {
@@ -271,6 +297,7 @@ function readSettingsPayload() {
   }
 
   if (smartState.enabled) {
+    syncSmartTargetsFromInputs();
     ensureSmartDefaults({ tempoLeitura }, false);
     const smartConfig = computeSmartConfig(latestTemperature, { tempoLeitura });
     if (!smartConfig) return null;
@@ -299,35 +326,54 @@ function readSettingsPayload() {
 }
 
 function ensureSmartDefaults(config, forceInputs) {
-  const hasSmartTargets = Number.isFinite(smartState.targetDown) && Number.isFinite(smartState.targetUp);
+  const hasSmartTargets = Number.isFinite(smartState.smartDown) && Number.isFinite(smartState.smartUp);
   if (!hasSmartTargets && Number.isFinite(config.pointDown) && Number.isFinite(config.pointUp)) {
-    smartState.targetDown = config.pointDown;
-    smartState.targetUp = config.pointUp;
+    smartState.smartDown = config.pointDown;
+    smartState.smartUp = config.pointUp;
     resetSmartLearning();
     saveSmartState();
   }
 
-  if (Number.isFinite(smartState.targetDown) && Number.isFinite(smartState.targetUp)) {
-    if (!Number.isFinite(smartState.upperCoast) || !Number.isFinite(smartState.lowerCoast)) {
+  if (Number.isFinite(smartState.smartDown) && Number.isFinite(smartState.smartUp)) {
+    if (!Number.isFinite(smartState.pidIntegral) || !Number.isFinite(smartState.pidWindowStart)) {
       resetSmartLearning();
       saveSmartState();
     }
   }
+
+  setInputValue(elements.smartDownInput, smartState.smartDown, forceInputs);
+  setInputValue(elements.smartUpInput, smartState.smartUp, forceInputs);
 }
 
-function syncTargetsFromManualSetpoints() {
-  const targetDown = Number(elements.pointDownInput.value);
-  const targetUp = Number(elements.pointUpInput.value);
-  if (Number.isFinite(targetDown)) smartState.targetDown = targetDown;
-  if (Number.isFinite(targetUp)) smartState.targetUp = targetUp;
+function syncSmartTargetsFromInputs() {
+  const inputDown = Number(elements.smartDownInput.value);
+  const inputUp = Number(elements.smartUpInput.value);
+  if (Number.isFinite(inputDown)) smartState.smartDown = inputDown;
+  if (Number.isFinite(inputUp)) smartState.smartUp = inputUp;
+  const fallbackDown = Number(elements.pointDownInput.value);
+  const fallbackUp = Number(elements.pointUpInput.value);
+  if (!Number.isFinite(smartState.smartDown) && Number.isFinite(fallbackDown)) {
+    smartState.smartDown = fallbackDown;
+  }
+  if (!Number.isFinite(smartState.smartUp) && Number.isFinite(fallbackUp)) {
+    smartState.smartUp = fallbackUp;
+  }
 }
 
 function resetSmartLearning() {
   const limits = getSmartLimits();
   if (!limits) return;
-  const initialCoast = limits.span * SMART_INITIAL_COAST_RATIO;
-  smartState.upperCoast = initialCoast;
-  smartState.lowerCoast = initialCoast;
+  const now = Date.now();
+  smartState.pidIntegral = 0;
+  smartState.pidLastError = null;
+  smartState.pidLastTime = null;
+  smartState.pidOutput = 0;
+  smartState.dutyCycle = 0;
+  smartState.pidWindowStart = now;
+  smartState.lastRelaySwitchAt = now;
+  smartState.forcedRelayOn = null;
+  smartState.filteredTemperature = null;
+  smartState.modeReason = "iniciando PID";
   smartState.heatingRate = null;
   smartState.coolingRate = null;
   smartState.upperDelay = estimateInitialDelay();
@@ -337,6 +383,8 @@ function resetSmartLearning() {
   smartState.lastTimestamp = null;
   smartState.smoothTemperature = null;
   smartState.relayChangedAt = null;
+  smartState.lastTrendSign = null;
+  smartState.lastReversalAt = null;
   smartState.upperCycle = null;
   smartState.lowerCycle = null;
   smartState.lastUpperError = null;
@@ -348,31 +396,86 @@ function updateSmartControl(temperature, updatedAt, remoteConfig, data) {
   const timeMs = getSampleTime(updatedAt);
   updateTrendAndRates(temperature, timeMs);
 
-  if (!smartState.phase) {
-    smartState.phase = temperature <= getSmartCenter() ? "heating" : "cooling";
-    smartState.relayChangedAt = timeMs;
-  }
-
-  const configBefore = computeSmartConfig(temperature, remoteConfig);
-  if (!configBefore) return null;
-
-  updateCycleLearning(temperature, timeMs);
-
-  if (temperature >= smartState.targetUp) {
-    if (smartState.phase === "heating") startCoolingPhase(temperature, timeMs, true);
-    smartState.phase = "cooling";
-  } else if (temperature <= smartState.targetDown) {
-    if (smartState.phase === "cooling") startHeatingPhase(temperature, timeMs, true);
-    smartState.phase = "heating";
-  } else if (smartState.phase === "heating" && shouldSwitchToCooling(temperature, configBefore)) {
-    startCoolingPhase(temperature, timeMs);
-  } else if (smartState.phase === "cooling" && shouldSwitchToHeating(temperature, configBefore)) {
-    startHeatingPhase(temperature, timeMs);
-  }
+  updatePidRelayState(temperature, timeMs);
 
   const configAfter = computeSmartConfig(temperature, remoteConfig);
   saveSmartState();
   return configAfter;
+}
+
+function updatePidRelayState(temperature, timeMs) {
+  const limits = getSmartLimits();
+  if (!limits) return;
+
+  const filtered = Number.isFinite(smartState.filteredTemperature)
+    ? smartState.filteredTemperature * (1 - PID_FILTER_GAIN) + temperature * PID_FILTER_GAIN
+    : temperature;
+  smartState.filteredTemperature = filtered;
+
+  if (!Number.isFinite(smartState.pidWindowStart)) smartState.pidWindowStart = timeMs;
+  if (!Number.isFinite(smartState.lastRelaySwitchAt)) smartState.lastRelaySwitchAt = timeMs;
+
+  if (temperature >= smartState.smartUp) {
+    setPidRelay(false, timeMs, "trava alta");
+    smartState.pidIntegral = Math.min(smartState.pidIntegral || 0, 0);
+    smartState.pidOutput = 0;
+    smartState.dutyCycle = 0;
+    smartState.pidWindowStart = timeMs;
+    return;
+  }
+  if (temperature <= smartState.smartDown) {
+    setPidRelay(true, timeMs, "trava baixa");
+    smartState.pidIntegral = Math.max(smartState.pidIntegral || 0, 0);
+    smartState.pidOutput = 1;
+    smartState.dutyCycle = 1;
+    smartState.pidWindowStart = timeMs;
+    return;
+  }
+
+  const target = getSmartCenter();
+  const error = target - filtered;
+  const dt = Number.isFinite(smartState.pidLastTime)
+    ? Math.max((timeMs - smartState.pidLastTime) / 1000, 0.25)
+    : getReadingInterval();
+  const derivative = Number.isFinite(smartState.pidLastError)
+    ? (error - smartState.pidLastError) / dt
+    : 0;
+  const maxIntegral = limits.span * PID_WINDOW_SECONDS * 2;
+  smartState.pidIntegral = clamp((smartState.pidIntegral || 0) + error * dt, -maxIntegral, maxIntegral);
+  smartState.pidLastError = error;
+  smartState.pidLastTime = timeMs;
+
+  const normalized = (
+    PID_KP * error +
+    PID_KI * smartState.pidIntegral +
+    PID_KD * derivative * PID_WINDOW_SECONDS
+  ) / Math.max(limits.span, 0.1);
+  const output = clamp(0.5 + normalized, 0, 1);
+  smartState.pidOutput = output;
+  smartState.dutyCycle = output;
+
+  let elapsed = (timeMs - smartState.pidWindowStart) / 1000;
+  if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed >= PID_WINDOW_SECONDS) {
+    smartState.pidWindowStart = timeMs;
+    elapsed = 0;
+  }
+
+  const desiredRelayOn = elapsed < output * PID_WINDOW_SECONDS;
+  const canSwitch = (timeMs - smartState.lastRelaySwitchAt) / 1000 >= PID_MIN_SWITCH_SECONDS;
+  if (smartState.forcedRelayOn === null || desiredRelayOn === smartState.forcedRelayOn || canSwitch) {
+    setPidRelay(desiredRelayOn, timeMs, "PID por janela");
+  }
+}
+
+function setPidRelay(relayOn, timeMs, reason) {
+  const next = Boolean(relayOn);
+  if (smartState.forcedRelayOn !== next) {
+    smartState.lastRelaySwitchAt = timeMs;
+  }
+  smartState.forcedRelayOn = next;
+  smartState.phase = next ? "heating" : "cooling";
+  smartState.modeReason = reason;
+  smartState.relayChangedAt = timeMs;
 }
 
 function updateTrendAndRates(temperature, timeMs) {
@@ -383,6 +486,7 @@ function updateTrendAndRates(temperature, timeMs) {
     const instantTrend = (currentSmooth - smartState.lastTemperature) / dt;
     smartState.trend = smoothValue(smartState.trend, instantTrend, 0.28);
     const phaseSlope = computePhaseSlope(smartState.phase);
+    detectTrendReversal(temperature, timeMs);
     if (smartState.phase === "heating" && phaseSlope > DEAD_TREND) {
       smartState.heatingRate = smoothValue(smartState.heatingRate, phaseSlope, SMART_RATE_GAIN);
     }
@@ -403,15 +507,14 @@ function computeSmartConfig(temperature, fallbackConfig = {}) {
 
   const phase = smartState.phase || (Number.isFinite(temperature) && temperature <= getSmartCenter() ? "heating" : "cooling");
   const minGap = limits.minGap;
-  const current = Number.isFinite(temperature) ? temperature : getSmartCenter();
   let pointDown;
   let pointUp;
 
-  if (phase === "heating") {
-    pointDown = current + FORCE_SETPOINT_OFFSET;
+  if (smartState.forcedRelayOn !== false && phase === "heating") {
+    pointDown = smartState.smartUp + FORCE_SETPOINT_OFFSET;
     pointUp = pointDown + minGap;
   } else {
-    pointUp = current - FORCE_SETPOINT_OFFSET;
+    pointUp = smartState.smartDown - FORCE_SETPOINT_OFFSET;
     pointDown = pointUp - minGap;
   }
 
@@ -422,126 +525,19 @@ function computeSmartConfig(temperature, fallbackConfig = {}) {
   };
 }
 
-function computePredictiveMargin(phase) {
-  const limits = getSmartLimits();
-  if (!limits) return SMART_MIN_MARGIN;
-  const maxCoast = limits.span * SMART_MAX_COAST_RATIO;
-
-  if (phase === "heating") {
-    const rate = getModelRate("heating");
-    const timeMargin = rate * (smartState.upperDelay || estimateInitialDelay());
-    return clamp((smartState.upperCoast || 0) + timeMargin, SMART_MIN_MARGIN, maxCoast);
-  }
-
-  const rate = getModelRate("cooling");
-  const timeMargin = rate * (smartState.lowerDelay || estimateInitialDelay());
-  return clamp((smartState.lowerCoast || 0) + timeMargin, SMART_MIN_MARGIN, maxCoast);
-}
-
-function getModelRate(phase) {
-  const slope = computePhaseSlope(phase);
-  if (phase === "heating") {
-    return clamp(Math.max(smartState.heatingRate || 0, slope, 0.01), 0.002, 5);
-  }
-  return clamp(Math.max(smartState.coolingRate || 0, -slope, 0.008), 0.002, 5);
-}
-
-function shouldSwitchToCooling(temperature, config) {
-  const rate = getModelRate("heating");
-  const delay = smartState.upperDelay || estimateInitialDelay();
-  const predicted = temperature + rate * delay;
-  return temperature >= config.pointUp || predicted >= smartState.targetUp;
-}
-
-function shouldSwitchToHeating(temperature, config) {
-  const rate = getModelRate("cooling");
-  const delay = smartState.lowerDelay || estimateInitialDelay();
-  const predicted = temperature - rate * delay;
-  return temperature <= config.pointDown || predicted <= smartState.targetDown;
-}
-
-function startCoolingPhase(temperature, timeMs, hardLimit = false) {
-  smartState.phase = "cooling";
-  smartState.relayChangedAt = timeMs;
-  smartState.upperCycle = {
-    switchTemp: temperature,
-    switchTime: timeMs,
-    peak: temperature,
-    peakTime: timeMs,
-    hardLimit
-  };
-  smartState.lowerCycle = null;
-}
-
-function startHeatingPhase(temperature, timeMs, hardLimit = false) {
-  smartState.phase = "heating";
-  smartState.relayChangedAt = timeMs;
-  smartState.lowerCycle = {
-    switchTemp: temperature,
-    switchTime: timeMs,
-    valley: temperature,
-    valleyTime: timeMs,
-    hardLimit
-  };
-  smartState.upperCycle = null;
-}
-
-function updateCycleLearning(temperature, timeMs) {
+function detectTrendReversal(temperature, timeMs) {
   const trend = computeRecentSlope(REVERSAL_WINDOW_MS);
+  if (trend.sampleCount < REVERSAL_MIN_SAMPLES || Math.abs(trend.slope) < DEAD_TREND) return;
 
-  if (smartState.phase === "cooling" && smartState.upperCycle) {
-    if (temperature >= smartState.upperCycle.peak) {
-      smartState.upperCycle.peak = temperature;
-      smartState.upperCycle.peakTime = timeMs;
-    }
-    const elapsed = (timeMs - smartState.upperCycle.switchTime) / 1000;
-    const peaked = trend.sampleCount >= REVERSAL_MIN_SAMPLES &&
-      elapsed >= REVERSAL_MIN_SECONDS &&
-      trend.slope < -DEAD_TREND;
-    const timedOut = elapsed > Math.max((smartState.upperDelay || 0) * 3, 45);
-    if ((peaked || timedOut) && temperature < smartState.upperCycle.peak - 0.05) {
-      finishUpperCycle(timeMs);
-    }
+  const nextSign = trend.slope > 0 ? 1 : -1;
+  const lastSign = smartState.lastTrendSign;
+  const canMark = !Number.isFinite(smartState.lastReversalAt) ||
+    (timeMs - smartState.lastReversalAt) / 1000 >= REVERSAL_MIN_SECONDS;
+  if (lastSign !== null && lastSign !== nextSign && canMark) {
+    addReversalEvent(timeMs, temperature, nextSign > 0 ? "lower" : "upper");
+    smartState.lastReversalAt = timeMs;
   }
-
-  if (smartState.phase === "heating" && smartState.lowerCycle) {
-    if (temperature <= smartState.lowerCycle.valley) {
-      smartState.lowerCycle.valley = temperature;
-      smartState.lowerCycle.valleyTime = timeMs;
-    }
-    const elapsed = (timeMs - smartState.lowerCycle.switchTime) / 1000;
-    const bottomed = trend.sampleCount >= REVERSAL_MIN_SAMPLES &&
-      elapsed >= REVERSAL_MIN_SECONDS &&
-      trend.slope > DEAD_TREND;
-    const timedOut = elapsed > Math.max((smartState.lowerDelay || 0) * 3, 45);
-    if ((bottomed || timedOut) && temperature > smartState.lowerCycle.valley + 0.05) {
-      finishLowerCycle(timeMs);
-    }
-  }
-}
-
-function finishUpperCycle(timeMs) {
-  const cycle = smartState.upperCycle;
-  if (!cycle) return;
-  const observedCoast = Math.max(cycle.peak - cycle.switchTemp, 0);
-  const error = cycle.peak - smartState.targetUp;
-  smartState.lastUpperError = error;
-  smartState.upperDelay = smoothValue(smartState.upperDelay, (timeMs - cycle.switchTime) / 1000, SMART_DELAY_GAIN);
-  smartState.upperCoast = adjustCoast(smartState.upperCoast, observedCoast, error, cycle.hardLimit);
-  addReversalEvent(cycle.peakTime || timeMs, cycle.peak, "upper");
-  smartState.upperCycle = null;
-}
-
-function finishLowerCycle(timeMs) {
-  const cycle = smartState.lowerCycle;
-  if (!cycle) return;
-  const observedCoast = Math.max(cycle.switchTemp - cycle.valley, 0);
-  const error = smartState.targetDown - cycle.valley;
-  smartState.lastLowerError = error;
-  smartState.lowerDelay = smoothValue(smartState.lowerDelay, (timeMs - cycle.switchTime) / 1000, SMART_DELAY_GAIN);
-  smartState.lowerCoast = adjustCoast(smartState.lowerCoast, observedCoast, error, cycle.hardLimit);
-  addReversalEvent(cycle.valleyTime || timeMs, cycle.valley, "lower");
-  smartState.lowerCycle = null;
+  smartState.lastTrendSign = nextSign;
 }
 
 function addReversalEvent(time, temperature, type) {
@@ -552,25 +548,13 @@ function addReversalEvent(time, temperature, type) {
   }
 }
 
-function adjustCoast(current, observedCoast, error, hardLimit = false) {
-  const limits = getSmartLimits();
-  const currentCoast = Number.isFinite(current) ? current : limits.span * SMART_INITIAL_COAST_RATIO;
-  const gain = hardLimit ? SMART_ERROR_GAIN_FAST * 1.5 : SMART_ERROR_GAIN_FAST;
-  const aggressiveTarget = observedCoast + Math.max(error, 0) * gain;
-  const relaxedTarget = Math.max(observedCoast + Math.max(error, 0) * 0.25, SMART_MIN_MARGIN);
-  const next = error > 0
-    ? Math.max(currentCoast + error * gain, aggressiveTarget)
-    : currentCoast * (1 - SMART_ERROR_GAIN_SLOW) + relaxedTarget * SMART_ERROR_GAIN_SLOW;
-  return clamp(next, SMART_MIN_MARGIN, limits.span * SMART_MAX_COAST_RATIO);
-}
-
 function getSmartLimits() {
-  if (!Number.isFinite(smartState.targetDown) ||
-      !Number.isFinite(smartState.targetUp) ||
-      smartState.targetDown >= smartState.targetUp) {
+  if (!Number.isFinite(smartState.smartDown) ||
+      !Number.isFinite(smartState.smartUp) ||
+      smartState.smartDown >= smartState.smartUp) {
     return null;
   }
-  const span = smartState.targetUp - smartState.targetDown;
+  const span = smartState.smartUp - smartState.smartDown;
   return {
     span,
     minGap: Math.max(0.4, span * SMART_MIN_GAP_RATIO)
@@ -580,14 +564,14 @@ function getSmartLimits() {
 function getSmartBounds(limits = getSmartLimits()) {
   const span = limits ? limits.span : 1;
   return {
-    low: smartState.targetDown - span,
-    high: smartState.targetUp + span
+    low: smartState.smartDown - span,
+    high: smartState.smartUp + span
   };
 }
 
 function getSmartCenter() {
-  if (!Number.isFinite(smartState.targetDown) || !Number.isFinite(smartState.targetUp)) return 0;
-  return (smartState.targetDown + smartState.targetUp) / 2;
+  if (!Number.isFinite(smartState.smartDown) || !Number.isFinite(smartState.smartUp)) return 0;
+  return (smartState.smartDown + smartState.smartUp) / 2;
 }
 
 function estimateInitialDelay(config = {}) {
@@ -627,39 +611,15 @@ function renderSmartControls(config = {}) {
   const phase = smartState.phase || "heating";
   const pointDown = Number.isFinite(config.pointDown) ? `${Number(config.pointDown).toFixed(1)} C` : "--";
   const pointUp = Number.isFinite(config.pointUp) ? `${Number(config.pointUp).toFixed(1)} C` : "--";
-  const target = phase === "heating" ? "alvo A" : "alvo B";
-  const coast = phase === "heating" ? smartState.upperCoast : smartState.lowerCoast;
-  const rate = phase === "heating" ? getModelRate("heating") : getModelRate("cooling");
-  const error = phase === "heating" ? smartState.lastUpperError : smartState.lastLowerError;
-  const etaA = estimateTimeToTarget("heating", latestTemperature);
-  const etaB = estimateTimeToTarget("cooling", latestTemperature);
+  const target = getSmartCenter();
+  const filtered = Number.isFinite(smartState.filteredTemperature) ? smartState.filteredTemperature : latestTemperature;
+  const error = Number.isFinite(filtered) ? target - filtered : null;
+  const duty = Number.isFinite(smartState.dutyCycle) ? smartState.dutyCycle * 100 : null;
   elements.smartStatus.textContent =
-    `fase ${phase === "heating" ? "aquecendo" : "resfriando"} ate ${target}. ` +
+    `PID ${phase === "heating" ? "ligado" : "desligado"} (${smartState.modeReason || "janela"}). ` +
     `point_down ${pointDown}, point_up ${pointUp}. ` +
-    `margem ${formatNumber(coast)} C, delay A ${formatSeconds(smartState.lowerDelay)}, delay B ${formatSeconds(smartState.upperDelay)}, ` +
-    `reta ${formatNumber(rate)} C/s, ETA A ${formatSeconds(etaA)}, ETA B ${formatSeconds(etaB)}, erro ciclo ${formatNumber(error)} C.`;
-}
-
-function estimateTimeToTarget(phase, temperature) {
-  if (!Number.isFinite(temperature)) return null;
-  if (phase === "heating") {
-    const rate = getModelRate("heating");
-    const remainingDelay = smartState.phase === "heating"
-      ? Math.max((smartState.lowerDelay || 0) - secondsSinceRelayChange(), 0)
-      : smartState.lowerDelay || 0;
-    return remainingDelay + Math.max((smartState.targetUp - temperature) / Math.max(rate, 0.001), 0);
-  }
-
-  const rate = getModelRate("cooling");
-  const remainingDelay = smartState.phase === "cooling"
-    ? Math.max((smartState.upperDelay || 0) - secondsSinceRelayChange(), 0)
-    : smartState.upperDelay || 0;
-  return remainingDelay + Math.max((temperature - smartState.targetDown) / Math.max(rate, 0.001), 0);
-}
-
-function secondsSinceRelayChange() {
-  if (!Number.isFinite(smartState.relayChangedAt)) return 0;
-  return Math.max((getSampleTime(latestTemperatureUpdatedAt) - smartState.relayChangedAt) / 1000, 0);
+    `smart ${formatNumber(smartState.smartDown)}-${formatNumber(smartState.smartUp)} C, ` +
+    `duty ${formatNumber(duty)}%, erro ${formatNumber(error)} C, integral ${formatNumber(smartState.pidIntegral)}.`;
 }
 
 function pushTemperatureSample(temperature, updatedAt, relayOn) {
@@ -804,8 +764,8 @@ function renderTemperatureChart(config = {}) {
   [
     config.pointDown,
     config.pointUp,
-    smartState.enabled ? smartState.targetDown : null,
-    smartState.enabled ? smartState.targetUp : null
+    smartState.enabled ? smartState.smartDown : null,
+    smartState.enabled ? smartState.smartUp : null
   ].forEach((value) => {
     if (Number.isFinite(value)) values.push(value);
   });
@@ -827,8 +787,8 @@ function renderTemperatureChart(config = {}) {
   const lines = [];
 
   if (smartState.enabled) {
-    lines.push(limitLine(yScale, smartState.targetDown, "smart-limit", "alvo B"));
-    lines.push(limitLine(yScale, smartState.targetUp, "smart-limit", "alvo A"));
+    lines.push(limitLine(yScale, smartState.smartDown, "smart-limit", "smart down"));
+    lines.push(limitLine(yScale, smartState.smartUp, "smart-limit", "smart up"));
   }
   lines.push(limitLine(yScale, config.pointDown, "control-limit", "point down"));
   lines.push(limitLine(yScale, config.pointUp, "control-limit", "point up"));
@@ -1083,9 +1043,19 @@ function average(values) {
 function loadSmartState() {
   const emptyState = {
     enabled: false,
-    targetDown: null,
-    targetUp: null,
+    smartDown: null,
+    smartUp: null,
     phase: null,
+    pidIntegral: null,
+    pidLastError: null,
+    pidLastTime: null,
+    pidOutput: null,
+    dutyCycle: null,
+    pidWindowStart: null,
+    lastRelaySwitchAt: null,
+    forcedRelayOn: null,
+    filteredTemperature: null,
+    modeReason: null,
     upperCoast: null,
     lowerCoast: null,
     upperDelay: null,
@@ -1111,9 +1081,19 @@ function loadSmartState() {
     const isLegacy = !stored && Boolean(legacyStored);
     return {
       enabled: Boolean(parsed.enabled),
-      targetDown: parseFiniteNumber(parsed.targetDown ?? parsed.smartDown),
-      targetUp: parseFiniteNumber(parsed.targetUp ?? parsed.smartUp),
+      smartDown: parseFiniteNumber(parsed.smartDown ?? parsed.targetDown),
+      smartUp: parseFiniteNumber(parsed.smartUp ?? parsed.targetUp),
       phase: normalizePhase(parsed.phase),
+      pidIntegral: isLegacy ? null : parseStoredNumber(parsed.pidIntegral),
+      pidLastError: isLegacy ? null : parseStoredNumber(parsed.pidLastError),
+      pidLastTime: isLegacy ? null : parseStoredNumber(parsed.pidLastTime),
+      pidOutput: isLegacy ? null : parseStoredNumber(parsed.pidOutput),
+      dutyCycle: isLegacy ? null : parseStoredNumber(parsed.dutyCycle),
+      pidWindowStart: isLegacy ? null : parseStoredNumber(parsed.pidWindowStart),
+      lastRelaySwitchAt: isLegacy ? null : parseStoredNumber(parsed.lastRelaySwitchAt),
+      forcedRelayOn: isLegacy ? null : normalizeRelayValue(parsed.forcedRelayOn),
+      filteredTemperature: isLegacy ? null : parseStoredNumber(parsed.filteredTemperature),
+      modeReason: isLegacy || typeof parsed.modeReason !== "string" ? null : parsed.modeReason,
       upperCoast: isLegacy ? null : parseStoredNumber(parsed.upperCoast),
       lowerCoast: isLegacy ? null : parseStoredNumber(parsed.lowerCoast),
       upperDelay: isLegacy ? null : parseStoredNumber(parsed.upperDelay),
@@ -1137,9 +1117,19 @@ function loadSmartState() {
 function saveSmartState() {
   localStorage.setItem(SMART_CONTROL_KEY, JSON.stringify({
     enabled: smartState.enabled,
-    targetDown: smartState.targetDown,
-    targetUp: smartState.targetUp,
+    smartDown: smartState.smartDown,
+    smartUp: smartState.smartUp,
     phase: smartState.phase,
+    pidIntegral: smartState.pidIntegral,
+    pidLastError: smartState.pidLastError,
+    pidLastTime: smartState.pidLastTime,
+    pidOutput: smartState.pidOutput,
+    dutyCycle: smartState.dutyCycle,
+    pidWindowStart: smartState.pidWindowStart,
+    lastRelaySwitchAt: smartState.lastRelaySwitchAt,
+    forcedRelayOn: smartState.forcedRelayOn,
+    filteredTemperature: smartState.filteredTemperature,
+    modeReason: smartState.modeReason,
     upperCoast: smartState.upperCoast,
     lowerCoast: smartState.lowerCoast,
     upperDelay: smartState.upperDelay,
