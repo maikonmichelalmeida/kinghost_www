@@ -404,18 +404,33 @@ p {
 .temperature-path.relay-on,
 .temperature-dot.relay-on {
   stroke: var(--relay-on);
-  fill: var(--relay-on);
 }
 
 .temperature-path.relay-off,
 .temperature-dot.relay-off {
   stroke: var(--relay-off);
-  fill: var(--relay-off);
 }
 
 .temperature-path.relay-unknown,
 .temperature-dot.relay-unknown {
   stroke: var(--gold);
+}
+
+.temperature-path.relay-on,
+.temperature-path.relay-off,
+.temperature-path.relay-unknown {
+  fill: none;
+}
+
+.temperature-dot.relay-on {
+  fill: var(--relay-on);
+}
+
+.temperature-dot.relay-off {
+  fill: var(--relay-off);
+}
+
+.temperature-dot.relay-unknown {
   fill: var(--gold);
 }
 
