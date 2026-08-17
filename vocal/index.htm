@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Treino Vocal Offline</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="control-bar" aria-label="Controles do treino">
+  <select id="daySelect" aria-label="Selecionar treino do dia" title="Treino do dia"></select>
+  <select id="exerciseSelect" aria-label="Selecionar exercício diretamente" title="Exercício direto"></select>
+  <button id="prevBtn" type="button" title="Exercício anterior do treino">← Previous</button>
+  <button id="nextBtn" type="button" title="Próximo exercício do treino">Next →</button>
+  <audio id="exerciseAudio" controls preload="metadata" aria-label="Áudio de referência do exercício"></audio>
+</header>
+
+<main class="exercise-shell">
+  <section class="music-data" aria-label="Notas do exercício">
+    <div>
+      <span>Notas</span>
+      <strong id="notesText"></strong>
+    </div>
+    <div>
+      <span>Variação</span>
+      <code id="variationText"></code>
+    </div>
+  </section>
+
+  <section class="tab-stage" id="tabStage" aria-label="Tablatura do exercício">
+    <button id="fullscreenBtn" class="fullscreen-btn" type="button">Tela cheia</button>
+    <img id="tabImage" alt="Tablatura do exercício">
+  </section>
+
+  <section class="lesson-frame-wrap">
+    <iframe id="lessonFrame" title="Descrição e foco de estudo do exercício"></iframe>
+  </section>
+</main>
+
+<script src="style.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+TREINO VOCAL OFFLINE
+
+Copie estes arquivos para:
+C:\Users\maiko\OneDrive\Desktop\site\www\vocal\
+
+Estrutura esperada:
+index.htm
+style.css
+style.js
+htm\
+tablaturas\
+sample_vocal\
+
+A página funciona offline abrindo index.htm diretamente no navegador.
+
+Interface:
+- topo: seleção A–H, exercício direto, Previous, Next e áudio;
+- abaixo: Notas e Variação;
+- tablatura ocupa a área principal;
+- descrição didática individual fica abaixo da tablatura;
+- setas esquerda/direita do teclado navegam pelo treino selecionado.
