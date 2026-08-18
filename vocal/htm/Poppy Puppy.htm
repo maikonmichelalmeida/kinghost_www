@@ -3,26 +3,883 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Poppy Puppy — foco de estudo</title>
+<title>Poppy Puppy — ID 17</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(9,minmax(58px,1fr));gap:.34rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .24rem;text-align:center}
+.note b{display:block;font-size:.98rem}.note span{font-size:.74rem;color:var(--muted)}
+.phon{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(5,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 17 · Articulação</p>
-  <h2>Explosivas P sem excesso de pressão.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Pratique ‘Poppy Puppy’ falado em fluxo leve.</li><li>Cante a escala sem deixar o P virar sopro forte.</li><li>Mantenha a vogal afinada após cada P.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>P curto e limpo.</li><li>Abdômen não dá um golpe grande a cada sílaba.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Cuspar ar nas consoantes.</li><li>Perder legato por excesso de ataque.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Aumente a velocidade gradualmente mantendo o P pequeno.</p>
+
+<p class="eyebrow">ID 17 · Poppy Puppy</p>
+<h2>Precisão labial e contraste de vogais: o mesmo “P” sem transformar cada ataque em explosão</h2>
+
+<p class="lead">
+<strong>Poppy Puppy</strong> é um exercício de articulação muito eficiente porque as duas palavras compartilham
+um esqueleto consonantal semelhante, mas pedem <strong>vogais diferentes</strong>.
+Isso permite comparar a precisão do /p/ em contextos distintos sem mudar toda a palavra.
+Ao mesmo tempo, a escala sobe e desce cinco graus, obrigando você a manter a articulação clara
+sem fazer os lábios, a mandíbula ou o fluxo de ar aumentarem junto com o pitch.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+o /p/ deve produzir <strong>fechamento completo + liberação limpa + entrada rápida da vogal</strong>.
+“Poppy” e “Puppy” devem continuar diferentes por causa da vogal,
+não porque uma palavra é cantada com mais pressão ou com uma boca muito maior.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A escala é <strong>1–2–3–4–5–4–3–2–1</strong>.
+Os deslocamentos são
+<strong>+2, +2, +1, +2, −2, −1, −2, −2 semitons</strong>.
+O único semitom é <strong>C#3↔D3</strong>.
+</p>
+
+<p>
+Siga exatamente a distribuição das palavras/sílabas apresentada no áudio.
+O texto e a melodia formam uma única tarefa motora; não vale a pena inventar outra divisão.
+</p>
+</section>
+
+<section>
+<h3>2. O /p/ é uma oclusiva bilabial surda</h3>
+
+<p>
+Para produzir /p/, os dois lábios fecham o trato oral por um instante,
+a pressão se acumula atrás do fechamento e então ocorre uma liberação.
+Depois vem o início da vogal.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>1 · Fechar</strong>lábios realmente se encontram.</div>
+<div class="box"><strong>2 · Liberar</strong>o fechamento termina de forma rápida.</div>
+<div class="box"><strong>3 · Vozeiar</strong>a vogal assume imediatamente o pitch.</div>
+</div>
+
+<div class="key">
+Se faltar fechamento, /p/ perde identidade.<br>
+Se sobrar pressão, ele vira uma pequena explosão que atrapalha o canto.
+</div>
+</section>
+
+<section>
+<h3>3. O fechamento do /p/ é coordenado por lábios + mandíbula</h3>
+
+<p>
+Estudos cinemáticos de oclusivas bilabiais mostram que lábio superior, lábio inferior e mandíbula
+não atuam como três peças independentes.
+Eles formam uma <strong>estrutura coordenada</strong> capaz de atingir o fechamento mesmo quando há variação
+na posição inicial dos articuladores.
+</p>
+
+<p>
+Estudos de perturbação da mandíbula mostram ainda que o sistema consegue reorganizar rapidamente
+os movimentos dos lábios para preservar a oclusão.
+</p>
+
+<div class="key">
+Na prática:
+<strong>não tente controlar conscientemente cada músculo.</strong>
+Dê ao sistema uma meta simples: fechamento completo, leve e pontual.
+</div>
+</section>
+
+<section>
+<h3>4. Evidência recente: timing entre articuladores é crucial</h3>
+
+<p>
+Um estudo de 2025 com articulografia eletromagnética examinou /p/, /b/, /t/ e /d/
+em diferentes velocidades e acentos.
+Nos fechamentos bilabiais, as relações temporais entre mandíbula, lábio superior e lábio inferior
+permaneceram fortemente coordenadas.
+</p>
+
+<p>
+Isso reforça uma ideia pedagógica importante:
+<strong>clareza não depende de força máxima; depende muito de timing interarticulatório.</strong>
+</p>
+</section>
+
+<section>
+<h3>5. “Articule completamente” = complete o fechamento, não aperte os lábios</h3>
+
+<p>
+A instrução da ficha é especialmente adequada ao /p/:
+se os lábios não fecharem, a consoante realmente perde sua característica.
+Mas o fechamento não precisa ser muscularmente agressivo.
+</p>
+
+<p>
+Faça um teste:
+diga <strong>“poppy”</strong> com os lábios exageradamente apertados.
+Depois diga normalmente.
+Você perceberá que o segundo continua tendo /p/ claro com muito menos esforço.
+</p>
+
+<div class="key">
+<strong>Contato completo ≠ pressão máxima.</strong>
+</div>
+</section>
+
+<section>
+<h3>6. O burst: pequeno evento acústico, grande valor informativo</h3>
+
+<p>
+Quando o /p/ é liberado, existe um curto transiente acústico — o <strong>burst</strong>.
+Ele ajuda o ouvinte a reconhecer a consoante.
+</p>
+
+<p>
+Em canto, as vogais podem ganhar muito mais intensidade do que esses bursts.
+Um estudo com cantores clássicos mostrou que reforçar os bursts de plosivas aumentou seu reconhecimento,
+sobretudo com reverberação e ruído simulando acompanhamento.
+</p>
+
+<div class="key">
+A lição não é “exploda o P”.<br>
+É: <strong>não deixe o P desaparecer sob a vogal.</strong>
+</div>
+</section>
+
+<section>
+<h3>7. O /p/ inglês também envolve timing entre liberação e início da voz</h3>
+
+<p>
+A distância temporal entre a liberação da consoante e o início do vozeamento é chamada
+<strong>Voice Onset Time — VOT</strong>.
+Ela é uma pista importante para distinguir oclusivas em várias línguas.
+</p>
+
+<p>
+Um estudo específico de canto comparou /p/ e /b/ em fala e canto
+em homens treinados e não treinados.
+O VOT do /p/ mudou entre fala e canto, e o treinamento vocal também interagiu com essa medida.
+</p>
+
+<div class="key">
+Isso mostra que você não precisa copiar mecanicamente a quantidade de aspiração da fala.
+<strong>Canto reorganiza o timing.</strong>
+Siga o áudio e procure um /p/ claro que entregue rapidamente a vogal.
+</div>
+</section>
+
+<section>
+<h3>8. Aspiração: audível o suficiente, não uma rajada de ar</h3>
+
+<p>
+Dependendo da pronúncia do áudio, o /p/ inicial pode apresentar uma pequena aspiração antes da vogal.
+Não transforme isso em <strong>“PHHHoppy”</strong>.
+</p>
+
+<p>
+O excesso de ar cria três problemas:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Pitch</strong>a nota demora para ganhar centro.</div>
+<div class="box"><strong>Respiração</strong>você gasta ar desnecessariamente.</div>
+<div class="box"><strong>Ritmo</strong>a vogal chega atrasada.</div>
+</div>
+</section>
+
+<section>
+<h3>9. O primeiro teste: P curto versus P explosivo</h3>
+
+<p>
+Em A2, diga/cante <strong>Poppy</strong> três vezes:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Fraco demais</strong>fechamento pouco perceptível.</div>
+<div class="box"><strong>Coordenado</strong>fechamento claro + liberação rápida.</div>
+<div class="box"><strong>Explosivo</strong>pressão exagerada.</div>
+</div>
+
+<p>
+Use os extremos apenas uma vez para reconhecê-los.
+Depois permaneça na versão coordenada.
+</p>
+</section>
+
+<section>
+<h3>10. Poppy versus Puppy: o contraste principal está na vogal</h3>
+
+<p>
+A pronúncia exata depende do sotaque usado no áudio,
+então copie o modelo em vez de impor uma transcrição.
+Mas pedagogicamente as duas palavras são excelentes porque
+<strong>o início consonantal é semelhante e a primeira vogal muda</strong>.
+</p>
+
+<div class="key">
+Seu ouvido deve perceber:
+<strong>mesmo P → vogal diferente → palavra diferente.</strong>
+</div>
+
+<p>
+Isso permite avaliar se você realmente está articulando a vogal
+ou apenas alterando intensidade e expressão.
+</p>
+</section>
+
+<section>
+<h3>11. Use o áudio como autoridade para a vogal</h3>
+
+<p>
+Em variedades diferentes de inglês, “Poppy” pode ter uma primeira vogal diferente.
+“Puppy” também possui seu próprio alvo.
+Não tente transformar este exercício numa aula de um sotaque que o áudio não usa.
+</p>
+
+<p>
+Faça primeiro imitação auditiva:
+<strong>Poppy — Puppy — Poppy — Puppy</strong>,
+sem cantar.
+</p>
+</section>
+
+<section>
+<h3>12. A segunda parte das palavras deve permanecer leve</h3>
+
+<p>
+Tanto Poppy quanto Puppy terminam numa sílaba átona semelhante a “pee/py” em muitas pronúncias.
+Ela não deve receber o mesmo peso da primeira sílaba.
+</p>
+
+<p>
+Se a palavra vira:
+<strong>POP-PEE</strong> com duas sílabas igualmente grandes,
+o ritmo da língua fica artificial.
+</p>
+
+<div class="key">
+Ataque claro na sílaba forte;
+<strong>segunda sílaba pequena e rápida</strong>, conforme o áudio.
+</div>
+</section>
+
+<section>
+<h3>13. O /p/ do meio não precisa ser igual ao /p/ inicial</h3>
+
+<p>
+Contexto fonético e posição silábica podem mudar timing e aspiração.
+Além disso, estudos mostram que a tarefa de canto por si só altera o VOT de /p/.
+</p>
+
+<p>
+Portanto, não force todos os Ps da palavra a terem a mesma quantidade de ar.
+</p>
+
+<div class="key">
+O alvo é <strong>identidade consonantal estável</strong>,
+não uniformidade microscópica do gesto.
+</div>
+</section>
+
+<section>
+<h3>14. Protocolo-base: fala → contraste → escala</h3>
+
+<ol class="protocol">
+<li>Ouça Poppy Puppy no áudio.</li>
+<li>Fale as duas palavras lentamente.</li>
+<li>Alterne Poppy↔Puppy na mesma altura de fala.</li>
+<li>Toque a escala no violão sem voz.</li>
+<li>Cante o exercício com violão em todas as notas.</li>
+<li>Observe se o /p/ cresce à medida que o pitch sobe.</li>
+<li>Observe se as duas vogais continuam diferentes.</li>
+</ol>
+</section>
+
+<section>
+<h3>15. Progressão 1 — somente Poppy numa nota</h3>
+
+<p>
+Em A2:
+<strong>Poppy · Poppy · Poppy · Poppy</strong>.
+</p>
+
+<p>
+Procure:
+fechamento completo, burst pequeno,
+vogal imediata e segunda sílaba leve.
+</p>
+
+<p>
+Depois faça em C#3 e E3.
+Se o P muda muito com o pitch, reduza volume.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 2 — somente Puppy numa nota</h3>
+
+<p>
+Repita o mesmo processo com Puppy.
+</p>
+
+<p>
+Agora observe principalmente se você preserva a vogal do áudio
+sem tornar a mandíbula maior apenas para diferenciá-la de Poppy.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 3 — minimal-pair pedagógico</h3>
+
+<p>
+Mesmo que linguisticamente a classificação dependa do sotaque,
+use pedagogicamente como um contraste quase mínimo:
+</p>
+
+<div class="key">
+<strong>Poppy → Puppy → Poppy → Puppy</strong>
+</div>
+
+<p>
+Tente manter constante:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>/p/</strong>clareza.</div>
+<div class="box"><strong>Pitch</strong>mesma nota.</div>
+<div class="box"><strong>Volume</strong>sem diferença grande.</div>
+<div class="box"><strong>Mudança</strong>principalmente a vogal.</div>
+</div>
+</section>
+
+<section>
+<h3>18. Progressão 4 — retire o P para ouvir somente as vogais</h3>
+
+<p>
+Cante os núcleos vocálicos aproximados do áudio na mesma nota.
+Depois recoloque Poppy e Puppy.
+</p>
+
+<p>
+Se você só consegue diferenciar as palavras quando o P fica mais forte,
+o contraste vocálico ainda não está suficientemente claro.
+</p>
+</section>
+
+<section>
+<h3>19. Progressão 5 — P + vogal sem segunda sílaba</h3>
+
+<p>
+Reduza temporariamente as palavras à primeira sílaba:
+algo como <strong>Pop / Pup</strong>,
+seguindo a vogal do áudio.
+</p>
+
+<p>
+O objetivo é analisar:
+<strong>liberação do P → entrada exata da vogal</strong>.
+Depois recoloque a palavra inteira.
+</p>
+</section>
+
+<section>
+<h3>20. Progressão 6 — uma vogal, vários Ps</h3>
+
+<p>
+Faça uma única vogal confortável precedida por /p/ repetidamente:
+<strong>Pa · Pa · Pa · Pa</strong>
+ou a vogal que mais se aproxima do áudio.
+</p>
+
+<p>
+Procure o menor impulso de ar que ainda produz um P claramente reconhecível.
+</p>
+
+<div class="key">
+O objetivo é encontrar o <strong>mínimo eficaz</strong>,
+não produzir o maior burst.
+</div>
+</section>
+
+<section>
+<h3>21. Lábios e mandíbula: não “morder” cada P</h3>
+
+<p>
+O fechamento é bilabial.
+A mandíbula pode colaborar,
+mas os lábios não precisam depender de uma grande elevação do queixo.
+</p>
+
+<p>
+Estudos de perturbação mostram que lábios e mandíbula conseguem reorganizar seus papéis
+para preservar a oclusão.
+Isso sugere uma estratégia pedagógica útil:
+<strong>deixe os lábios assumirem a tarefa labial.</strong>
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 7 — dedo no queixo</h3>
+
+<p>
+Encoste levemente um dedo no queixo enquanto fala Poppy Puppy.
+Não impeça o movimento.
+</p>
+
+<p>
+Pergunte:
+o queixo sobe para fechar cada P?
+há pequenos “golpes” mandibulares?
+</p>
+
+<p>
+Tente repetir com menos deslocamento externo,
+mantendo os lábios eficientes.
+</p>
+</section>
+
+<section>
+<h3>23. Progressão 8 — dois graus de força labial</h3>
+
+<p>
+Faça uma palavra com contato labial mais firme que o necessário.
+Depois outra com contato mínimo suficiente.
+</p>
+
+<p>
+Compare a clareza.
+Se ambas são igualmente reconhecíveis,
+a versão mais leve é a melhor referência para agilidade.
+</p>
+</section>
+
+<section>
+<h3>24. Não use o abdômen como “gatilho” de cada P</h3>
+
+<p>
+Como /p/ envolve pressão oral,
+é tentador adicionar um pequeno soco expiratório em cada consoante.
+Isso pode tornar o burst maior e roubar estabilidade da vogal.
+</p>
+
+<div class="key">
+O fechamento dos lábios já cria a condição de pressão necessária.<br>
+Não é preciso transformar cada P em um exercício abdominal.
+</div>
+</section>
+
+<section>
+<h3>25. Progressão 9 — mesma palavra, duas intensidades</h3>
+
+<p>
+Cante Poppy em volume moderado e depois 15–20% mais leve.
+Faça o mesmo com Puppy.
+</p>
+
+<p>
+O P deve continuar reconhecível nas duas.
+Se desaparece na versão leve,
+melhore o timing antes de aumentar força.
+</p>
+</section>
+
+<section>
+<h3>26. A escala: primeiro sem texto</h3>
+
+<p>
+Faça A2–B2–C#3–D3–E3–D3–C#3–B2–A2
+numa vogal fácil.
+</p>
+
+<p>
+Depois recoloque Poppy Puppy.
+Se a afinação piora apenas com as palavras,
+a dificuldade está na integração articulatória.
+</p>
+</section>
+
+<section>
+<h3>27. C#3→D3: o semitom continua sendo um ponto de controle</h3>
+
+<p>
+Como nos exercícios anteriores de cinco graus,
+o único semitom é C#3↔D3.
+O burst do P pode desviar sua atenção auditiva desse passo pequeno.
+</p>
+
+<p>
+Isole:
+<strong>C#3–D3–C#3</strong>
+primeiro no violão, depois numa vogal e finalmente com o trecho textual correspondente.
+</p>
+</section>
+
+<section>
+<h3>28. E3: o P não deve ficar maior no topo</h3>
+
+<p>
+No grau 5, observe se você antecipa a nota com:
+mais pressão nos lábios, mais ar ou mais volume.
+</p>
+
+<div class="key">
+Faça o fragmento em torno de E3 cerca de <strong>15% mais leve</strong>.
+Se o P continua claro, o excesso anterior era desnecessário.
+</div>
+</section>
+
+<section>
+<h3>29. Progressão 10 — Poppy/Puppy em dinâmica uniforme</h3>
+
+<p>
+Faça todas as sílabas com intensidade aproximadamente constante.
+Só depois experimente um pequeno arco de dinâmica na escala.
+</p>
+
+<p>
+Isso evita confundir “subir” com “cantar mais forte”.
+</p>
+</section>
+
+<section>
+<h3>30. Velocidade: timing melhora antes de força aumentar</h3>
+
+<p>
+Estudos recentes de coordenação interarticulatória mostram que relações de timing
+entre mandíbula e lábios permanecem organizadas mesmo com mudanças de velocidade.
+</p>
+
+<p>
+Pedagogicamente, quando você acelera:
+<strong>reduza a amplitude dos gestos e preserve a ordem temporal.</strong>
+</p>
+
+<div class="grid3">
+<div class="box"><strong>60–72 bpm</strong>controle do fechamento.</div>
+<div class="box"><strong>80–96 bpm</strong>automatização.</div>
+<div class="box"><strong>100–112 bpm</strong>economia, se continuar claro.</div>
+</div>
+
+<p class="mini">Os valores são referências pedagógicas, não limites derivados de estudos.</p>
+</section>
+
+<section>
+<h3>31. Progressão 11 — P menor à medida que acelera</h3>
+
+<p>
+Aumente 8–12 bpm.
+Na nova velocidade, imagine o gesto labial <strong>10% menor</strong>.
+</p>
+
+<p>
+Se o P continua claro, você encontrou economia.
+Se vira uma vogal sem fechamento, devolva um pouco de amplitude.
+</p>
+</section>
+
+<section>
+<h3>32. Coarticulação: prepare a vogal antes da liberação</h3>
+
+<p>
+Na fala fluida, a forma que vem depois influencia o gesto atual.
+O sistema já está preparando a vogal enquanto o fechamento do P acontece.
+</p>
+
+<p>
+Isso é particularmente útil em Poppy versus Puppy:
+a configuração interna para a vogal pode começar a diferir
+mesmo enquanto os lábios ainda estão fechados.
+</p>
+
+<div class="key">
+O P pode parecer externamente igual;
+<strong>a próxima vogal já está sendo preparada por dentro.</strong>
+</div>
+</section>
+
+<section>
+<h3>33. Não tente eliminar coarticulação</h3>
+
+<p>
+Coarticulação é parte normal do controle motor da fala.
+O que precisa permanecer é o alvo perceptivo:
+Poppy deve continuar Poppy e Puppy deve continuar Puppy.
+</p>
+
+<p>
+Se a velocidade apaga o contraste vocálico,
+reduza o andamento até as duas palavras voltarem a ser facilmente distinguíveis.
+</p>
+</section>
+
+<section>
+<h3>34. Progressão 12 — ordem invertida</h3>
+
+<p>
+Se o áudio normalmente usa Poppy Puppy,
+fale ocasionalmente:
+<strong>Puppy Poppy</strong>.
+</p>
+
+<p>
+Depois cante as duas numa única nota.
+Isso testa se você controla os dois alvos vocálicos
+ou apenas executa uma sequência memorizada.
+</p>
+</section>
+
+<section>
+<h3>35. Progressão 13 — violão gradualmente retirado</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as notas.</p>
+</div>
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão em A2, C#3, E3, C#3 e A2.</p>
+</div>
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão apenas em A2 e E3.</p>
+</div>
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque A2, cante a sequência e confira A2 final.</p>
+</div>
+
+<p>
+Mantenha o andamento fixo enquanto retira o guia.
+Não aumente duas dificuldades ao mesmo tempo.
+</p>
+</section>
+
+<section>
+<h3>36. Transposição: o limite é quando a palavra começa a deformar</h3>
+
+<p>
+Suba o exercício por semitom.
+Não julgue apenas se você alcançou a nota superior.
+Observe se o texto continua coordenado.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura</th></tr>
+<tr><td>P vira explosão</td><td>Pressão/aspiração excessivas.</td></tr>
+<tr><td>P deixa de fechar</td><td>Velocidade ou tessitura acima da coordenação atual.</td></tr>
+<tr><td>Poppy e Puppy começam a soar iguais</td><td>Contraste vocálico colapsou.</td></tr>
+<tr><td>Mandíbula bate em cada P</td><td>Movimento externo excessivo.</td></tr>
+<tr><td>E equivalente fica muito mais forte</td><td>Pitch associado à intensidade.</td></tr>
+<tr><td>Pequenas adaptações vocálicas aparecem sem perder a palavra</td><td>Pode ser ajuste funcional.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>37. Vibrato: não é variável útil neste exercício</h3>
+
+<p>
+O objetivo é articulação rápida, VOT, vogais e precisão temporal.
+Não acrescente vibrato deliberadamente às sílabas curtas.
+</p>
+
+<p>
+Se alguma nota do áudio for sustentada,
+deixe o vibrato surgir naturalmente somente depois da palavra já estar estável.
+</p>
+</section>
+
+<section>
+<h3>38. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>P parece um estouro</td><td>Pressão acumulada demais</td><td>Menos impulso; contato labial leve.</td></tr>
+<tr><td>P quase desaparece</td><td>Fechamento incompleto</td><td>Treinar P+vogal lentamente.</td></tr>
+<tr><td>Muito “ar” antes da vogal</td><td>Aspiração exagerada</td><td>Encurtar intervalo liberação→voz.</td></tr>
+<tr><td>Poppy e Puppy ficam iguais</td><td>Vogais pouco diferenciadas</td><td>Alternar as palavras na mesma nota.</td></tr>
+<tr><td>Mandíbula mastiga cada P</td><td>Queixo assumindo trabalho labial</td><td>Dedo no queixo; gesto menor.</td></tr>
+<tr><td>E3 explode em volume</td><td>Topo comprado com pressão</td><td>Trecho do topo 15% mais leve.</td></tr>
+<tr><td>C#→D fica grande demais</td><td>Semitom encoberto pela articulação</td><td>Isolar sem texto e recolocar palavra.</td></tr>
+<tr><td>Afinação piora em alta velocidade</td><td>Carga temporal excessiva</td><td>Reduzir 10–15% o andamento.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>39. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Fechamento</strong>/p/ sempre completa a oclusão.</div>
+<div class="box"><strong>Liberação</strong>burst curto, sem explosão excessiva.</div>
+<div class="box"><strong>VOT</strong>vogal entra rapidamente e com pitch.</div>
+<div class="box"><strong>Vogais</strong>Poppy e Puppy continuam claramente diferentes.</div>
+<div class="box"><strong>Mandíbula</strong>menos movimento conforme aumenta a velocidade.</div>
+<div class="box"><strong>Integração</strong>texto e escala deixam de competir.</div>
+</div>
+</section>
+
+<section>
+<h3>40. Sessão-modelo — 7 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Pronúncia · ~1 min</h4>
+<p>Poppy↔Puppy em fala, copiando exatamente o áudio.</p>
+</div>
+
+<div class="phase">
+<h4>2 · /p/ · ~1 min</h4>
+<p>P+vogal em A2: fechamento completo, liberação pequena e voz imediata.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Separar variáveis · ~1–2 min</h4>
+<p>Palavras numa única nota; depois escala numa única vogal.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Motivo completo · ~2 min</h4>
+<p>Violão em todas as notas e texto como no áudio.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Gargalo · ~1 min</h4>
+<p>Escolha um: P explosivo, aspiração, contraste Poppy/Puppy ou C#↔D.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Velocidade ou transposição · ~1–2 min</h4>
+<p>Mude somente uma das duas variáveis.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Fechamento</h4>
+<p>Volte a uma tonalidade confortável e faça uma passagem
+em que os Ps sejam pequenos, claros e previsíveis.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo científico padronizado chamado “Poppy Puppy”.
+A aula aplica a tarefa específica da ficha a estudos primários sobre oclusivas bilabiais,
+coordenação entre lábios e mandíbula, Voice Onset Time em canto,
+burst de plosivas e inteligibilidade, coarticulação e controle de pitch.
+As progressões Poppy↔Puppy na mesma nota, redução deliberada do gesto,
+P+vogal e retirada gradual do violão são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+McCrea CR, Morris RJ.
+<em>Effects of vocal training and phonatory task on voice onset time.</em>
+J Voice. 2007;21(1):54–63.
+DOI: 10.1016/j.jvoice.2005.05.002. PMID: 16426814.
+</li>
+
+<li>
+Löfqvist A, Gracco VL.
+<em>Lip and jaw kinematics in bilabial stop consonant production.</em>
+J Speech Lang Hear Res. 1997;40(4):877–893.
+DOI: 10.1044/jslhr.4004.877. PMID: 9263951.
+</li>
+
+<li>
+Folkins JW, Abbs JH.
+<em>Lip and jaw motor control during speech: responses to resistive loading of the jaw.</em>
+J Speech Hear Res. 1975;18(1):207–219.
+DOI: 10.1044/jshr.1801.207. PMID: 1127904.
+</li>
+
+<li>
+Masapollo M, Gendron R, Wyndham E, Marcellus A, Shamsi A, Maxfield N.
+<em>Interarticulator Timing Relations Underlie the Production of Precise and Consistent
+Vocal Tract Constrictions During Speech.</em>
+J Speech Lang Hear Res. 2025;68(6):2700–2720.
+DOI: 10.1044/2025_JSLHR-24-00535.
+PMID: 40268725. PMCID: PMC12173160.
+</li>
+
+<li>
+Vurma A, Meister E, Meister L, Ross J, Raju M, Kala V, Dede T.
+<em>The intensities of vowels and plosive bursts and their impact on text intelligibility in singing.</em>
+J Acoust Soc Am. 2023;154(4):2653–2664.
+DOI: 10.1121/10.0021968. PMID: 37877771.
+</li>
+
+<li>
+Ostry DJ, Gribble PL, Gracco VL.
+<em>Coarticulation of jaw movements in speech production:
+is context sensitivity in speech kinematics centrally planned?</em>
+J Neurosci. 1996;16(4):1570–1579.
+DOI: 10.1523/JNEUROSCI.16-04-01570.1996.
+PMID: 8778306. PMCID: PMC6578564.
+</li>
+
+<li>
+De Nil LF, Abbs JH.
+<em>Influence of speaking rate on the upper lip, lower lip, and jaw peak velocity sequencing
+during bilabial closing movements.</em>
+J Acoust Soc Am. 1991;89(2):845–849.
+DOI: 10.1121/1.1894645. PMID: 2016434.
+</li>
+
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice:
+Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012.
+PMID: 26948385. PMCID: PMC5010534.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

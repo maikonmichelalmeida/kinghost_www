@@ -3,26 +3,1040 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bumblebee — foco de estudo</title>
+<title>Bumblebee — ID 19</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1200px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(10,minmax(58px,1fr));gap:.32rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.56rem .2rem;text-align:center}
+.note b{display:block;font-size:.94rem}.note span{font-size:.72rem;color:var(--muted)}
+.phon{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:1050px){.notes{grid-template-columns:repeat(8,1fr)}}
+@media(max-width:850px){.notes{grid-template-columns:repeat(6,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.notes{grid-template-columns:repeat(4,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 19 · Articulação</p>
-  <h2>Resistência articulatória com precisão.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Divida a sequência em blocos curtos.</li><li>Aprenda cada bloco lento antes de ligar tudo.</li><li>Use metrônomo/áudio e mantenha cada nota identificável.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Lábios flexíveis.</li><li>Mesmo tempo do início ao fim.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Tentar a sequência inteira rápido desde o começo.</li><li>Comer notas intermediárias.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Aumente 5–10% de velocidade quando conseguir duas passadas limpas.</p>
+
+<p class="eyebrow">ID 19 · Bumblebee</p>
+<h2>Agilidade sustentada: lábios rápidos, leves e precisos numa sequência longa</h2>
+
+<p class="lead">
+<strong>Bumblebee</strong> não é apenas mais um exercício de dicção.
+A palavra alterna repetidamente gestos bilabiais — principalmente <strong>/b/</strong> e <strong>/m/</strong> —
+enquanto a linha melódica percorre <strong>30 notas</strong>, sobe de A2 até C#4 e depois retorna.
+Isso cria um treino muito específico:
+<strong>fechar, liberar e reconfigurar os lábios muitas vezes sem deixar a tensão crescer de repetição para repetição.</strong>
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+flexibilidade labial não significa “lábios frouxos”.
+Significa conseguir <strong>fechamento completo quando necessário + liberação imediata depois</strong>,
+com o mínimo de rigidez residual.
+</div>
+
+<section>
+<h3>1. A sequência completa</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>B3</b><span>9</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>C#4</b><span>10</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>B3</b><span>9</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A extensão total vai de <strong>A2 a C#4</strong>:
+uma oitava mais uma terça maior.
+Mas a sequência não sobe em escala.
+Ela usa um padrão de <strong>salto para cima + recuo curto</strong>,
+criando um zigue-zague que sobe gradualmente até o topo.
+Depois o processo se inverte.
+</p>
+</section>
+
+<section>
+<h3>2. A arquitetura da subida</h3>
+
+<p>
+A primeira metade pode ser entendida em pequenos pares:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>A→C#→B</strong>sobe uma terça, recua um grau.</div>
+<div class="box"><strong>B→D→C#</strong>sobe uma terça, recua um semitom.</div>
+<div class="box"><strong>C#→E→D</strong>sobe uma terça, recua um grau.</div>
+<div class="box"><strong>D→F#→E</strong>sobe uma terça, recua um grau.</div>
+</div>
+
+<p>
+O mesmo princípio continua até <strong>A3→C#4</strong>.
+Portanto, a linha possui direção ascendente,
+mas o cérebro precisa administrar pequenas correções descendentes o tempo todo.
+</p>
+
+<div class="key">
+Não memorize 30 notas como uma lista.
+Memorize o <strong>gesto musical: “salta para cima, recua, salta para cima, recua”.</strong>
+</div>
+</section>
+
+<section>
+<h3>3. A descida não é simplesmente a subida ao contrário</h3>
+
+<p>
+Depois de C#4, o desenho muda:
+há quedas maiores intercaladas com pequenos retornos para cima.
+Por isso, não suponha que dominar a subida garante dominar a descida.
+</p>
+
+<p>
+Estudos com arpejos cantados encontraram maior imprecisão em algumas condições descendentes,
+sobretudo quando o andamento e a articulação também aumentavam a dificuldade.
+</p>
+
+<div class="key">
+Treine a <strong>subida e a descida separadamente</strong>
+antes de tratar Bumblebee como uma única frase longa.
+</div>
+</section>
+
+<section>
+<h3>4. O desafio real é duplo: articulação + previsão tonal</h3>
+
+<p>
+Enquanto os lábios executam vários fechamentos,
+o ouvido precisa prever cada salto do desenho.
+Se você espera a nota sair para então corrigi-la,
+a articulação rápida já terá levado a voz para a próxima sílaba.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Sistema articulatório</strong>prepara B, M, L e as vogais.</div>
+<div class="box"><strong>Sistema auditivo-motor</strong>prepara o próximo centro tonal.</div>
+</div>
+
+<p>
+Esse acoplamento é o que torna o ID 19 mais avançado que uma simples repetição de “bumblebee”.
+</p>
+</section>
+
+<section>
+<h3>5. Pronúncia: copie o áudio</h3>
+
+<p>
+A palavra inglesa <strong>Bumblebee</strong> pode ser analisada aproximadamente como
+<span class="phon">/ˈbʌmbəlbiː/</span>,
+mas o exercício deve seguir a pronúncia real do seu MP3.
+</p>
+
+<p>
+O que interessa tecnicamente é a sequência:
+</p>
+
+<div class="key">
+<strong>B → vogal → M → B → vogal/L → B → EE</strong>
+</div>
+
+<p>
+Há vários retornos ao fechamento bilabial,
+mas eles têm <strong>funções fonéticas diferentes</strong>.
+</p>
+</section>
+
+<section>
+<h3>6. /b/ e /m/ usam os mesmos lábios, mas não são o mesmo gesto vocal</h3>
+
+<p>
+Tanto /b/ quanto /m/ exigem fechamento entre os lábios.
+Porém:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>/b/</strong>é uma oclusiva oral vozeada: ocorre fechamento, pressão oral e liberação.</div>
+<div class="box"><strong>/m/</strong>é uma nasal vozeada: os lábios fecham, mas o som continua pela via nasal.</div>
+</div>
+
+<div class="key">
+Essa é uma das melhores propriedades do exercício:
+<strong>mesmo alvo labial, comportamento aerodinâmico diferente.</strong>
+</div>
+</section>
+
+<section>
+<h3>7. Flexibilidade começa por conseguir fechar sem apertar</h3>
+
+<p>
+Estudos de cinemática de oclusivas bilabiais mostram que os lábios chegam ao fechamento em movimento
+e podem inclusive sofrer pequena compressão mecânica.
+Isso não significa que você precise deliberadamente “esmagar” os lábios.
+</p>
+
+<p>
+O sistema motor trabalha com uma meta robusta de fechamento:
+o suficiente para garantir a vedação apesar das variações de contexto.
+</p>
+
+<div class="key">
+<strong>Fechamento seguro, pressão muscular mínima necessária.</strong>
+</div>
+</section>
+
+<section>
+<h3>8. A mandíbula ajuda, mas não deve comandar os lábios</h3>
+
+<p>
+Lábio superior, lábio inferior e mandíbula formam um sistema coordenado.
+Experimentos aplicando resistência à mandíbula mostraram que os lábios conseguem
+reorganizar seus movimentos em tempo real para ainda completar o fechamento bilabial.
+</p>
+
+<p>
+Isso demonstra <strong>equivalência motora</strong>:
+o objetivo acústico/articulatório pode ser atingido por combinações diferentes de movimento.
+</p>
+
+<div class="key">
+No treino:
+se a mandíbula começa a “mastigar” Bumblebee,
+deixe os <strong>lábios assumirem mais do trabalho que é deles.</strong>
+</div>
+</section>
+
+<section>
+<h3>9. O primeiro teste: Bumblebee falado com dedo no queixo</h3>
+
+<p>
+Encoste levemente um dedo no queixo.
+Fale Bumblebee algumas vezes.
+Não segure a mandíbula.
+</p>
+
+<p>
+Observe:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>B</strong>o queixo dá um golpe?</div>
+<div class="box"><strong>M</strong>há aperto adicional?</div>
+<div class="box"><strong>Velocidade</strong>a mandíbula cresce quando você acelera?</div>
+</div>
+
+<p>
+Procure reduzir movimentos externos que não sejam necessários para as vogais.
+</p>
+</section>
+
+<section>
+<h3>10. /b/: feche e saia imediatamente</h3>
+
+<p>
+O /b/ deste exercício não é um lugar para permanecer.
+Ele é uma transição:
+<strong>fechamento → liberação → vogal</strong>.
+</p>
+
+<p>
+Como aparece repetidamente,
+qualquer excesso minúsculo se acumula.
+Um B 20% pesado pode parecer irrelevante uma vez;
+repetido por uma sequência longa, transforma-se em rigidez.
+</p>
+
+<div class="key">
+Quanto mais longo o exercício,
+<strong>mais importante fica a economia de cada microgesto.</strong>
+</div>
+</section>
+
+<section>
+<h3>11. /m/: mantenha a voz passando, não transforme em pausa</h3>
+
+<p>
+Durante /m/, os lábios fecham, mas a fonação pode continuar.
+Use isso para evitar que a palavra seja quebrada em blocos.
+</p>
+
+<p>
+Compare:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Ruim</strong>“bum | ble | bee” com interrupções rígidas.</div>
+<div class="box"><strong>Melhor</strong>uma palavra contínua com mudanças rápidas de configuração.</div>
+</div>
+</section>
+
+<section>
+<h3>12. O contraste B↔M é um treino de “fecha igual, funciona diferente”</h3>
+
+<p>
+Faça numa nota confortável:
+<strong>Ba–Ma–Ba–Ma</strong>.
+</p>
+
+<p>
+Tente manter semelhante:
+amplitude do movimento labial, volume e esforço.
+A diferença deve vir principalmente do modo como o trato oral/nasal e a liberação funcionam.
+</p>
+
+<div class="key">
+Se M exige mais aperto labial que B,
+você está adicionando força que a nasal não precisa.
+</div>
+</section>
+
+<section>
+<h3>13. Timing velofaríngeo: /m/ não depende só dos lábios</h3>
+
+<p>
+Estudos de transição entre /m/ e plosivas mostram que movimentos velofaríngeos,
+vozeamento e liberação labial possuem timings próprios.
+O sistema precisa coordenar vários eventos em poucos centésimos de segundo.
+</p>
+
+<p>
+Isso reforça por que é contraproducente tentar “controlar tudo” conscientemente.
+</p>
+
+<div class="key">
+Dê metas perceptivas simples:
+<strong>M claramente nasal, B claramente liberado, palavra contínua.</strong>
+</div>
+</section>
+
+<section>
+<h3>14. O /l/ é a única grande mudança que não depende dos lábios</h3>
+
+<p>
+Na parte “ble”, a língua precisa assumir o protagonismo.
+Isso cria um ótimo teste de independência:
+os lábios acabaram de liberar B, mas não precisam acompanhar o movimento lingual com a mandíbula.
+</p>
+
+<p>
+Fale lentamente:
+<strong>ble – ble – ble</strong>.
+Depois reduza o movimento externo mantendo o som reconhecível.
+</p>
+</section>
+
+<section>
+<h3>15. Progressão 1 — palavra inteira numa única nota</h3>
+
+<p>
+Antes da sequência de 30 notas, faça Bumblebee inteira em:
+A2, C#3, E3, A3 e C#4 separadamente,
+somente nas alturas que estiverem confortáveis.
+</p>
+
+<p>
+Isso mostra se a articulação degrada por causa da tessitura.
+</p>
+
+<table>
+<tr><th>Resultado</th><th>Leitura</th></tr>
+<tr><td>Palavra clara em todas</td><td>Articulação robusta.</td></tr>
+<tr><td>Lábios apertam nas mais altas</td><td>Pitch e articulação estão se acoplando.</td></tr>
+<tr><td>Bee perde clareza no alto</td><td>Vogal/tessitura precisa de ajuste.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>16. Progressão 2 — articulação sem pitch</h3>
+
+<p>
+Fale Bumblebee no ritmo do áudio sem cantar.
+Use um pulso confortável.
+</p>
+
+<p>
+Aumente lentamente o andamento e observe
+se a palavra vai ficando <strong>menor e mais automática</strong>,
+ou mais grande e trabalhosa.
+</p>
+
+<div class="key">
+Velocidade funcional reduz movimento desnecessário.
+Velocidade ruim aumenta tensão para “não perder” a palavra.
+</div>
+</section>
+
+<section>
+<h3>17. O que a pesquisa sobre velocidade mostra</h3>
+
+<p>
+Estudos de movimentos labiais em fala repetitiva mostram que a estratégia motora
+muda com a velocidade.
+Não existe uma sequência rígida e invariável de picos de velocidade entre lábio superior,
+lábio inferior e mandíbula.
+</p>
+
+<p>
+Outros estudos de unidades motoras do lábio também encontraram
+mudanças na ativação conforme a taxa silábica aumenta.
+</p>
+
+<div class="key">
+Isso apoia uma regra prática:
+<strong>não tente fazer “o mesmo Bumblebee, só mais rápido”.</strong>
+Permita que o gesto se reorganize.
+</div>
+</section>
+
+<section>
+<h3>18. Progressão 3 — menor amplitude conforme acelera</h3>
+
+<p>
+Use três velocidades:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lenta</strong>clareza máxima, consciência dos contatos.</div>
+<div class="box"><strong>Média</strong>reduza a amplitude externa em ~10–15%.</div>
+<div class="box"><strong>Rápida</strong>reduza mais, preservando todos os sons essenciais.</div>
+</div>
+
+<p>
+Os percentuais são apenas intenção pedagógica, não medida anatômica.
+</p>
+</section>
+
+<section>
+<h3>19. Progressão 4 — B mínimo eficaz</h3>
+
+<p>
+Repita “bee” em uma nota confortável.
+Faça primeiro com B mais forte que o necessário.
+Depois reduza gradualmente o contato/pressão até chegar ao menor B ainda claramente reconhecível.
+</p>
+
+<div class="key">
+Esse é seu <strong>B de agilidade</strong>:
+completo, mas pequeno.
+</div>
+</section>
+
+<section>
+<h3>20. Progressão 5 — M mínimo eficaz</h3>
+
+<p>
+Faça “mum” ou a parte nasal de Bumblebee em uma nota confortável.
+Reduza pressão labial sem perder o fechamento.
+</p>
+
+<p>
+Você deve perceber que o M continua funcionando
+mesmo quando o contato fica mais leve.
+</p>
+</section>
+
+<section>
+<h3>21. A linha melódica: divida 30 notas em blocos</h3>
+
+<p>
+Não pratique a sequência inteira desde a primeira repetição.
+Use blocos:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Bloco A</strong>A2 até E3.</div>
+<div class="box"><strong>Bloco B</strong>D3 até A3.</div>
+<div class="box"><strong>Bloco C</strong>G#3 até C#4 e início da volta.</div>
+</div>
+
+<p>
+Depois trabalhe o restante da descida em blocos semelhantes.
+Junte somente quando cada pedaço estiver previsível.
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 6 — “salta e recua” sem texto</h3>
+
+<p>
+Faça a subida numa vogal simples:
+A2–C#3–B2–D3–C#3–E3...
+</p>
+
+<p>
+Ouça o padrão:
+<strong>salto ascendente → pequeno recuo</strong>.
+</p>
+
+<div class="key">
+Quando o padrão vira uma ideia musical,
+você reduz a carga de memória nota a nota.
+</div>
+</section>
+
+<section>
+<h3>23. Progressão 7 — apenas as notas superiores do zigue-zague</h3>
+
+<p>
+Extraia mentalmente a “linha de cima”:
+C#3, D3, E3, F#3, G#3, A3, B3, C#4.
+</p>
+
+<p>
+Toque-a no violão.
+Depois volte ao padrão completo.
+</p>
+
+<p>
+Essa linha revela que o topo de cada pequeno salto
+vai subindo de forma muito organizada.
+</p>
+</section>
+
+<section>
+<h3>24. Progressão 8 — apenas as notas de retorno</h3>
+
+<p>
+Agora ouça a linha interna:
+B2, C#3, D3, E3, F#3, G#3, A3...
+</p>
+
+<p>
+Ela também sobe gradualmente.
+Isso transforma um desenho aparentemente complicado
+em <strong>duas linhas ascendentes entrelaçadas</strong>.
+</p>
+
+<div class="key">
+O zigue-zague fica muito mais fácil quando você percebe
+as duas escadas escondidas dentro dele.
+</div>
+</section>
+
+<section>
+<h3>25. C#4: não “guarde força” para o topo</h3>
+
+<p>
+Se você passa toda a subida antecipando C#4,
+os lábios podem começar a endurecer muito antes de chegar lá.
+</p>
+
+<p>
+Faça a subida pensando somente no próximo pequeno salto.
+Quando chegar ao topo,
+trate C#4 como continuação do padrão.
+</p>
+
+<div class="key">
+<strong>Antecipar o pitch ≠ antecipar tensão.</strong>
+</div>
+</section>
+
+<section>
+<h3>26. Isolamento A3→C#4</h3>
+
+<p>
+O último salto da subida é uma terça maior:
+A3→C#4.
+</p>
+
+<p>
+Toque os dois no violão.
+Depois toque A3, cante C#4 e confira.
+Faça primeiro numa vogal.
+Só depois recoloque Bumblebee.
+</p>
+</section>
+
+<section>
+<h3>27. A descida começa com C#4→A3: outra terça maior</h3>
+
+<p>
+Logo depois do topo há uma queda de quatro semitons.
+É fácil “despencar” abaixo de A3.
+</p>
+
+<p>
+Isole:
+<strong>C#4→A3→B3</strong>.
+A nota seguinte sobe novamente um tom.
+</p>
+
+<div class="key">
+A descida não é queda contínua:
+<strong>cai → recupera um pouco → cai → recupera um pouco.</strong>
+</div>
+</section>
+
+<section>
+<h3>28. Progressão 9 — metade ascendente, pausa, metade descendente</h3>
+
+<p>
+Faça a subida até C#4 e pare.
+Respire normalmente.
+Depois faça a descida separada.
+</p>
+
+<p>
+Só quando ambas estiverem claras faça a sequência inteira numa única passagem,
+conforme o áudio.
+</p>
+</section>
+
+<section>
+<h3>29. Sequência longa: o verdadeiro marcador é tensão acumulada</h3>
+
+<p>
+Nos primeiros cinco segundos, quase qualquer pessoa consegue manter os lábios “soltos”.
+O teste real é o fim da sequência.
+</p>
+
+<p>
+Compare o primeiro e o último A2:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Contato labial</strong>ficou mais pesado?</div>
+<div class="box"><strong>Mandíbula</strong>ficou maior?</div>
+<div class="box"><strong>Volume</strong>cresceu involuntariamente?</div>
+</div>
+
+<div class="key">
+Se o último A2 é mais trabalhoso que o primeiro,
+o exercício está revelando <strong>acúmulo de tensão</strong>.
+</div>
+</section>
+
+<section>
+<h3>30. Progressão 10 — primeiro A2 versus último A2</h3>
+
+<p>
+Antes de começar, cante Bumblebee em A2 uma vez.
+Faça a sequência completa.
+Imediatamente depois, repita Bumblebee em A2.
+</p>
+
+<p>
+As duas versões deveriam ser parecidas.
+Se a segunda está pesada,
+reduza velocidade, volume ou número de transposições.
+</p>
+</section>
+
+<section>
+<h3>31. Não transforme “flexibilidade dos lábios” em lip trill</h3>
+
+<p>
+Lip trill é uma ferramenta útil em outros contextos,
+especialmente como exercício semiocluído.
+Mas não é necessário adicioná-lo automaticamente aqui.
+</p>
+
+<p>
+O alvo específico do ID 19 é diferente:
+<strong>fechamentos bilabiais precisos dentro de linguagem articulada.</strong>
+</p>
+
+<div class="key">
+Treine o gesto que o exercício realmente pede.
+</div>
+</section>
+
+<section>
+<h3>32. Progressão 11 — lábios leves, palavra clara</h3>
+
+<p>
+Faça uma repetição comum.
+Na seguinte, pense apenas:
+<strong>“os lábios se encontram e imediatamente deixam de se segurar”.</strong>
+</p>
+
+<p>
+Não tente deixá-los frouxos durante o fechamento.
+Eles precisam trabalhar.
+A liberdade aparece na <strong>capacidade de liberar o trabalho depois.</strong>
+</p>
+</section>
+
+<section>
+<h3>33. Progressão 12 — articulação em duas intensidades</h3>
+
+<p>
+Faça um bloco da sequência em volume moderado.
+Repita o mesmo bloco aproximadamente 15–20% mais leve.
+</p>
+
+<p>
+Se a versão mais leve mantém clareza,
+ela costuma ser melhor para desenvolver velocidade.
+</p>
+
+<p>
+Se /b/ e /m/ desaparecem,
+não aumente brutalmente a força: melhore primeiro timing e fechamento.
+</p>
+</section>
+
+<section>
+<h3>34. Velocidade e afinação precisam progredir separadamente</h3>
+
+<p>
+Pesquisas com canto mostram que andamento rápido e certas articulações
+podem aumentar erros de pitch.
+Em população geral, reduzir andamento também melhora substancialmente
+a precisão de muitas pessoas.
+</p>
+
+<div class="key">
+Se você quer acelerar Bumblebee,
+<strong>não aumente também a tessitura na mesma etapa.</strong>
+Escolha uma dificuldade.
+</div>
+</section>
+
+<section>
+<h3>35. Progressão 13 — três versões da mesma tonalidade</h3>
+
+<div class="phase">
+<h4>A · lenta</h4>
+<p>100% clareza, violão completo.</p>
+</div>
+<div class="phase">
+<h4>B · média</h4>
+<p>menor movimento dos lábios, mesmo pitch.</p>
+</div>
+<div class="phase">
+<h4>C · rápida</h4>
+<p>somente se B continuar limpa; não aumente volume.</p>
+</div>
+
+<p>
+Depois volte à versão lenta.
+Se a lenta agora parece mais fácil,
+a velocidade serviu como ferramenta de economia.
+</p>
+</section>
+
+<section>
+<h3>36. O violão: retire em camadas</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as notas.</p>
+</div>
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão marca apenas as notas superiores de cada zigue-zague.</p>
+</div>
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão marca A2, E3, A3, C#4, A3, E3 e A2.</p>
+</div>
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque A2 inicial; faça o padrão e confira A2 final.</p>
+</div>
+
+<p>
+A redução do guia deve acontecer depois que o desenho estiver memorizado.
+</p>
+</section>
+
+<section>
+<h3>37. O feedback auditivo e cinestésico trabalham juntos</h3>
+
+<p>
+Estudos com estudantes e cantores treinados mostram que o controle de pitch
+depende tanto do feedback auditivo quanto de informações cinestésicas,
+e que treinamento prolongado modifica a precisão desse controle.
+</p>
+
+<p>
+No Bumblebee, isso é particularmente importante:
+em alta velocidade, não há tempo para analisar conscientemente cada nota e cada fechamento labial.
+</p>
+
+<div class="key">
+A meta final é que você <strong>sinta o padrão</strong>
+sem deixar de ouvi-lo.
+</div>
+</section>
+
+<section>
+<h3>38. Progressão 14 — nota “fantasma” no topo</h3>
+
+<p>
+Toque a sequência até A3, mas omita C#4.
+Cante C#4 e confira depois.
+</p>
+
+<p>
+Mais tarde omita uma das notas de retorno na descida.
+</p>
+
+<p>
+Isso testa se o mapa foi internalizado ou se você ainda depende de imitação simultânea.
+</p>
+</section>
+
+<section>
+<h3>39. Transposição: primeiro reduza a sequência</h3>
+
+<p>
+Antes de transportar as 30 notas inteiras para cima,
+transponha apenas um bloco curto.
+</p>
+
+<p>
+Se esse bloco continua claro,
+então experimente a sequência completa na nova tonalidade.
+</p>
+
+<div class="key">
+Não use 30 notas para descobrir que a tonalidade estava alta demais
+desde a sexta nota.
+</div>
+</section>
+
+<section>
+<h3>40. Limite técnico do exercício</h3>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>B começa a bater</td><td>Pressão labial/oral excessiva.</td></tr>
+<tr><td>M exige apertar mais</td><td>Tensão acumulada nos lábios.</td></tr>
+<tr><td>Mandíbula começa a mastigar</td><td>Coordenação labial perdeu independência.</td></tr>
+<tr><td>C#4 exige aumento brusco de volume</td><td>Tessitura/coordenação no limite.</td></tr>
+<tr><td>Descida começa a desafinar mais que subida</td><td>Mapa descendente ainda não está consolidado.</td></tr>
+<tr><td>Último A2 está mais pesado que primeiro</td><td>Fadiga/tensão acumulada durante a sequência.</td></tr>
+<tr><td>A palavra começa a embolar em velocidade alta</td><td>Taxa acima da coordenação atual.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>41. Vibrato: não é objetivo do Bumblebee</h3>
+
+<p>
+A sequência longa depende de precisão temporal, articulação e centros tonais claros.
+Vibrato deliberado acrescentaria uma variável sem ajudar o alvo principal.
+</p>
+
+<p>
+Se o áudio sustenta alguma nota, deixe vibrato natural surgir apenas quando for musicalmente apropriado.
+Não o transforme em parte do protocolo-base.
+</p>
+</section>
+
+<section>
+<h3>42. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Lábios</strong>fecham completamente e liberam rápido.</div>
+<div class="box"><strong>B/M</strong>continuam diferentes sem exigir força diferente.</div>
+<div class="box"><strong>Mandíbula</strong>não cresce com a velocidade.</div>
+<div class="box"><strong>Zigue-zague</strong>vira um padrão previsível, não 30 notas soltas.</div>
+<div class="box"><strong>Topo</strong>C#4 entra sem explosão de volume.</div>
+<div class="box"><strong>Final</strong>último A2 parece tão organizado quanto o primeiro.</div>
+</div>
+</section>
+
+<section>
+<h3>43. Sessão-modelo — 8 a 11 minutos</h3>
+
+<div class="phase">
+<h4>1 · Palavra · ~1 min</h4>
+<p>Bumblebee falado → B/M contrastados → dedo leve no queixo.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Desenho musical · ~2 min</h4>
+<p>Subida sem texto; notas superiores do zigue-zague; depois padrão completo.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Articulação + bloco curto · ~1–2 min</h4>
+<p>Use apenas a primeira parte da sequência com Bumblebee.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Sequência completa · ~2 min</h4>
+<p>Violão completo, velocidade moderada e volume controlado.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Gargalo · ~1 min</h4>
+<p>Escolha somente um: B, M, mandíbula, C#4 ou descida.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Velocidade OU transposição · ~1–2 min</h4>
+<p>Não aumente as duas simultaneamente.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Comparação final · ~30 s</h4>
+<p>Bumblebee em A2 antes/depois: confirme que o sistema terminou tão livre quanto começou.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo científico padronizado chamado “Bumblebee”.
+A aula combina a finalidade exata da ficha — flexibilidade dos lábios e clareza —
+com estudos primários de coordenação bilabial, equivalência motora,
+velocidade de fala, atividade muscular labial, timing velofaríngeo,
+controle de sequências motoras e precisão de pitch em canto.
+As progressões por blocos, B/M na mesma nota, “duas escadas” do zigue-zague,
+redução deliberada de amplitude e comparação do primeiro/último A2
+são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Löfqvist A, Gracco VL.
+<em>Lip and jaw kinematics in bilabial stop consonant production.</em>
+J Speech Lang Hear Res. 1997;40(4):877–893.
+DOI: 10.1044/jslhr.4004.877. PMID: 9263951.
+</li>
+
+<li>
+Folkins JW, Abbs JH.
+<em>Lip and jaw motor control during speech: responses to resistive loading of the jaw.</em>
+J Speech Hear Res. 1975;18(1):207–219.
+DOI: 10.1044/jshr.1801.207. PMID: 1127904.
+</li>
+
+<li>
+Hughes OM, Abbs JH.
+<em>Labial-mandibular coordination in the production of speech:
+implications for the operation of motor equivalence.</em>
+Phonetica. 1976;33(3):199–221.
+DOI: 10.1159/000259722. PMID: 996113.
+</li>
+
+<li>
+De Nil LF, Abbs JH.
+<em>Influence of speaking rate on the upper lip, lower lip, and jaw peak velocity sequencing
+during bilabial closing movements.</em>
+J Acoust Soc Am. 1991;89(2):845–849.
+DOI: 10.1121/1.1894645. PMID: 2016434.
+</li>
+
+<li>
+<em>Activation of lip motor units with variations in speech rate and phonetic structure.</em>
+J Speech Hear Res. 1995.
+PMID: 7474971.
+Estudou unidades motoras do lábio em repetições de sílabas entre 1 e 4 sílabas/s.
+</li>
+
+<li>
+Smith A, Goffman L, Zelaznik HN, Ying G, McGillem C.
+<em>Spatiotemporal stability and patterning of speech movement sequences.</em>
+Exp Brain Res. 1995.
+DOI: 10.1007/BF00231983. PMID: 7589300.
+</li>
+
+<li>
+<em>Nasometric and phototransductive measurements of reaction times among normal adult speakers.</em>
+Cleft Palate J. 1990.
+PMID: 2302817.
+Examinou a coordenação temporal entre /m/, movimento velofaríngeo, vozeamento e liberação de uma plosiva bilabial.
+</li>
+
+<li>
+<em>An analysis of velopharyngeal timing in normal adult speakers using a microcomputer based photodetector system.</em>
+1989.
+PMID: 2704200.
+</li>
+
+<li>
+Kearney E et al.
+<em>Is the Articulatory Trajectory of Changing Syllables Important for Achieving Higher
+Syllable Rates Compared to Repeated Syllables?</em>
+J Speech Lang Hear Res. 2024.
+DOI: 10.1044/2024_JSLHR-24-00074. PMID: 39133834.
+</li>
+
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice:
+Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012.
+PMID: 26948385. PMCID: PMC5010534.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Effects of a professional solo singer education on auditory and kinesthetic feedback:
+a longitudinal study of singers' pitch control.</em>
+J Voice. 2004;18(2):236–241.
+DOI: 10.1016/j.jvoice.2003.05.001. PMID: 15193657.
+</li>
+
+<li>
+Dalla Bella S, Giguère JF, Peretz I.
+<em>Singing proficiency in the general population.</em>
+J Acoust Soc Am. 2007;121(2):1182–1189.
+DOI: 10.1121/1.2427111. PMID: 17348539.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

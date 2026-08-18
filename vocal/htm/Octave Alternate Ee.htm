@@ -3,26 +3,993 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Octave Alternate Ee — foco de estudo</title>
+<title>Octave Alternate Ee — ID 22</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(11,minmax(58px,1fr));gap:.32rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .22rem;text-align:center}
+.note b{display:block;font-size:.96rem}.note span{font-size:.72rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:1050px){.notes{grid-template-columns:repeat(6,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.notes{grid-template-columns:repeat(4,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 22 · Alcance</p>
-  <h2>Alternância de oitava sem perder coordenação.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Aprenda C3–E3–G3–C4 primeiro.</li><li>Depois mantenha G3↔C4 como um balanço leve.</li><li>Faça ‘Ee’ estreito, mas não espremido.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>A alternância não fica cada vez mais forte.</li><li>C4 aparece com menos peso, não mais pressão.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Prender língua.</li><li>Transformar Ee em grito fino.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Aumente o número de alternâncias só enquanto elas permanecem iguais.</p>
+
+<p class="eyebrow">ID 22 · Octave Alternate Ee</p>
+<h2>Alternar a região de transição: subir, voltar e subir de novo sem reconstruir a voz a cada nota</h2>
+
+<p class="lead">
+O <strong>Octave Alternate Ee</strong> começa com um arpejo
+<strong>1–3–5–8</strong> e depois transforma o topo num exercício de alternância:
+<strong>G3↔C4</strong> repetidamente.
+Isso é diferente de simplesmente sustentar uma nota alta.
+A voz precisa <strong>entrar numa coordenação mais alta, retornar e reencontrá-la várias vezes</strong>,
+sem cada C4 virar um novo “salto de coragem”.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+o primeiro C4 mostra se você consegue chegar;
+os C4 seguintes mostram se você consegue <strong>reacessar a mesma coordenação</strong>.
+O Ee nasal é uma ferramenta deliberada deste exercício,
+não uma regra para cantar tudo nasalmente.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>C3</b><span>1</span></div>
+<div class="note"><b>E3</b><span>3</span></div>
+<div class="note"><b>G3</b><span>5</span></div>
+<div class="note"><b>C4</b><span>8</span></div>
+<div class="note"><b>G3</b><span>5</span></div>
+<div class="note"><b>C4</b><span>8</span></div>
+<div class="note"><b>G3</b><span>5</span></div>
+<div class="note"><b>C4</b><span>8</span></div>
+<div class="note"><b>G3</b><span>5</span></div>
+<div class="note"><b>C4</b><span>8</span></div>
+<div class="note"><b>G3</b><span>5</span></div>
+</div>
+
+<p>
+A sequência é:
+<strong>C3–E3–G3–C4–G3–C4–G3–C4–G3–C4–G3</strong>.
+Os intervalos são:
+<strong>+4, +3, +5, −5, +5, −5, +5, −5, +5, −5 semitons</strong>.
+</p>
+
+<p>
+Depois do arpejo inicial, sobra praticamente uma única tarefa intervalar:
+<strong>quarta justa entre G3 e C4</strong>, repetida diversas vezes em ambas as direções.
+</p>
+</section>
+
+<section>
+<h3>2. O exercício não repete a oitava: repete a transição 5↔8</h3>
+
+<p>
+O nome “Octave Alternate” descreve a região superior do arpejo,
+mas musicalmente a alternância é entre o quinto grau e a oitava:
+<strong>G3↔C4</strong>.
+</p>
+
+<p>
+Essa repetição é muito valiosa porque elimina novidade.
+Depois de uma ou duas passagens,
+o ouvido já sabe exatamente o tamanho do salto.
+Se ainda há esforço crescente, o problema deixa de ser “não conheço a nota”
+e passa a ser mais provavelmente <strong>coordenação</strong>.
+</p>
+</section>
+
+<section>
+<h3>3. Pense em duas zonas, não em onze notas</h3>
+
+<div class="grid2">
+<div class="box"><strong>Zona inferior</strong>G3 — ponto de retorno.</div>
+<div class="box"><strong>Zona superior</strong>C4 — ponto de reacesso.</div>
+</div>
+
+<p>
+Depois do arpejo inicial, você está praticando uma ponte entre essas duas zonas.
+</p>
+
+<div class="key">
+O objetivo não é fazer:
+<strong>“baixo → alto → baixo → alto”</strong> como quatro vozes diferentes.<br>
+É encontrar <strong>uma coordenação contínua o suficiente para atravessar a ponte várias vezes.</strong>
+</div>
+</section>
+
+<section>
+<h3>4. Voz mista: aqui o conceito precisa ser funcional</h3>
+
+<p>
+“Voz mista” é um termo pedagógico útil,
+mas não corresponde a uma única configuração anatômica universal.
+Pesquisas sobre registros mostram que a transição suave depende de
+ajustes da fonte glótica e também das ressonâncias do trato vocal.
+</p>
+
+<p>
+Portanto, não procure uma sensação literal de
+“metade peito, metade cabeça”.
+</p>
+
+<div class="key">
+Neste exercício, mix significa:
+<strong>C4 mantém núcleo e presença sem carregar toda a coordenação pesada da região inferior;
+G3 retorna sem despencar para uma voz abruptamente mais pesada.</strong>
+</div>
+</section>
+
+<section>
+<h3>5. O que torna o ID 22 diferente do ID 21</h3>
+
+<p>
+No exercício anterior, o topo era repetido na mesma frequência.
+Aqui, cada C4 é precedido por G3.
+Isso significa que você precisa reconstruir o estado superior
+depois de uma excursão para baixo.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Repetição na mesma nota</strong>testa estabilidade/reataque.</div>
+<div class="box"><strong>Alternância G3↔C4</strong>testa reversibilidade da transição.</div>
+</div>
+
+<div class="key">
+O ID 22 pergunta:
+<strong>“você consegue mudar e voltar sem perder a organização?”</strong>
+</div>
+</section>
+
+<section>
+<h3>6. O Ee é propositalmente nasal — desta vez a nasalidade é parte do exercício</h3>
+
+<p>
+Em exercícios anteriores, evitamos confundir brilho com nasalização.
+Aqui a ficha explicitamente pede um <strong>Ee nasal</strong>.
+Portanto, não tente “corrigir” essa nasalidade.
+</p>
+
+<p>
+O objetivo é usar deliberadamente o acoplamento nasal como uma variável do trato vocal
+e observar se ele facilita a passagem entre as duas regiões.
+</p>
+
+<div class="key">
+A palavra importante é <strong>propositalmente</strong>:
+você produz nasalidade porque o exercício pede,
+e depois deve ser capaz de retirá-la em outros contextos.
+</div>
+</section>
+
+<section>
+<h3>7. O que acontece fisicamente quando uma vogal fica nasalizada</h3>
+
+<p>
+A nasalização envolve abertura velofaríngea suficiente para acoplar
+as cavidades oral e nasal.
+Isso cria novas ressonâncias e <strong>antirressonâncias</strong>,
+alterando o espectro da vogal.
+</p>
+
+<p>
+Modelos físicos e experimentais mostram que as cavidades nasais
+podem reduzir energia em algumas regiões de F1/F2
+e redistribuir energia em frequências mais altas.
+</p>
+
+<div class="key">
+Nasalizar não é apenas “sentir no nariz”.
+É uma <strong>mudança acústica real do sistema de ressonância</strong>.
+</div>
+</section>
+
+<section>
+<h3>8. Nasalidade não significa simplesmente “som saindo pelo nariz”</h3>
+
+<p>
+O acoplamento nasal cria um sistema acústico complexo.
+Há fluxo e radiação nasal, mas também mudanças no comportamento acústico
+do trato oral-nasal como conjunto.
+</p>
+
+<p>
+Por isso, duas produções com sensação nasal semelhante
+podem não ter exatamente o mesmo espectro ou quantidade de fluxo nasal.
+</p>
+</section>
+
+<section>
+<h3>9. Cantores profissionais realmente usam abertura velofaríngea em alguns pitches</h3>
+
+<p>
+Um estudo com 17 cantores líricos profissionais analisou /a/, /i/ e /u/
+por nasofibroscopia e medidas de fluxo.
+A maioria mostrou algum fluxo nasal em pelo menos algumas alturas,
+com grande variação individual.
+</p>
+
+<p>
+Mais importante:
+a presença de abertura velofaríngea não se correlacionou simplesmente
+com a avaliação perceptiva de “som nasal”.
+</p>
+
+<div class="key">
+Isso derruba uma simplificação útil de evitar:
+<strong>“porta nasal aberta = voz obviamente fanha”.</strong>
+O fenômeno é mais complexo.
+</div>
+</section>
+
+<section>
+<h3>10. Existe evidência especificamente no passaggio masculino</h3>
+
+<p>
+Em oito cantores clássicos profissionais masculinos,
+um estudo comparou glides de A3 a A4
+indo para falsete ou para voz de palco acima do passaggio.
+Em cinco deles, a nasalance aumentou durante a transição
+para a voz de palco acima do passaggio.
+</p>
+
+<p>
+Isso mostra que <strong>alguns cantores treinados realmente aumentam a participação nasal
+durante a transição</strong>.
+</p>
+
+<div class="key">
+Mas não aconteceu da mesma forma em todos.
+Portanto, nasalidade pode ser uma estratégia,
+não uma lei universal da voz mista.
+</div>
+</section>
+
+<section>
+<h3>11. Não interprete a pesquisa como “quanto mais nasal, melhor”</h3>
+
+<p>
+O estudo não demonstra que maximizar nasalance automaticamente estabiliza qualquer voz.
+Ele mostra variabilidade individual e associação da estratégia
+com determinados tipos de transição em alguns profissionais.
+</p>
+
+<p>
+Isso combina perfeitamente com a função do exercício:
+<strong>explorar deliberadamente uma configuração</strong>,
+não transformá-la em postura permanente.
+</p>
+</section>
+
+<section>
+<h3>12. A sensação no nariz é um feedback útil</h3>
+
+<p>
+Vibração na ponte nasal pode ser medida com acelerômetros.
+Treinamento de voz ressonante já demonstrou mudanças mensuráveis
+nessa vibração facial.
+</p>
+
+<p>
+Portanto, “sinta ressonância no nariz” não é uma fantasia sensorial.
+Existe vibração mecânica real.
+</p>
+
+<div class="key">
+Mas sensação forte no nariz não mede diretamente
+<strong>qualidade de mix, eficiência ou segurança</strong>.
+É apenas uma pista.
+</div>
+</section>
+
+<section>
+<h3>13. Como produzir o Ee nasal sem apertar</h3>
+
+<p>
+Comece falando um /i/ nasalizado de forma deliberada,
+quase caricatural,
+mas em intensidade pequena.
+</p>
+
+<p>
+Depois reduza o exagero até obter:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Ee reconhecível</strong>a vogal ainda é clara.</div>
+<div class="box"><strong>Nasalidade audível</strong>o efeito está presente.</div>
+<div class="box"><strong>Pescoço neutro</strong>não há compressão para “segurar” o som.</div>
+</div>
+</section>
+
+<section>
+<h3>14. Teste rápido: oral ↔ nasal na mesma nota</h3>
+
+<p>
+Em C3 ou E3, faça:
+<strong>Ee oral → Ee nasal → Ee oral</strong>.
+</p>
+
+<p>
+O pitch e o volume devem permanecer semelhantes.
+Assim você aprende que nasalidade é uma variável independente
+que pode ser adicionada e retirada.
+</p>
+
+<div class="key">
+Se o Ee nasal sempre fica muito mais alto em volume,
+reduza a intensidade e repita.
+</div>
+</section>
+
+<section>
+<h3>15. Progressão 1 — nasalidade graduada</h3>
+
+<p>
+Faça três Ee na mesma nota:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Leve</strong>só um toque nasal.</div>
+<div class="box"><strong>Média</strong>efeito claro do exercício.</div>
+<div class="box"><strong>Exagerada</strong>apenas uma vez para reconhecer o extremo.</div>
+</div>
+
+<p>
+Depois volte ao nível médio.
+</p>
+
+<p>
+Isso impede que “nasal” vire uma instrução binária sem controle fino.
+</p>
+</section>
+
+<section>
+<h3>16. Primeiro aprenda C3–E3–G3–C4 sem alternância</h3>
+
+<p>
+Faça apenas o arpejo inicial:
+<strong>C3–E3–G3–C4</strong>.
+</p>
+
+<p>
+Não acrescente ainda os retornos.
+Chegue ao C4 com um Ee nasal claro,
+sem aumento brusco de volume.
+</p>
+
+<div class="key">
+Primeiro encontre a coordenação superior.
+Depois treine a capacidade de <strong>perdê-la parcialmente e reencontrá-la</strong>.
+</div>
+</section>
+
+<section>
+<h3>17. C3→E3→G3: use o acorde como mapa</h3>
+
+<p>
+Toque C maior no violão.
+Depois toque C3–E3–G3–C4.
+</p>
+
+<p>
+O arpejo cria uma estrutura harmônica previsível:
+1–3–5–8.
+Isso reduz a carga auditiva antes da alternância.
+</p>
+</section>
+
+<section>
+<h3>18. Isole G3→C4</h3>
+
+<p>
+Esse é o salto fundamental do exercício:
+uma <strong>quarta justa ascendente</strong>, cinco semitons.
+</p>
+
+<p>
+Faça:
+<strong>G3 → C4</strong>.
+Pare.
+</p>
+
+<p>
+Toque ambos no violão no início.
+Depois toque apenas G3,
+cante C4 e confira.
+</p>
+</section>
+
+<section>
+<h3>19. Isole C4→G3</h3>
+
+<p>
+A volta é a mesma quarta justa em direção descendente.
+Ela merece prática própria.
+</p>
+
+<p>
+Muitos cantores se concentram em “subir”
+e deixam a descida simplesmente cair.
+</p>
+
+<div class="key">
+C4→G3 deve ser <strong>um alvo intervalar</strong>,
+não uma liberação de controle.
+</div>
+</section>
+
+<section>
+<h3>20. Progressão 2 — G3↔C4 sem texto complexo</h3>
+
+<p>
+Como a sílaba é sempre Ee,
+a articulação já é simples.
+Faça:
+</p>
+
+<div class="key">
+<strong>G3 – C4 – G3 – C4 – G3 – C4 – G3</strong>
+</div>
+
+<p>
+bem devagar,
+com a mesma nasalidade em todas as notas.
+</p>
+
+<p>
+O objetivo é perceber se a qualidade muda apenas por causa da altura.
+</p>
+</section>
+
+<section>
+<h3>21. A nasalidade deve permanecer semelhante, não idêntica à força</h3>
+
+<p>
+A geometria do trato e a relação entre harmônicos/resonâncias mudam com o pitch.
+Portanto, a sensação nasal pode variar entre G3 e C4.
+</p>
+
+<p>
+Não tente “travar” a mesma sensação física.
+</p>
+
+<div class="key">
+Mantenha <strong>a intenção nasal</strong> e o resultado auditivo,
+mas permita pequenas diferenças sensoriais.
+</div>
+</section>
+
+<section>
+<h3>22. O erro mais importante: C4 fica progressivamente mais pesado</h3>
+
+<p>
+Faça os quatro C4 e compare:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>C4 #1</strong>primeiro acesso.</div>
+<div class="box"><strong>C4 #2</strong>reacesso.</div>
+<div class="box"><strong>C4 #3</strong>economia.</div>
+<div class="box"><strong>C4 #4</strong>resistência ao acúmulo.</div>
+</div>
+
+<p>
+Se cada C4 fica mais alto em volume ou mais “grudado”,
+a alternância está acumulando peso.
+</p>
+</section>
+
+<section>
+<h3>23. Progressão 3 — C4 alternadamente normal e leve</h3>
+
+<p>
+Na sequência G3↔C4,
+faça:
+</p>
+
+<div class="key">
+C4 normal → C4 15% mais leve → C4 normal → C4 15% mais leve
+</div>
+
+<p>
+Mantenha G3 o mais constante possível.
+</p>
+
+<p>
+Isso testa se a nota superior realmente precisa da pressão que você costuma usar.
+</p>
+</section>
+
+<section>
+<h3>24. Progressão 4 — G3 não pode voltar “pesado demais”</h3>
+
+<p>
+Faça uma regra diferente:
+todos os C4 iguais,
+mas cada G3 deve retornar sem engrossar a voz.
+</p>
+
+<p>
+É comum pensar:
+“já desci, posso devolver todo o peso”.
+Isso cria uma grande mudança que depois precisa ser desfeita novamente no próximo C4.
+</p>
+
+<div class="key">
+Quanto menor a ruptura no G3,
+<strong>menor o trabalho para reencontrar C4.</strong>
+</div>
+</section>
+
+<section>
+<h3>25. Essa é a lógica central da voz mista neste exercício</h3>
+
+<p>
+O objetivo não é fazer G3 e C4 acusticamente iguais.
+O objetivo é evitar uma mudança tão grande de mecanismo/estratégia
+que cada salto pareça uma troca completa de voz.
+</p>
+
+<p>
+Pesquisas de transição mostram que cantores treinados podem realizar mudanças
+entre configurações de registro de maneira muito contínua.
+</p>
+
+<div class="key">
+Pense em um <strong>corredor</strong> entre G3 e C4,
+não em duas salas separadas por uma porta pesada.
+</div>
+</section>
+
+<section>
+<h3>26. Formant tuning e /i/: por que Ee é interessante</h3>
+
+<p>
+A vogal /i/ possui F1 relativamente baixo.
+Quando o pitch sobe,
+a relação entre F0/harmônicos e as ressonâncias do trato muda.
+Profissionais utilizam diferentes estratégias de ajuste,
+especialmente perto do passaggio.
+</p>
+
+<p>
+Estudos com /i/ mostram que a vogal pode influenciar a estabilidade da transição
+e que não existe uma única estratégia de formant tuning para todos os cantores.
+</p>
+
+<div class="key">
+Logo, não tente preservar uma geometria microscópica de /i/.
+Preserve <strong>identidade de Ee + facilidade</strong>.
+</div>
+</section>
+
+<section>
+<h3>27. Nasalização também modifica o espectro de /i/</h3>
+
+<p>
+Modelos tridimensionais do trato vocal com e sem cavidades nasais
+mostram que a nasalização pode produzir antirressonâncias
+e alterar significativamente a distribuição de energia do espectro.
+</p>
+
+<p>
+Isso ajuda a entender por que um Ee nasal pode parecer
+mais “fino”, “focado” ou diferente de um Ee puramente oral.
+</p>
+
+<div class="key">
+Essas descrições perceptivas são consequência do filtro acústico,
+não prova de que a voz ficou automaticamente mais eficiente.
+</div>
+</section>
+
+<section>
+<h3>28. Progressão 5 — Ee oral versus Ee nasal no G3↔C4</h3>
+
+<p>
+Faça três alternâncias com Ee nasal.
+Descanse.
+Depois faça apenas uma ou duas alternâncias com Ee mais oral,
+na mesma tonalidade e intensidade.
+</p>
+
+<p>
+Compare:
+facilidade, estabilidade do salto e sensação de peso.
+</p>
+
+<p>
+Não escolha vencedor universal.
+Descubra <strong>o que a nasalidade está fazendo na sua coordenação</strong>.
+</p>
+</section>
+
+<section>
+<h3>29. Se o nasal facilita muito, não fique dependente dele</h3>
+
+<p>
+O exercício pode ser excelente como ponte.
+Mas a meta de longo prazo é conseguir transferir a coordenação
+para vogais menos nasalizadas quando o repertório pedir.
+</p>
+
+<p>
+Por isso, quando estiver estável:
+</p>
+
+<div class="key">
+<strong>Ee nasal → Ee menos nasal → Ee oral</strong>
+na mesma nota ou em apenas um par G3↔C4.
+</div>
+
+<p>
+Use isso como progressão posterior, não como ponto de partida.
+</p>
+</section>
+
+<section>
+<h3>30. Progressão 6 — “desnasalização” gradual</h3>
+
+<p>
+Em uma tonalidade confortável:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>1</strong>Ee nasal claro.</div>
+<div class="box"><strong>2</strong>Ee com metade da intenção nasal.</div>
+<div class="box"><strong>3</strong>Ee predominantemente oral.</div>
+</div>
+
+<p>
+Se a voz quebra apenas no terceiro,
+você encontrou uma dependência específica para trabalhar mais tarde.
+</p>
+</section>
+
+<section>
+<h3>31. Não tampe o nariz como técnica principal</h3>
+
+<p>
+Pinçar as narinas pode ser usado brevemente para perceber
+mudança acústica em sons nasalizados,
+mas altera o sistema e não corresponde à produção normal.
+</p>
+
+<p>
+Não faça a escala com o nariz tampado.
+Use o ouvido e a sensação como referências principais.
+</p>
+</section>
+
+<section>
+<h3>32. O violão deve ensinar o intervalo e depois sair do caminho</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as notas.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão toca C3–E3–G3–C4; depois você alterna G3↔C4 sozinho.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão toca apenas G3 e C4 antes da sequência.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque C3, cante tudo e confira o G3 final.</p>
+</div>
+</section>
+
+<section>
+<h3>33. Progressão 7 — C4 fantasma</h3>
+
+<p>
+Toque C3–E3–G3.
+Não toque C4.
+Cante o primeiro C4 e confira depois.
+</p>
+
+<p>
+Quando ficar confiável,
+faça todas as alternâncias sem o violão junto.
+</p>
+
+<div class="key">
+O C4 precisa ser <strong>preparado internamente</strong>,
+não localizado por tentativa.
+</div>
+</section>
+
+<section>
+<h3>34. Progressão 8 — G3 fantasma na volta</h3>
+
+<p>
+Agora faça o inverso:
+toque C4,
+não toque o G3 seguinte.
+Cante G3 e confira.
+</p>
+
+<p>
+Isso impede que a descida seja tratada como simples relaxamento de altura.
+</p>
+</section>
+
+<section>
+<h3>35. Velocidade: primeiro estabilidade, depois alternância rápida</h3>
+
+<p>
+Comece num andamento em que cada G3 e C4 tenha centro claro.
+Depois aumente gradualmente.
+</p>
+
+<p>
+Ao acelerar, não aumente:
+volume, duração da consoante inexistente,
+nem força nasal.
+A única coisa que muda é a velocidade da preparação tonal.
+</p>
+</section>
+
+<section>
+<h3>36. Progressão 9 — pares isolados em diferentes velocidades</h3>
+
+<p>
+Faça G3→C4→G3:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lento</strong>ouve e organiza.</div>
+<div class="box"><strong>Médio</strong>reduz preparação consciente.</div>
+<div class="box"><strong>Rápido</strong>usa mapa internalizado.</div>
+</div>
+
+<p>
+Se o rápido perde centro,
+volte um nível sem aumentar força.
+</p>
+</section>
+
+<section>
+<h3>37. Transposição: não transforme a nasalidade em licença para forçar</h3>
+
+<p>
+Suba por semitom somente enquanto as alternâncias permanecerem simétricas e repetíveis.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>1º C superior bom, últimos pioram</td><td>Acúmulo de peso/pressão.</td></tr>
+<tr><td>G inferior fica cada vez mais pesado</td><td>Retorno excessivo à coordenação inferior.</td></tr>
+<tr><td>Ee fica extremamente fanho</td><td>Nasalidade exagerada para “segurar” a nota.</td></tr>
+<tr><td>C superior precisa de muito mais volume</td><td>Coordenação superior no limite.</td></tr>
+<tr><td>Pequena mudança de sensação nasal sem perda de facilidade</td><td>Pode ser normal.</td></tr>
+<tr><td>Ee deixa de ser reconhecível</td><td>Modificação vocálica excessiva.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>38. O limite técnico é a reversibilidade</h3>
+
+<p>
+Você pode ainda “alcançar” a nota superior numa tonalidade,
+mas se não consegue voltar ao grau 5 e subir novamente com a mesma organização,
+a tonalidade já excedeu o objetivo do exercício.
+</p>
+
+<div class="key">
+Para o ID 22,
+<strong>alcance sem reversibilidade não é domínio.</strong>
+</div>
+</section>
+
+<section>
+<h3>39. Vibrato: mantenha fora da versão-base</h3>
+
+<p>
+As notas precisam ser comparáveis entre si.
+Use centros relativamente retos.
+</p>
+
+<p>
+Mais tarde, sustente um único C4:
+1–2 s reto → vibrato natural → G3.
+Se isso muda brutalmente a coordenação,
+volte ao reto.
+</p>
+</section>
+
+<section>
+<h3>40. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>C4 entra por baixo</td><td>Mapa do salto insuficiente</td><td>G3→C4 isolado; C4 fantasma.</td></tr>
+<tr><td>C4 fica mais pesado a cada repetição</td><td>Acúmulo de pressão</td><td>Alternar C4 normal/15% mais leve.</td></tr>
+<tr><td>G3 despenca para voz muito pesada</td><td>Retorno excessivo de registro</td><td>Manter G3 mais próximo da coordenação superior.</td></tr>
+<tr><td>Ee nasal fica apertado</td><td>Nasalidade confundida com compressão</td><td>Reduzir volume e exagero nasal.</td></tr>
+<tr><td>Sem nasalidade a voz quebra</td><td>Dependência da configuração</td><td>Ee nasal → menos nasal → oral gradualmente.</td></tr>
+<tr><td>Vibração no nariz muda entre G3/C4</td><td>Pode ser resposta acústica normal</td><td>Julgar som e esforço, não fixar sensação.</td></tr>
+<tr><td>Descida desafina</td><td>G3 não está sendo pré-ouvido</td><td>G3 fantasma e confirmação posterior.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>41. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Primeiro C4</strong>entra próximo do centro.</div>
+<div class="box"><strong>Último C4</strong>parece tão organizado quanto o primeiro.</div>
+<div class="box"><strong>G3</strong>retorna sem ganhar peso excessivo.</div>
+<div class="box"><strong>Ee nasal</strong>é deliberado, não comprimido.</div>
+<div class="box"><strong>Reversibilidade</strong>G3↔C4 deixa de parecer troca de voz.</div>
+<div class="box"><strong>Transferência</strong>parte da coordenação sobrevive com menos nasalidade.</div>
+</div>
+</section>
+
+<section>
+<h3>42. Sessão-modelo — 7 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Nasalidade controlada · ~1 min</h4>
+<p>Ee oral→nasal→oral; depois três graus de nasalidade.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Arpejo · ~1 min</h4>
+<p>C3–E3–G3–C4 com violão completo.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Ponte · ~1–2 min</h4>
+<p>G3→C4→G3 lentamente, depois em velocidade moderada.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Alternâncias · ~1–2 min</h4>
+<p>G3↔C4 repetido; compare primeiro e último C4.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Exercício completo · ~1 min</h4>
+<p>C3–E3–G3–C4–G3–C4–G3–C4–G3–C4–G3.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Independência · ~1 min</h4>
+<p>C4 fantasma ou retirada parcial do violão.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Transferência · ~1 min</h4>
+<p>Opcional: uma alternância nasal → menos nasal, sem perder coordenação.</p>
+</div>
+
+<div class="phase">
+<h4>8 · Transposição</h4>
+<p>Suba apenas enquanto a ida e a volta continuarem igualmente organizadas.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Octave Alternate Ee”.
+A aula parte da finalidade específica da ficha — extensão e voz mista usando um Ee nasal —
+e a conecta a estudos primários de comportamento velofaríngeo no canto,
+nasalance durante o passaggio, acústica das cavidades nasais,
+registros, formant tuning e vibração facial.
+A interpretação principal é deliberadamente conservadora:
+nasalização pode funcionar como estratégia em alguns cantores e contextos,
+mas não é tratada como condição universal da voz mista.
+</p>
+
+<ol class="refs">
+<li>
+Echternach M, Högerle C, Köberlein M, Schlegel P, Döllinger M, Richter B, Kainz MA.
+<em>The Effect of Nasalance on Vocal Fold Oscillation Patterns During the Male Passaggio.</em>
+J Voice. 2021;35(3):500.e9–500.e16.
+DOI: 10.1016/j.jvoice.2019.09.013. PMID: 31668917.
+</li>
+
+<li>
+Birch P, Gümoes B, Stavad H, Prytz S, Björkner E, Sundberg J.
+<em>Velum Behavior in Professional Classic Operatic Singing.</em>
+J Voice. 2002;16(1):61–71.
+DOI: 10.1016/S0892-1997(02)00073-5. PMID: 12002888.
+</li>
+
+<li>
+Vampola T, Horáček J, Radolf V, Švec JG, Laukkanen AM.
+<em>Influence of nasal cavities on voice quality: Computer simulations and experiments.</em>
+J Acoust Soc Am. 2020;148(5):3218.
+DOI: 10.1121/10.0002487. PMID: 33261400.
+</li>
+
+<li>
+Chen FC, Ma EPM, Yiu EML.
+<em>Facial bone vibration in resonant voice production.</em>
+J Voice. 2014;28(5):596–602.
+DOI: 10.1016/j.jvoice.2013.12.014. PMID: 24629644.
+</li>
+
+<li>
+Miller DG, Schutte HK.
+<em>'Mixing' the registers: glottal source or vocal tract?</em>
+Folia Phoniatr Logop. 2005;57(5–6):278–291.
+DOI: 10.1159/000087081. PMID: 16280630.
+</li>
+
+<li>
+Neumann K et al.
+<em>The interplay between glottis and vocal tract during the male passaggio.</em>
+Folia Phoniatr Logop. 2005.
+DOI: 10.1159/000087084. PMID: 16280632.
+</li>
+
+<li>
+Echternach M et al.
+<em>The Influence of Vowels on Vocal Fold Dynamics in the Tenor's Passaggio.</em>
+J Voice. 2018.
+DOI: 10.1016/j.jvoice.2016.11.010. PMID: 28040341.
+</li>
+
+<li>
+Sundberg J, Lã FMB, Gill BP.
+<em>Formant tuning strategies in professional male opera singers.</em>
+J Voice. 2013;27(3):278–288.
+DOI: 10.1016/j.jvoice.2012.12.002. PMID: 23453594.
+</li>
+
+<li>
+Henrich N, Smith J, Wolfe J.
+<em>Vocal tract resonances in singing: Strategies used by sopranos, altos, tenors, and baritones.</em>
+J Acoust Soc Am. 2011;129(2):1024–1035.
+DOI: 10.1121/1.3518766. PMID: 21361458.
+</li>
+
+<li>
+Bernardoni NH et al.
+<em>Vocal tract resonances in singing: variation with laryngeal mechanism for male operatic singers in chest and falsetto registers.</em>
+J Acoust Soc Am. 2014.
+DOI: 10.1121/1.4836255. PMID: 24437789.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

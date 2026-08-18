@@ -3,26 +3,948 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Neh Noy Scale — foco de estudo</title>
+<title>Neh Noy Scale — ID 20</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(8,minmax(62px,1fr));gap:.34rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .24rem;text-align:center}
+.note b{display:block;font-size:.98rem}.note span{font-size:.74rem;color:var(--muted)}
+.phon{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(5,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.notes{grid-template-columns:repeat(4,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 20 · Articulação</p>
-  <h2>Troca de vogal em escala completa.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Faça primeiro só ‘Neh’, depois só ‘Noy’.</li><li>Depois alterne conforme o padrão do áudio.</li><li>Compare subida e descida: os semitons devem continuar claros.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>O ‘oy’ não puxa a afinação.</li><li>Boca muda, garganta não aperta.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Arredondar tanto que o som fique preso.</li><li>Acelerar a descida.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Transponha meio tom preservando dicção e pitch.</p>
+
+<p class="eyebrow">ID 20 · Neh Noy Scale</p>
+<h2>Flexibilidade de boca e lábios: arredondar, liberar e trocar de vogal sem carregar tensão pela escala</h2>
+
+<p class="lead">
+A <strong>Neh Noy Scale</strong> é um exercício de mobilidade articulatória.
+O contraste entre <strong>Neh</strong> e <strong>Noy</strong> exige uma mudança clara de formato do trato:
+Neh tende a usar uma configuração menos arredondada,
+enquanto Noy pede um <strong>“O” labial perceptível</strong> antes de caminhar para o final da sílaba.
+Ao mesmo tempo, a voz percorre uma escala maior completa de uma oitava e retorna.
+O desafio é fazer a boca mudar muito <strong>sem transformar cada mudança de pitch numa mudança desnecessária de mandíbula ou tensão labial</strong>.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+o “O” de Noy deve ser <strong>claro e arredondado, mas elástico</strong>.
+Você precisa conseguir entrar no formato e sair dele rapidamente.
+Flexibilidade não é manter o O perfeito; é <strong>conseguir formá-lo e abandoná-lo sem rigidez residual</strong>.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>F#3</b><span>6</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+Em graus:
+<strong>1–2–3–4–5–6–7–8–7–6–5–4–3–2–1</strong>.
+É uma escala maior completa de A2 a A3.
+Os semitons aparecem entre <strong>C#3↔D3</strong> e <strong>G#3↔A3</strong>.
+</p>
+
+<p>
+Siga a alternância exata de <strong>Neh/Noy</strong> do áudio.
+A aula usa o contraste entre as sílabas como mecanismo técnico,
+mas não inventa uma distribuição diferente da gravação.
+</p>
+</section>
+
+<section>
+<h3>2. O exercício possui duas escalas ao mesmo tempo</h3>
+
+<p>
+Uma escala é musical:
+A2→A3→A2.
+A outra é articulatória:
+a boca alterna entre configurações diferentes de Neh e Noy.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Escala tonal</strong>pitch muda em cada grau.</div>
+<div class="box"><strong>Escala articulatória</strong>lábios, língua e mandíbula reconfiguram a sílaba.</div>
+</div>
+
+<div class="key">
+Seu objetivo avançado é manter essas duas tarefas <strong>independentes</strong>:
+a boca muda porque mudou a sílaba;
+o pitch muda porque mudou a nota.
+</div>
+</section>
+
+<section>
+<h3>3. “Modele os lábios em um O claro” — sim, mas sem congelar o O</h3>
+
+<p>
+A instrução da ficha está correta como alvo perceptivo.
+Em Noy, a fase arredondada deve realmente parecer arredondada.
+O erro seria interpretar isso como
+<strong>segurar um bico rígido durante a sílaba inteira</strong>.
+</p>
+
+<p>
+A palavra/sílaba se move.
+Se o áudio realiza Noy de modo semelhante a uma sequência O→Y/“oi”,
+o arredondamento precisa diminuir durante a própria sílaba.
+</p>
+
+<div class="key">
+Pense:
+<strong>forma o O → deixa o O acontecer → libera o O.</strong>
+</div>
+</section>
+
+<section>
+<h3>4. Arredondamento é um gesto acústico, não uma pose estética</h3>
+
+<p>
+Arredondar os lábios alonga o trato vocal e altera suas ressonâncias.
+Em várias vogais posteriores,
+esse ajuste contribui para baixar especialmente frequências de ressonância relevantes para a identidade da vogal.
+</p>
+
+<p>
+Mas lábios não trabalham sozinhos.
+A língua também pode contribuir para o mesmo alvo acústico.
+</p>
+
+<div class="key">
+O alvo é <strong>o som de Noy</strong>.
+O formato visível dos lábios é uma ferramenta para obtê-lo,
+não um concurso de quem faz o círculo mais perfeito.
+</div>
+</section>
+
+<section>
+<h3>5. Equivalência motora: língua e lábios podem dividir o trabalho</h3>
+
+<p>
+Um estudo clássico de produção de /u/ mediu língua, lábios e mandíbula
+e investigou se diferentes combinações de arredondamento labial e elevação do corpo da língua
+podiam contribuir para um alvo acústico semelhante.
+Os resultados deram suporte parcial à ideia de <strong>equivalência motora</strong>.
+</p>
+
+<p>
+Pedagogicamente, isso é muito importante:
+</p>
+
+<div class="key">
+Se Noy só funciona quando você faz um bico enorme,
+talvez os lábios estejam tentando fazer <strong>todo</strong> o trabalho do trato.
+</div>
+
+<p>
+Procure um O claro com participação coordenada de língua, lábios e mandíbula.
+</p>
+</section>
+
+<section>
+<h3>6. Noy é movimento, não uma vogal única congelada</h3>
+
+<p>
+Siga o MP3 para a pronúncia.
+A grafia “Noy” normalmente sugere uma trajetória vocálica,
+não uma única vogal estática.
+</p>
+
+<p>
+Isso torna o exercício especialmente valioso:
+os lábios precisam <strong>arredondar e depois desarredondar</strong>
+dentro de uma única sílaba.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Início</strong>N + preparação da vogal.</div>
+<div class="box"><strong>Centro</strong>O claro e arredondado.</div>
+<div class="box"><strong>Saída</strong>transição rápida conforme o áudio.</div>
+</div>
+</section>
+
+<section>
+<h3>7. Coarticulação antecipatória: o O pode começar antes de você “ouvi-lo”</h3>
+
+<p>
+Estudos eletromiográficos de arredondamento labial mostram que o gesto de arredondar
+pode começar durante segmentos anteriores,
+sobrepondo-se temporalmente à articulação que vem antes da vogal arredondada.
+</p>
+
+<p>
+Isso não é erro: é <strong>coarticulação</strong>.
+É uma das razões pelas quais a fala rápida pode continuar fluida.
+</p>
+
+<div class="key">
+No Noy, você pode começar a <strong>preparar</strong> o arredondamento durante o N,
+sem transformar o N anterior numa vogal arredondada.
+</div>
+</section>
+
+<section>
+<h3>8. Preparar não é chegar cedo demais</h3>
+
+<p>
+A coarticulação só é boa enquanto a sílaba anterior continua reconhecível.
+Se você antecipa o O tanto que Neh já começa a soar arredondado,
+o gesto invadiu cedo demais.
+</p>
+
+<p>
+Pense em:
+<strong>preparação interna antecipada + alvo acústico no momento correto.</strong>
+</p>
+</section>
+
+<section>
+<h3>9. Neh: não faça um sorriso rígido para criar contraste</h3>
+
+<p>
+Para destacar a diferença entre Neh e Noy,
+é fácil exagerar Neh abrindo lateralmente os lábios.
+Isso cria um contraste visual enorme,
+mas pode adicionar tensão desnecessária.
+</p>
+
+<div class="key">
+Neh deve ser <strong>claramente diferente de Noy</strong>,
+mas o contraste pode vir principalmente da língua e da forma interna do trato,
+não de puxar os cantos da boca.
+</div>
+</section>
+
+<section>
+<h3>10. Noy: “O claro” não significa boca pequena demais</h3>
+
+<p>
+Um O muito fechado pode ficar abafado ou exigir excesso de protrusão.
+A mandíbula participa da abertura vertical,
+e estudos mostram que a magnitude de sua abertura varia conforme a vogal.
+</p>
+
+<p>
+Portanto, não tente fazer o O somente comprimindo os lábios.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lábios</strong>arredondam/projetam moderadamente.</div>
+<div class="box"><strong>Mandíbula</strong>oferece espaço suficiente.</div>
+<div class="box"><strong>Língua</strong>completa o alvo acústico.</div>
+</div>
+</section>
+
+<section>
+<h3>11. “Movimente bem lábios e mandíbula” não significa fazer movimentos enormes</h3>
+
+<p>
+A ficha pede mobilidade, e esse é o ponto correto.
+Mas amplitude máxima não é sinônimo de flexibilidade.
+</p>
+
+<p>
+Flexibilidade significa:
+<strong>conseguir aumentar e diminuir a abertura rapidamente,
+arredondar e desfazer o arredondamento,
+sem ficar preso na configuração anterior.</strong>
+</p>
+
+<div class="key">
+Movimento suficiente + retorno rápido = mobilidade.<br>
+Movimento enorme + demora para voltar = rigidez disfarçada de articulação.
+</div>
+</section>
+
+<section>
+<h3>12. A mandíbula pode mudar pela vogal; não precisa mudar pelo pitch</h3>
+
+<p>
+Estudos com cantores profissionais mostram que abertura mandibular depende tanto da vogal quanto do pitch,
+especialmente quando relações entre F0 e ressonâncias começam a exigir adaptação.
+</p>
+
+<p>
+Mas isso não quer dizer que, nesta tessitura-base, você deva abrir progressivamente
+a mandíbula em cada grau da escala.
+</p>
+
+<div class="key">
+Primeiro pergunte:
+<strong>“a boca mudou porque cantei Noy ou porque fiquei com medo da nota mais alta?”</strong>
+</div>
+</section>
+
+<section>
+<h3>13. O teste mais útil: Neh↔Noy na mesma nota</h3>
+
+<p>
+Faça em A2:
+</p>
+
+<div class="key">
+<strong>Neh → Noy → Neh → Noy</strong>
+</div>
+
+<p>
+Mantenha:
+pitch, duração e intensidade semelhantes.
+Agora toda grande diferença que você sente vem principalmente da articulação.
+</p>
+
+<p>
+Repita em E3 e A3, se A3 estiver confortável.
+</p>
+</section>
+
+<section>
+<h3>14. Progressão 1 — câmera lenta de Noy</h3>
+
+<p>
+Numa nota confortável:
+</p>
+
+<div class="phase">
+<h4>1 · N</h4>
+<p>Entrada breve.</p>
+</div>
+<div class="phase">
+<h4>2 · O</h4>
+<p>Deixe o arredondamento ficar claramente audível.</p>
+</div>
+<div class="phase">
+<h4>3 · saída</h4>
+<p>Complete a trajetória da sílaba conforme o áudio, desfazendo o O.</p>
+</div>
+
+<p>
+Depois reduza gradualmente o tempo até voltar ao Noy normal.
+</p>
+</section>
+
+<section>
+<h3>15. Progressão 2 — O exagerado uma vez, depois econômico</h3>
+
+<p>
+Faça um Noy com arredondamento propositalmente grande apenas uma vez.
+Depois um com arredondamento mínimo.
+Na terceira repetição, escolha o menor gesto que ainda produz um O claro.
+</p>
+
+<div class="key">
+O terceiro é o alvo.
+Os extremos servem apenas para calibrar percepção.
+</div>
+</section>
+
+<section>
+<h3>16. Progressão 3 — arredonda sem voz</h3>
+
+<p>
+Sem cantar, alterne:
+<strong>Neh → Noy → Neh → Noy</strong>
+como fala silenciosa ou muito leve.
+</p>
+
+<p>
+Observe a trajetória dos lábios.
+Eles devem chegar ao O e retornar sem “travar” no formato arredondado.
+</p>
+
+<p>
+Depois recoloque a voz.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 4 — mandíbula disponível, lábios rápidos</h3>
+
+<p>
+Encoste um dedo levemente no queixo.
+Faça Neh↔Noy.
+</p>
+
+<p>
+Pergunte:
+a mandíbula faz um golpe em Noy?
+ela fecha demais em Neh?
+ela começa a acompanhar a escala?
+</p>
+
+<p>
+Não segure o queixo.
+Use apenas como feedback tátil.
+</p>
+</section>
+
+<section>
+<h3>18. Progressão 5 — mesma mandíbula, lábios diferentes</h3>
+
+<p>
+Numa nota confortável, tente reduzir a diferença de abertura mandibular entre Neh e Noy,
+deixando os <strong>lábios e língua</strong> assumirem mais da mudança.
+</p>
+
+<p>
+Não transforme isso na técnica definitiva.
+É um experimento de independência articulatória.
+</p>
+
+<div class="key">
+Depois volte à versão natural e observe
+se a mandíbula continua menos dominante.
+</div>
+</section>
+
+<section>
+<h3>19. Progressão 6 — mesmos lábios, mandíbula/língua diferentes</h3>
+
+<p>
+Faça o experimento inverso:
+reduza propositalmente a quantidade de protrusão labial em Noy
+e veja até onde língua e abertura mandibular conseguem preservar a identidade da vogal.
+</p>
+
+<p>
+Pare antes de o O deixar de ser claro.
+</p>
+
+<p>
+Esse exercício torna palpável a ideia de <strong>equivalência motora</strong>.
+</p>
+</section>
+
+<section>
+<h3>20. Progressão 7 — retorno rápido do O</h3>
+
+<p>
+Repita:
+<strong>Noy–Neh–Noy–Neh</strong> em uma nota.
+</p>
+
+<p>
+O foco agora é a <strong>saída</strong> do arredondamento:
+você consegue abandonar o O tão rapidamente quanto consegue formá-lo?
+</p>
+
+<div class="key">
+Mobilidade inclui <strong>desfazer</strong> uma configuração.
+</div>
+</section>
+
+<section>
+<h3>21. Agora leve para a escala — primeiro só subindo</h3>
+
+<p>
+Faça:
+<strong>A2–B2–C#3–D3–E3–F#3–G#3–A3</strong>.
+</p>
+
+<p>
+Use o violão em todas as notas.
+Concentre-se em duas perguntas:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Pitch</strong>cada grau chega limpo?</div>
+<div class="box"><strong>Boca</strong>Neh/Noy continuam igualmente livres no topo?</div>
+</div>
+</section>
+
+<section>
+<h3>22. Depois faça somente a descida</h3>
+
+<p>
+A3–G#3–F#3–E3–D3–C#3–B2–A2.
+</p>
+
+<p>
+Na descida, o erro comum é relaxar demais a articulação
+e deixar o Noy perder a forma do O.
+</p>
+
+<div class="key">
+Pitch desce.
+<strong>Clareza articulatória não precisa descer.</strong>
+</div>
+</section>
+
+<section>
+<h3>23. C#3↔D3: primeiro semitom</h3>
+
+<p>
+Isole:
+<strong>C#3–D3–C#3</strong>.
+</p>
+
+<p>
+Faça primeiro numa única sílaba.
+Depois use a combinação Neh/Noy correspondente ao áudio.
+</p>
+
+<p>
+Se o intervalo funciona com uma única vogal e piora com a troca de sílaba,
+a articulação está interferindo na preparação tonal.
+</p>
+</section>
+
+<section>
+<h3>24. G#3↔A3: o semitom no topo</h3>
+
+<p>
+Esse ponto é ainda mais importante porque combina:
+<strong>menor intervalo da escala + maior tessitura da sequência</strong>.
+</p>
+
+<p>
+Faça:
+G#3→A3→G#3 cerca de 15–20% mais leve.
+</p>
+
+<div class="key">
+A3 não precisa receber uma boca maior simplesmente porque é o topo.
+</div>
+</section>
+
+<section>
+<h3>25. A3: adapte apenas se necessário</h3>
+
+<p>
+Estudos com cantores mostram que ajustes de mandíbula e formantes podem surgir em regiões mais altas,
+mas variam com vogal e estratégia.
+</p>
+
+<p>
+No exercício-base, tente primeiro preservar a identidade de Neh/Noy
+com uma articulação econômica.
+Se uma pequena modificação torna A3 claramente mais livre,
+ela pode ser funcional.
+</p>
+
+<div class="key">
+Modificação útil = <strong>menos esforço sem perder a sílaba</strong>.<br>
+Modificação ruim = mudar a sílaba para simplesmente alcançar a nota.
+</div>
+</section>
+
+<section>
+<h3>26. Equalização de vogais: não deixe Neh e Noy virarem extremos</h3>
+
+<p>
+Treinamento de equalização vocálica em cantores produziu alterações mensuráveis em F1/F2,
+frequentemente compatíveis com uma configuração lingual mais central.
+</p>
+
+<p>
+Isso sugere uma ferramenta:
+se Neh fica excessivamente aberto/espalhado e Noy excessivamente arredondado,
+aproxime um pouco os dois <strong>sem apagar o contraste</strong>.
+</p>
+
+<div class="key">
+Equalizar = reduzir extremos desnecessários.<br>
+Não = fazer Neh e Noy soarem iguais.
+</div>
+</section>
+
+<section>
+<h3>27. Progressão 8 — Neh extremo ↔ Noy extremo, depois centro</h3>
+
+<p>
+Em uma nota fácil:
+faça uma vez Neh muito espalhado e Noy muito arredondado.
+Depois reduza ambos os extremos.
+</p>
+
+<p>
+A terceira versão deve ter:
+<strong>contraste acústico claro + transição pequena o suficiente para ser rápida.</strong>
+</p>
+</section>
+
+<section>
+<h3>28. Progressão 9 — articulação uniforme antes da dinâmica</h3>
+
+<p>
+Faça a escala inteira quase no mesmo volume.
+Não aumente intensidade conforme sobe.
+</p>
+
+<p>
+Quando isso estiver estável,
+experimente um pequeno crescendo até A3 e decrescendo na volta.
+</p>
+
+<p>
+Se o crescendo endurece o O de Noy,
+reduza o arco dinâmico.
+</p>
+</section>
+
+<section>
+<h3>29. Progressão 10 — duas intensidades</h3>
+
+<p>
+Faça a escala em volume moderado.
+Depois repita 15% mais leve.
+</p>
+
+<p>
+Tente manter exatamente a mesma nitidez de Neh e Noy.
+Se a articulação só fica clara com volume alto,
+você está usando energia acústica como substituto de precisão.
+</p>
+</section>
+
+<section>
+<h3>30. Velocidade: reduza o tamanho do gesto antes de acelerar</h3>
+
+<p>
+Comece aproximadamente em 72–88 bpm.
+Depois suba para 96–112 bpm se permanecer limpo.
+</p>
+
+<p>
+Os números são referências pedagógicas.
+O princípio real é:
+</p>
+
+<div class="key">
+<strong>antes de acelerar, torne o movimento menor.</strong>
+</div>
+
+<p>
+Um O enorme pode funcionar lentamente e falhar totalmente quando a sequência fica rápida.
+</p>
+</section>
+
+<section>
+<h3>31. Progressão 11 — “O 10% menor”</h3>
+
+<p>
+Aumente um pouco o andamento
+e imagine que o arredondamento de Noy é 10% menor,
+mas continua claramente audível.
+</p>
+
+<p>
+Se a vogal perde identidade, devolva parte do gesto.
+Se continua clara, você encontrou economia.
+</p>
+</section>
+
+<section>
+<h3>32. Progressão 12 — articulação e pitch em tempos diferentes</h3>
+
+<p>
+Fale Neh Noy rapidamente sem cantar.
+Depois cante a escala lentamente.
+</p>
+
+<p>
+Tente transportar para o canto
+a <strong>economia labial da fala rápida</strong>
+sem transportar sua pressa.
+</p>
+</section>
+
+<section>
+<h3>33. O violão: quatro níveis</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as 15 notas.</p>
+</div>
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão em A2, C#3, E3, G#3, A3 e os mesmos pontos na descida.</p>
+</div>
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão apenas em A2 e A3.</p>
+</div>
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque A2, cante toda a escala e confira A2 final.</p>
+</div>
+
+<p>
+Não retire o violão no mesmo momento em que aumenta velocidade ou transposição.
+</p>
+</section>
+
+<section>
+<h3>34. Progressão 13 — nota “fantasma” no grau 7</h3>
+
+<p>
+Toque a subida até F#3,
+omita G#3 no violão e volte a tocar A3.
+Você precisa cantar G#3 corretamente no espaço.
+</p>
+
+<p>
+Depois faça o inverso na descida.
+</p>
+
+<div class="key">
+Isso testa se o semitom G#→A está realmente internalizado.
+</div>
+</section>
+
+<section>
+<h3>35. Transposição: o objetivo continua sendo articulação</h3>
+
+<p>
+Suba o exercício meio tom por vez.
+Não transforme o ID 20 em prova de extensão.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>Noy exige bico cada vez maior</td><td>Compensação labial crescente.</td></tr>
+<tr><td>Neh vira sorriso rígido</td><td>Contraste sendo exagerado.</td></tr>
+<tr><td>Mandíbula acompanha cada grau</td><td>Pitch e articulação acoplados.</td></tr>
+<tr><td>A3 equivalente aumenta muito em volume</td><td>Pitch comprado com pressão.</td></tr>
+<tr><td>O de Noy desaparece na velocidade</td><td>Gesto pequeno demais ou timing inadequado.</td></tr>
+<tr><td>Pequena centralização da vogal reduz esforço</td><td>Pode ser adaptação funcional.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>36. Vibrato: não é prioridade</h3>
+
+<p>
+As sílabas mudam rapidamente e o objetivo é articulação.
+Mantenha notas relativamente retas.
+</p>
+
+<p>
+Se quiser verificar liberdade,
+sustente ocasionalmente o A3 em Noy:
+1–2 s reto e depois vibrato natural.
+Observe se os lábios continuam flexíveis.
+</p>
+
+<p>
+Não acrescente vibrato como parte obrigatória do exercício.
+</p>
+</section>
+
+<section>
+<h3>37. Teste avançado — mesmo Noy, três estratégias</h3>
+
+<p>
+Em uma nota fácil, produza Noy três vezes:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Mais lábios</strong>arredondamento/protrusão maiores.</div>
+<div class="box"><strong>Equilibrado</strong>lábios + língua + mandíbula coordenados.</div>
+<div class="box"><strong>Menos lábios</strong>reduza protrusão e deixe o trato compensar.</div>
+</div>
+
+<p>
+Compare som e esforço.
+Não existe obrigação de a estratégia intermediária ser geometricamente “a correta”,
+mas normalmente queremos evitar dependência extrema de um único articulador.
+</p>
+</section>
+
+<section>
+<h3>38. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Noy fica rígido</td><td>O transformado em pose</td><td>Câmera lenta: forma→O→libera.</td></tr>
+<tr><td>O não aparece</td><td>Arredondamento/timing insuficiente</td><td>Noy lento; O exagerado uma vez, depois reduzir.</td></tr>
+<tr><td>Neh parece artificial</td><td>Sorriso lateral excessivo</td><td>Menos lábios; língua faz mais trabalho.</td></tr>
+<tr><td>Mandíbula mastiga a escala</td><td>Pitch controlado pela boca</td><td>Neh↔Noy na mesma nota; dedo no queixo.</td></tr>
+<tr><td>C#→D desafina</td><td>Semitom encoberto pela troca articulatória</td><td>Isolar numa vogal → recolocar sílaba.</td></tr>
+<tr><td>G#→A fica grande demais</td><td>Topo + semitom mal internalizados</td><td>G#–A–G# mais leve com violão.</td></tr>
+<tr><td>A3 exige boca enorme</td><td>Compensação prematura</td><td>Reduzir volume e testar pequena adaptação.</td></tr>
+<tr><td>Velocidade apaga o contraste</td><td>Amplitude/timing fora do ideal</td><td>Reduzir andamento e achar gesto mínimo eficaz.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>39. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Neh</strong>claro sem sorriso rígido.</div>
+<div class="box"><strong>Noy</strong>O audível e arredondado sem bico preso.</div>
+<div class="box"><strong>Retorno</strong>lábios desfazem o O rapidamente.</div>
+<div class="box"><strong>Mandíbula</strong>muda pela vogal, não por cada grau.</div>
+<div class="box"><strong>Escala</strong>os dois semitons entram com precisão.</div>
+<div class="box"><strong>Velocidade</strong>aumenta enquanto os gestos ficam menores.</div>
+</div>
+</section>
+
+<section>
+<h3>40. Sessão-modelo — 7 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Contraste · ~1 min</h4>
+<p>Neh↔Noy na mesma nota; depois Noy em câmera lenta.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Mobilidade · ~1 min</h4>
+<p>Forma o O → libera; dedo leve no queixo; gesto mínimo eficaz.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Escala ascendente · ~1–2 min</h4>
+<p>Violão em todas as notas; foco C#↔D e G#↔A.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Escala descendente · ~1 min</h4>
+<p>Mantenha clareza articulatória enquanto o pitch volta.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Escala completa · ~1–2 min</h4>
+<p>Neh/Noy conforme o áudio, intensidade uniforme.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Uma variável · ~1 min</h4>
+<p>Escolha velocidade, dinâmica, gesto menor ou retirada do violão.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Transposição · ~1 min</h4>
+<p>Suba apenas enquanto o O continuar claro e móvel.</p>
+</div>
+
+<div class="phase">
+<h4>8 · Fechamento</h4>
+<p>Volte a uma tonalidade confortável e faça uma passagem em que
+os lábios pareçam <strong>rápidos e elásticos</strong>, não simplesmente “relaxados”.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Neh Noy Scale”.
+A aula parte do objetivo específico da ficha — flexibilidade de boca/lábios —
+e aplica estudos primários sobre arredondamento labial, coarticulação antecipatória,
+equivalência motora, abertura mandibular em cantores, efeitos de vogais sobre a articulação,
+equalização vocálica e formant tuning.
+As progressões Neh↔Noy na mesma nota, Noy em câmera lenta,
+“gesto mínimo eficaz” e separação subida/descida são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Bell-Berti F, Harris KS.
+<em>Temporal patterns of coarticulation: lip rounding.</em>
+J Acoust Soc Am. 1982;71(2):449–454.
+DOI: 10.1121/1.387466. PMID: 7069059.
+</li>
+
+<li>
+Lubker J.
+<em>Temporal aspects of speech production: anticipatory labial coarticulation.</em>
+Phonetica. 1981;38(1–3):51–65.
+DOI: 10.1159/000260014. PMID: 7267722.
+</li>
+
+<li>
+Bell-Berti F, Harris KS.
+<em>Anticipatory labial coarticulation: experimental, biological, and linguistic variables.</em>
+J Acoust Soc Am. 1982.
+PMID: 7069058.
+</li>
+
+<li>
+Perkell JS, Matthies ML, Svirsky MA, Jordan MI.
+<em>Trading relations between tongue-body raising and lip rounding in production of the vowel /u/:
+a pilot “motor equivalence” study.</em>
+J Acoust Soc Am. 1993;93(5):2948–2961.
+DOI: 10.1121/1.405814. PMID: 8315158.
+</li>
+
+<li>
+Hughes OM, Abbs JH.
+<em>Labial-mandibular coordination in the production of speech:
+implications for the operation of motor equivalence.</em>
+Phonetica. 1976;33(3):199–221.
+DOI: 10.1159/000259722. PMID: 996113.
+</li>
+
+<li>
+Sundberg J, Skoog J.
+<em>Dependence of jaw opening on pitch and vowel in singers.</em>
+J Voice. 1997;11(3):301–306.
+DOI: 10.1016/S0892-1997(97)80008-2. PMID: 9297674.
+</li>
+
+<li>
+Lim M, Lin E, Bones P.
+<em>Vowel effect on glottal parameters and the magnitude of jaw opening.</em>
+J Voice. 2006;20(1):46–54.
+DOI: 10.1016/j.jvoice.2004.09.003. PMID: 15941648.
+</li>
+
+<li>
+Dromey C, Heaton E, Hopkin JA.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2011;25(6):678–682.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+
+<li>
+Sundberg J, Lã FMB, Gill BP.
+<em>Formant tuning strategies in professional male opera singers.</em>
+J Voice. 2013;27(3):278–288.
+DOI: 10.1016/j.jvoice.2012.12.002. PMID: 23453594.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

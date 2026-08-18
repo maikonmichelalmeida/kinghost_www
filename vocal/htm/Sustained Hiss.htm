@@ -3,26 +3,464 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sustained Hiss — foco de estudo</title>
+<title>Sustained Hiss — ID 1</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1120px}
+.lesson-card p,.lesson-card li{line-height:1.58}
+.lesson-card h3{margin-top:1.35rem;margin-bottom:.45rem}
+.lead{font-size:1.04rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{
+  border-left:3px solid var(--accent2);
+  background:var(--panel2);
+  padding:.8rem .95rem;
+  margin:.85rem 0
+}
+.grid2,.grid3,.grid4{display:grid;gap:.65rem;margin:.7rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:.8rem .9rem
+}
+.box strong,.phase h4{color:var(--accent);display:block;margin:0 0 .25rem}
+table{width:100%;border-collapse:collapse;margin:.7rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.52rem .62rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.2rem;padding-top:.9rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.25rem}
+.refs li{margin:.38rem 0}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{
+  counter-increment:step;
+  margin:.62rem 0;
+  padding-left:2.15rem;
+  position:relative
+}
+.protocol li::before{
+  content:counter(step);
+  position:absolute;left:0;top:.08rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--accent);color:#fff;font-weight:700;font-size:.8rem
+}
+@media(max-width:800px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 1 · Respiração</p>
-  <h2>Controle de fluxo, não duração máxima.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Inspire sem elevar os ombros e solte um “sss” uniforme.</li><li>Cronometre apenas depois de conseguir pressão estável do início ao fim.</li><li>Compare o começo e o final: o som não deve morrer nem disparar.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Abdômen responde de forma gradual.</li><li>Pescoço e mandíbula ficam passivos.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Esvaziar tudo à força.</li><li>Competir por segundos sacrificando a regularidade.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Faça 3 repetições limpas; aumente o tempo só quando as três forem semelhantes.</p>
+
+<p class="eyebrow">ID 1 · Sustained Hiss</p>
+<h2>Controle expiratório: gastar o ar de forma previsível, não simplesmente durar mais</h2>
+
+<p class="lead">
+O <strong>Sustained Hiss</strong> isola uma parte muito específica do canto:
+a capacidade de administrar a expiração. Como o <strong>“sss” é surdo</strong> — as pregas vocais
+não estão produzindo uma nota — este exercício não treina diretamente afinação, registro, vibrato,
+ressonância ou fechamento glótico. A vantagem é justamente retirar essas variáveis e observar
+o comportamento respiratório quase sozinho.
+</p>
+
+<div class="key">
+<strong>Meta do exercício:</strong>
+produzir um “sss” uniforme do início ao fim com o mínimo de correções corporais,
+sem despejar o ar no começo e sem apertar o corpo para sobreviver aos últimos segundos.
+</div>
+
+<section>
+<h3>1. “Suporte” não é força abdominal máxima</h3>
+
+<p>
+A respiração no canto resulta da interação entre <strong>volume pulmonar, caixa torácica,
+parede abdominal e pressão necessária para a tarefa vocal</strong>. Estudos de cinemática respiratória
+mostram que cantores treinados desenvolvem estratégias coordenadas entre tórax e abdômen,
+mas não existe um único desenho corporal obrigatório para todos.
+</p>
+
+<p>
+Isso é importante porque instruções como “mantenha a barriga para fora”, “aperte o abdômen”
+ou “segure o diafragma” podem induzir movimentos artificiais que não correspondem ao que
+cantores realmente fazem. Estudos clássicos inclusive mostraram que a percepção subjetiva
+dos próprios cantores sobre como respiravam nem sempre correspondia ao movimento medido.
+</p>
+
+<div class="key">
+Para este exercício, pense menos em <strong>posição corporal fixa</strong> e mais em
+<strong>resultado:</strong> fluxo regular, tórax sem colapso abrupto e abdômen livre para responder.
+</div>
+</section>
+
+<section>
+<h3>2. A inspiração correta é confortável, não máxima</h3>
+
+<p>
+Não tente “encher 100% dos pulmões” antes de cada repetição. Inspirar até o limite pode criar
+rigidez torácica, elevar ombros e fazer você começar a expiração sob pressão excessiva.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Silenciosa</strong>O ar entra sem puxada ruidosa ou garganta apertada.</div>
+<div class="box"><strong>Ampla</strong>Costelas inferiores e abdômen podem se expandir naturalmente.</div>
+<div class="box"><strong>Submáxima</strong>Pare quando sentir que já há ar suficiente para a tarefa.</div>
+</div>
+
+<p>
+Para começar, uma inspiração confortável seguida de 10–15 segundos de “sss”
+é mais útil do que uma inspiração extrema seguida de 40 segundos de luta.
+</p>
+</section>
+
+<section>
+<h3>3. A emissão: o “sss” deve ser economicamente constante</h3>
+
+<p>
+O som é produzido pela turbulência do ar passando por uma pequena constrição oral.
+A abertura deve permanecer praticamente igual. Se você muda muito a abertura dos dentes ou da língua,
+muda também a resistência e perde a comparação entre o início e o fim.
+</p>
+
+<ol class="protocol">
+<li>Inspire confortavelmente.</li>
+<li>Comece o “sss” sem explosão inicial.</li>
+<li>Mantenha a mesma sensação de intensidade.</li>
+<li>Evite deixar o tórax desabar rapidamente nos primeiros segundos.</li>
+<li>Não aperte garganta, mandíbula ou língua quando o ar diminuir.</li>
+<li>Pare <strong>antes</strong> de precisar espremer os últimos resíduos de ar.</li>
+</ol>
+
+<p>
+O melhor final é aquele em que você poderia continuar mais um pouco, mas escolhe parar
+porque a coordenação começaria a se degradar.
+</p>
+</section>
+
+<section>
+<h3>4. O erro mais comum: gastar demais no começo</h3>
+
+<p>
+Faça uma repetição e observe os três primeiros segundos. Se o “sss” começa grande e depois rapidamente
+fica menor, você está usando um fluxo inicial acima do necessário.
+</p>
+
+<div class="key">
+<strong>Correção:</strong> comece deliberadamente cerca de 10–20% mais leve do que sua tendência natural.
+Se a duração aumentar sem sensação de “economizar desesperadamente”, você encontrou um fluxo melhor.
+</div>
+
+<p>
+Esse é um aprendizado muito transferível para canto: frases longas costumam falhar não porque
+“faltou capacidade pulmonar”, mas porque o gasto inicial foi incompatível com a duração da frase.
+</p>
+</section>
+
+<section>
+<h3>5. O segundo erro: transformar os últimos segundos em musculação</h3>
+
+<p>
+No fim da expiração, a pressão elástica natural do sistema respiratório diminui e a participação
+muscular necessária pode mudar. Isso não significa que você deva contrair todo o abdômen
+e comprimir o tórax até não restar ar algum.
+</p>
+
+<p>
+Estudos com cantores mostram que a cinemática respiratória muda conforme a demanda,
+a duração da tarefa e a intensidade, e que padrões experientes não são simplesmente
+“mais contração abdominal”. Em alguns trabalhos, iniciantes apresentaram mais atividade abdominal
+global e colapso torácico, enquanto profissionais distribuíam melhor a estratégia respiratória.
+</p>
+
+<p>
+Portanto, pare quando a qualidade do fluxo exigir uma reorganização evidente.
+<strong>Treine controle, não exaustão.</strong>
+</p>
+</section>
+
+<section>
+<h3>6. Use o violão como relógio musical</h3>
+
+<p>
+Como não existe pitch neste exercício, o violão tem uma função muito útil:
+transformar segundos em <strong>frase musical medida</strong>.
+</p>
+
+<div class="grid4">
+<div class="box"><strong>8 pulsos</strong>Base fácil.</div>
+<div class="box"><strong>12 pulsos</strong>Controle intermediário.</div>
+<div class="box"><strong>16 pulsos</strong>Frase longa.</div>
+<div class="box"><strong>20 pulsos</strong>Só se continuar confortável.</div>
+</div>
+
+<p>
+Por exemplo, toque acordes ou batidas a <strong>60 bpm</strong> e mantenha o “sss”
+por 12 pulsos. Na repetição seguinte, tente manter exatamente a mesma densidade sonora
+por 16 pulsos — não apenas produzir um “sss” cada vez mais fraco para vencer o cronômetro.
+</p>
+
+<p>
+Isso aproxima o exercício da função real do canto: <strong>distribuir ar dentro de uma duração musical.</strong>
+</p>
+</section>
+
+<section>
+<h3>7. Progressão eficiente: aumente duração sem perder identidade</h3>
+
+<p>
+Não aumente o tempo em todas as repetições. Estabeleça primeiro uma duração que você reproduz com consistência.
+Uma progressão pedagógica simples:
+</p>
+
+<div class="phase">
+<h4>Nível 1 — 8 pulsos</h4>
+<p>Três repetições muito semelhantes. O objetivo é aprender o fluxo.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2 — 12 pulsos</h4>
+<p>Mesmo “sss”, apenas distribuído por mais tempo.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3 — 16 pulsos</h4>
+<p>Observe especialmente se os quatro últimos pulsos mudam de qualidade.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 4 — duração variável</h4>
+<p>Faça 8 → 16 → 12 → 20 pulsos. Agora você precisa planejar o gasto antes de começar.</p>
+</div>
+
+<p>
+A duração variável é pedagogicamente mais interessante do que fazer sempre “o máximo”.
+No canto real, você precisa adaptar o fluxo à frase que vem, não produzir sempre a maior expiração possível.
+</p>
+</section>
+
+<section>
+<h3>8. O teste mais específico: início e fim devem parecer parentes</h3>
+
+<p>
+Faça uma repetição de 12 ou 16 pulsos e compare mentalmente:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Primeiros 2 pulsos</strong>Há excesso de ar? Ataque explosivo?</div>
+<div class="box"><strong>Últimos 2 pulsos</strong>Há aperto? Tremor? Queda brusca de intensidade?</div>
+</div>
+
+<p>
+O objetivo não é torná-los fisicamente idênticos — as condições pulmonares mudam ao longo da expiração —
+mas manter <strong>a mesma intenção acústica e a mesma facilidade geral.</strong>
+</p>
+</section>
+
+<section>
+<h3>9. Variante de controle: “sss” leve versus moderado</h3>
+
+<p>
+Quando a versão-base estiver estável, faça duas intensidades claramente diferentes:
+</p>
+
+<div class="grid2">
+<div class="box">
+<strong>Leve</strong>
+Fluxo pequeno e duração maior. Útil para perceber economia.
+</div>
+<div class="box">
+<strong>Moderado</strong>
+Mais energia no jato, mas ainda sem pressão corporal excessiva.
+</div>
+</div>
+
+<p>
+Não compare apenas duração. Compare o quanto seu corpo precisa mudar para sustentar cada nível.
+Essa variante ensina que <strong>maior demanda de pressão/fluxo reduz a reserva disponível</strong>,
+um princípio que também aparece quando o canto fica mais intenso.
+</p>
+</section>
+
+<section>
+<h3>10. Variante mais musical: “hiss da frase”</h3>
+
+<p>
+Escolha uma frase de uma música que você realmente canta. Toque o acompanhamento no violão,
+mas em vez de cantar, faça um “sss” durante <strong>exatamente a duração daquela frase</strong>.
+Respire no mesmo ponto em que respiraria na música.
+</p>
+
+<p>
+Depois cante a frase normalmente.
+</p>
+
+<div class="key">
+A pergunta é: <strong>a frase cantada gasta ar de forma muito mais desorganizada que o hiss?</strong>
+Se sim, o problema provavelmente não é apenas respiratório; articulação, fechamento glótico,
+registro ou intensidade podem estar aumentando a demanda.
+</div>
+
+<p>
+Essa comparação é valiosa porque evita atribuir toda dificuldade de frase longa a “falta de apoio”.
+</p>
+</section>
+
+<section>
+<h3>11. Não use este exercício para treinar vibrato, drive ou alcance</h3>
+
+<table>
+<tr><th>Recurso</th><th>Aqui?</th><th>Por quê</th></tr>
+<tr><td>Vibrato</td><td><strong>Não</strong></td><td>Não há fonação nem frequência fundamental para vibrar.</td></tr>
+<tr><td>Drive</td><td><strong>Não</strong></td><td>É uma coordenação fonatória/supraglótica completamente diferente.</td></tr>
+<tr><td>Canudo com voz</td><td><strong>Não como substituição</strong></td><td>Isso transforma a tarefa em SOVT fonado, como o trabalho do ID 13.</td></tr>
+<tr><td>Afinação</td><td><strong>Não</strong></td><td>O “sss” é não vozeado.</td></tr>
+<tr><td>Controle de expiração</td><td><strong>Sim</strong></td><td>É justamente a variável que este exercício isola.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>12. O que a ciência não permite afirmar</h3>
+
+<p>
+É comum encontrar afirmações de que sustained hiss “fortalece o diafragma”,
+“aumenta automaticamente apoio” ou “faz cantar notas mais longas”.
+A evidência disponível não permite uma conclusão tão direta.
+</p>
+
+<p>
+Em cantores clássicos treinados, programas específicos de fortalecimento muscular respiratório
+conseguiram aumentar força inspiratória/expiratória, mas isso <strong>não produziu mudanças consistentes
+nas medidas de voz</strong>. Isso mostra que força respiratória e coordenação vocal não são a mesma coisa.
+</p>
+
+<p>
+Por outro lado, estudos de treinamento vocal e respiratório mostram que padrões de cinemática,
+uso de volume pulmonar e comportamento aerodinâmico podem mudar com treinamento.
+Então o valor deste exercício está melhor descrito como
+<strong>treino de organização e dosagem da expiração</strong>, e não como musculação respiratória.
+</p>
+</section>
+
+<section>
+<h3>13. Como medir progresso sem cair na armadilha do cronômetro</h3>
+
+<table>
+<tr><th>Métrica</th><th>Progresso verdadeiro</th></tr>
+<tr><td><strong>Regularidade</strong></td><td>Menos diferença entre início, meio e fim.</td></tr>
+<tr><td><strong>Repetibilidade</strong></td><td>Três execuções semelhantes sem grande variação.</td></tr>
+<tr><td><strong>Planejamento</strong></td><td>Você adapta naturalmente o fluxo para 8, 12 ou 16 pulsos.</td></tr>
+<tr><td><strong>Conforto</strong></td><td>Menos rigidez para a mesma duração.</td></tr>
+<tr><td><strong>Transferência</strong></td><td>Frases cantadas começam a terminar com mais reserva e menos desespero.</td></tr>
+</table>
+
+<div class="key">
+<strong>Tempo máximo é uma métrica secundária.</strong>
+Um “sss” de 30 s que degrada progressivamente pode ser tecnicamente inferior
+a um de 18 s totalmente estável e reproduzível.
+</div>
+</section>
+
+<section>
+<h3>14. Sessão-modelo — 4 a 6 minutos</h3>
+
+<div class="phase">
+<h4>1 · Calibração</h4>
+<p>2 repetições de 8 pulsos, fluxo leve.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Estabilidade</h4>
+<p>2 repetições de 12–16 pulsos mantendo densidade semelhante.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Planejamento</h4>
+<p>Faça duas durações diferentes, por exemplo 8 e 16 pulsos.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Transferência</h4>
+<p>Faça o hiss no comprimento de uma frase real acompanhada pelo violão e depois cante a mesma frase.</p>
+</div>
+
+<p>
+Entre repetições, faça uma ou duas respirações normais. Não transforme a sequência em hiperventilação
+nem faça dez inspirações profundas consecutivas.
+</p>
+</section>
+
+<section>
+<h3>15. Quando encerrar a repetição</h3>
+
+<p>Pare antes de aparecer qualquer combinação de:</p>
+
+<div class="grid3">
+<div class="box"><strong>Colapso</strong>Tórax despenca e você tenta “buscar” o resto do ar.</div>
+<div class="box"><strong>Aperto</strong>Pescoço, garganta, mandíbula ou língua entram na tarefa.</div>
+<div class="box"><strong>Compressão</strong>Abdômen precisa contrair violentamente para manter o “sss”.</div>
+<div class="box"><strong>Instabilidade</strong>Fluxo começa a pulsar ou desaparecer.</div>
+<div class="box"><strong>Tontura</strong>Interrompa e volte à respiração normal.</div>
+<div class="box"><strong>Competição</strong>Você só está tentando superar o cronômetro.</div>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Há pouca pesquisa experimental que teste especificamente o exercício pedagógico “sustained hiss”
+em cantores saudáveis. Por isso, esta aula não atribui ao “sss” efeitos que não foram demonstrados.
+A base científica vem de estudos de cinemática respiratória, aerodinâmica vocal,
+treinamento respiratório e pedagogia do canto. As progressões por pulsos, duração variável
+e “hiss da frase” são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Watson PJ, Hixon TJ. <em>Respiratory kinematics in classical (opera) singers.</em>
+J Speech Hear Res. 1985;28(1):104–122. DOI: 10.1044/jshr.2801.104. PMID: 3157022.
+</li>
+<li>
+Thorpe CW, Cala SJ, Chapman J, Davis PJ.
+<em>Patterns of breath support in projection of the singing voice.</em>
+J Voice. 2001;15(1):86–104. DOI: 10.1016/S0892-1997(01)00009-1. PMID: 12269638.
+</li>
+<li>
+Mendes AP, Brown WS, Sapienza C, Rothman HB.
+<em>Effects of vocal training on respiratory kinematics during singing tasks.</em>
+Folia Phoniatr Logop. 2006;58(5):363–377. DOI: 10.1159/000094570. PMID: 16966837.
+</li>
+<li>
+Iwarsson J et al.
+<em>Breathing and Singing: Objective Characterization of Breathing Patterns in Classical Singers.</em>
+PLoS ONE. 2016. PMID: 27159498. PMCID: PMC4861272.
+</li>
+<li>
+McHenry M et al.
+<em>Effects of Bel Canto Training on Acoustic and Aerodynamic Characteristics of the Singing Voice.</em>
+J Voice. 2016. PMID: 26559334.
+</li>
+<li>
+Ray C et al.
+<em>Effects of Respiratory Muscle Strength Training in Classically Trained Singers.</em>
+J Voice. 2018. PMID: 28958873.
+</li>
+<li>
+Traser L et al.
+<em>Differences of respiratory kinematics in female and male singers — a comparative study using dynamic MRI.</em>
+Front Physiol. 2022. PMID: 36544443. PMCID: PMC9760878.
+</li>
+<li>
+Menezes M et al.
+<em>Effects of Diaphragmatic Breathing Exercise on Respiratory Functions and Vocal Sustenance in Apparently Healthy Vocalists.</em>
+J Voice. 2022. DOI: 10.1016/j.jvoice.2022.09.025. PMID: 36333216.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

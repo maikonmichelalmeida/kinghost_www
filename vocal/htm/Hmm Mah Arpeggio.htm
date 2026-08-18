@@ -3,26 +3,831 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hmm Mah Arpeggio — foco de estudo</title>
+<title>Hmm Mah Arpeggio — ID 7</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1160px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.4rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{
+content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;
+display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem
+}
+.notes{display:grid;grid-template-columns:repeat(13,minmax(50px,1fr));gap:.32rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .2rem;text-align:center}
+.note b{display:block;font-size:.96rem}.note span{font-size:.74rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}
+.refs li{margin:.4rem 0}
+@media(max-width:960px){.notes{grid-template-columns:repeat(7,1fr)}}
+@media(max-width:820px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.notes{grid-template-columns:repeat(5,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 7 · Tom</p>
-  <h2>Transferência de ressonância do fechado para o aberto.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Comece o ‘Hmm’ fácil e abra para ‘Mah’ sem aumentar a pressão.</li><li>O arpejo deve manter o mesmo centro de emissão.</li><li>Use o violão para conferir os saltos de terça e quinta.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>A abertura para ‘Mah’ não desmonta a afinação.</li><li>O som continua livre.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Prender o nariz.</li><li>Tentar fabricar vibração na testa.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Faça primeiro lento; depois conecte o arpejo em uma só linha.</p>
+
+<p class="eyebrow">ID 7 · Hmm Mah Arpeggio</p>
+<h2>Ressonância que transfere: do humming fechado para a vogal aberta</h2>
+
+<p class="lead">
+O <strong>Hmm Mah Arpeggio</strong> não deve ser praticado como duas sonoridades independentes.
+O <strong>Hmm</strong> cria uma condição de trato vocal semiocluído na qual é fácil perceber vibração facial,
+continuidade e economia. O <strong>Mah</strong> abre o trato e testa se essa organização continua funcional
+quando a semioclusão desaparece. O arpejo ainda acrescenta saltos grandes, incluindo a oitava,
+fazendo a coordenação ser testada em uma faixa muito maior que uma escala conjunta.
+</p>
+
+<div class="key">
+<strong>Pergunta central do exercício:</strong>
+o que permanece quando você troca <strong>Hmm → Mah</strong>?<br>
+Não tente preservar exatamente o mesmo timbre nem exatamente a mesma vibração no rosto.
+Preserve <strong>facilidade, continuidade, ataque limpo, centro tonal e ausência de pressão extra.</strong>
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A primeira célula é um arpejo maior completo:
+<strong>1–3–5–8–5–3–1</strong>.
+Depois vem <strong>5–3–8–5–3–1</strong>.
+O padrão contém saltos de terça, quinta e, na segunda metade, um salto especialmente grande
+<strong>C#3→A3</strong>.
+</p>
+
+<p>
+A execução deve seguir a divisão exata entre Hmm e Mah do seu áudio de referência.
+Pedagogicamente, porém, pense no Hmm como <strong>calibração</strong>
+e no Mah como <strong>transferência</strong>.
+</p>
+</section>
+
+<section>
+<h3>2. O que o humming muda fisicamente</h3>
+
+<p>
+No humming, os lábios estão fechados e a saída principal do som ocorre pela cavidade nasal.
+Essa configuração aumenta a impedância acústica vista pela fonte glótica e faz parte da família
+dos exercícios de trato vocal semiocluído — SOVT.
+</p>
+
+<p>
+Pesquisas com humming, tubos, canudos e outros SOVT mostram que a semioclusão pode alterar
+o padrão de vibração das pregas, a relação entre fonte e trato vocal e a sensação de esforço.
+Em estudos de humming, foram observadas melhora imediata de medidas de regularidade glótica
+e mudanças de qualidade vocal em diferentes populações.
+</p>
+
+<div class="key">
+O Hmm não é “mágico” porque vibra no rosto.
+Ele cria uma <strong>condição acústica diferente</strong> que pode tornar uma coordenação eficiente
+mais fácil de encontrar e perceber.
+</div>
+</section>
+
+<section>
+<h3>3. A vibração no rosto é real — mas é feedback, não destino do som</h3>
+
+<p>
+A sensação no nariz, lábio superior ou região anterior da face não é apenas imaginação.
+Estudos com acelerômetros mediram vibração facial durante voz ressonante e encontraram
+maior magnitude em sons como <strong>/m/</strong> do que em /a/, inclusive na ponte nasal e lábio superior.
+</p>
+
+<p>
+Isso torna o Hmm excelente como <strong>feedback somatossensorial</strong>.
+Mas a interpretação correta é:
+“estou sentindo uma consequência mecânica desta configuração”,
+e não:
+“preciso colocar a voz fisicamente na máscara”.
+</p>
+
+<div class="key">
+No Mah, a vibração facial <strong>pode diminuir</strong> sem que a emissão tenha piorado.
+Se você tentar manter exatamente a mesma sensação empurrando o som “para a frente”,
+pode criar tensão desnecessária.
+</div>
+</section>
+
+<section>
+<h3>4. Como fazer o Hmm</h3>
+
+<div class="grid3">
+<div class="box"><strong>Lábios</strong>Encostados, sem pressionar um contra o outro.</div>
+<div class="box"><strong>Dentes</strong>Sem mordida; pequena distância confortável.</div>
+<div class="box"><strong>Língua</strong>Relaxada, sem empurrar o palato ou os dentes.</div>
+</div>
+
+<p>
+O som deve ser claramente vozeado e afinado.
+Evite um “Hmm” excessivamente soproso ou um zumbido produzido com pressão nos lábios.
+</p>
+
+<p>
+Faça uma nota confortável e procure uma sensação de
+<strong>vibração clara + pouco esforço + pitch estável</strong>.
+Esses três elementos juntos são mais úteis do que maximizar qualquer um isoladamente.
+</p>
+</section>
+
+<section>
+<h3>5. Não aperte os lábios para conseguir mais vibração</h3>
+
+<p>
+É possível aumentar artificialmente a sensação facial pressionando os lábios,
+mas isso não significa maior eficiência glótica.
+</p>
+
+<p>
+Faça um teste breve:
+produza Hmm com lábios muito apertados por apenas um instante e compare com um Hmm de contato leve.
+A versão útil deve oferecer vibração sem sensação de resistência muscular na boca.
+</p>
+
+<div class="key">
+<strong>Contato labial mínimo suficiente.</strong>
+Mais pressão labial não equivale a mais ressonância útil.
+</div>
+</section>
+
+<section>
+<h3>6. O Mah: abrir sem “jogar fora” a coordenação</h3>
+
+<p>
+Ao abrir para Mah, três coisas mudam imediatamente:
+a saída acústica deixa de ser predominantemente nasal,
+a geometria do trato vocal muda e a vogal /a/ apresenta formantes diferentes dos do humming.
+</p>
+
+<p>
+Portanto, o Mah <strong>não pode soar idêntico</strong> ao Hmm.
+A tarefa é conservar a organização funcional, não copiar o espectro acústico.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Preserve</strong>Facilidade e fluxo coordenado.</div>
+<div class="box"><strong>Preserve</strong>Pitch centrado e ataque sem impacto.</div>
+<div class="box"><strong>Permita mudar</strong>Timbre e localização da vibração percebida.</div>
+</div>
+</section>
+
+<section>
+<h3>7. O erro clássico da transferência: Hmm ótimo, Mah pesado</h3>
+
+<p>
+Muitas pessoas fazem um humming leve e, no instante em que abrem a boca,
+produzem um Mah maior, mais alto e mais pressionado.
+Isso destrói exatamente o que o exercício deveria ensinar.
+</p>
+
+<div class="key">
+O primeiro Mah deve parecer <strong>menor do que você acha necessário</strong>.
+Não “projete” a vogal. Apenas abra a saída e veja quanto da facilidade permanece.
+</div>
+
+<p>
+Depois, se precisar de mais intensidade, aumente gradualmente sem perder essa base.
+</p>
+</section>
+
+<section>
+<h3>8. Técnica-chave: Hmm → Mmm-ah → Mah</h3>
+
+<p>
+Antes de fazer o arpejo completo, treine a transição numa única nota:
+</p>
+
+<div class="phase">
+<h4>Etapa 1 · Hmm</h4>
+<p>1–2 segundos de humming confortável.</p>
+</div>
+
+<div class="phase">
+<h4>Etapa 2 · Mmm-ah</h4>
+<p>Abra lentamente para /a/ mantendo a mesma nota.</p>
+</div>
+
+<div class="phase">
+<h4>Etapa 3 · Mah</h4>
+<p>Reduza a duração do /m/ até virar uma sílaba normal.</p>
+</div>
+
+<p>
+Essa progressão torna a transição observável.
+Se a voz muda abruptamente de esforço no momento da abertura,
+volte à etapa 2 e reduza a velocidade da transição.
+</p>
+</section>
+
+<section>
+<h3>9. O /a/ não precisa ficar enorme</h3>
+
+<p>
+A abertura da boca altera F1 e outras ressonâncias.
+Um Mah excessivamente aberto pode produzir uma mudança acústica muito maior do que o necessário
+e facilitar o aparecimento de tensão mandibular.
+</p>
+
+<p>
+Comece com um <strong>/a/ moderado e natural</strong>.
+Conforme o exercício é transposto para regiões mais altas,
+alguma adaptação de vogal/mandíbula pode se tornar legítima;
+mas ela deve surgir pela necessidade acústica, não como gesto automático.
+</p>
+</section>
+
+<section>
+<h3>10. O arpejo 1–3–5–8: construa como estrutura, não como quatro saltos separados</h3>
+
+<p>
+Toque no violão:
+<strong>A2–C#3–E3–A3</strong>.
+Ouça o acorde maior contido nessas notas.
+</p>
+
+<p>
+A ideia é internalizar uma arquitetura:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>1</strong>Tônica: ponto de partida.</div>
+<div class="box"><strong>3</strong>Define a qualidade maior.</div>
+<div class="box"><strong>5</strong>Estabiliza a tríade.</div>
+<div class="box"><strong>8</strong>Retorna à identidade da tônica em outra oitava.</div>
+</div>
+
+<p>
+Quando você ouve o arpejo como <strong>um acorde desdobrado</strong>,
+a oitava deixa de parecer uma nota isolada “lá em cima”.
+</p>
+</section>
+
+<section>
+<h3>11. Use o violão em três níveis</h3>
+
+<div class="phase">
+<h4>Nível 1 · Guia total</h4>
+<p>Toque todas as notas junto com a voz.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2 · Acorde antes, voz depois</h4>
+<p>Toque A maior como acorde, deixe soar e depois cante o arpejo nota a nota.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3 · Apenas tônica</h4>
+<p>Toque A2, cante o arpejo e confira A3 no violão somente depois.</p>
+</div>
+
+<p>
+Estudos de precisão em arpejos mostram que treinamento e condições de feedback
+afetam a acurácia de pitch. A meta é usar o violão para construir o mapa,
+e não permanecer dependente dele em cada ataque.
+</p>
+</section>
+
+<section>
+<h3>12. A oitava: antecipe auditivamente antes de cantar</h3>
+
+<p>
+Antes de A3, não “suba fisicamente”.
+Ouça mentalmente a oitava e deixe o sistema motor preparar a altura.
+</p>
+
+<div class="key">
+<strong>O ouvido salta primeiro; o corpo responde depois.</strong>
+</div>
+
+<p>
+Se A3 só aparece quando você aumenta muito volume, levanta o queixo ou abre a boca de repente,
+o problema não é apenas alcance: o salto ainda não está coordenado.
+</p>
+</section>
+
+<section>
+<h3>13. O salto C#3→A3 da segunda metade é ainda mais revelador</h3>
+
+<p>
+Esse salto é de uma sexta menor ascendente (+8 semitons).
+Como ele parte do terceiro grau e chega à oitava,
+é fácil errar por antecipação insuficiente ou compensar com força.
+</p>
+
+<p>
+Isole:
+<strong>C#3 → A3</strong>.
+Toque os dois no violão, depois toque só C#3 e tente chegar a A3.
+Confira depois.
+</p>
+
+<p>
+Se esse salto falha enquanto A2→A3 funciona,
+o problema é mais <strong>intervalar/auditivo</strong> do que simplesmente de alcance.
+</p>
+</section>
+
+<section>
+<h3>14. Progressão 1 — Hmm em todo o arpejo</h3>
+
+<p>
+Antes de fazer Mah, cante o padrão inteiro apenas em Hmm.
+Isso cria uma referência de:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Esforço</strong>Quanto trabalho é realmente necessário.</div>
+<div class="box"><strong>Afinação</strong>Como os saltos soam sem mudança grande de vogal.</div>
+<div class="box"><strong>Continuidade</strong>Se a oitava entra sem quebra ou pressão.</div>
+</div>
+
+<p>
+Depois repita em Mah e compare.
+O contraste é mais útil do que tentar imaginar abstratamente “ressonância”.
+</p>
+</section>
+
+<section>
+<h3>15. Progressão 2 — Hmm → Mah nota por nota</h3>
+
+<p>
+Em uma tonalidade confortável, faça cada grau em par:
+</p>
+
+<div class="key">
+<strong>Hmm(A2) → Mah(A2)<br>
+Hmm(C#3) → Mah(C#3)<br>
+Hmm(E3) → Mah(E3)<br>
+Hmm(A3) → Mah(A3)</strong>
+</div>
+
+<p>
+Esse protocolo mostra exatamente <strong>em qual região</strong> a transferência começa a falhar.
+Talvez A2 e C#3 sejam fáceis, mas A3 fique pesado ao abrir.
+Nesse caso, você encontrou o ponto específico de estudo.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 3 — “ponte de M” cada vez menor</h3>
+
+<p>
+No A3, experimente:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Mmmm-ah</strong>Ponte longa.</div>
+<div class="box"><strong>Mmah</strong>Ponte média.</div>
+<div class="box"><strong>Mah</strong>Ataque normal.</div>
+</div>
+
+<p>
+Se Mah direto perde a facilidade, volte um passo.
+O objetivo é <strong>retirar gradualmente a ajuda do humming</strong>,
+não provar que você consegue abandoná-la de uma vez.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 4 — Mah em menor intensidade</h3>
+
+<p>
+Depois do Hmm, faça o Mah aproximadamente <strong>20% mais leve</strong> que sua tendência espontânea.
+Isso reduz a chance de confundir “abrir a boca” com “aumentar pressão”.
+</p>
+
+<p>
+Quando a versão leve estiver estável, aumente para volume moderado
+sem deixar o ataque endurecer.
+</p>
+</section>
+
+<section>
+<h3>18. Progressão 5 — dinâmica no humming</h3>
+
+<p>
+Há estudos mostrando que humming pode permitir aumento gradual de intensidade
+com menor aumento de contato glótico e menor constrição supraglótica
+do que estratégias mais pressionadas.
+</p>
+
+<p>
+Em uma nota confortável, faça:
+<strong>Hmm leve → moderado → leve</strong>.
+Depois faça Mah tentando preservar a mesma ideia de crescimento gradual.
+</p>
+
+<div class="key">
+Não use isso no A3 máximo da sessão.
+Treine dinâmica onde o pitch já é fácil.
+</div>
+</section>
+
+<section>
+<h3>19. Progressão 6 — uma vogal intermediária antes do Mah</h3>
+
+<p>
+Se Hmm→Mah for uma mudança muito brusca, use:
+</p>
+
+<div class="phase">
+<h4>Hmm → Moo → Mah</h4>
+<p>
+/u/ mantém uma configuração mais fechada que /a/ e pode funcionar como etapa intermediária.</p>
+</div>
+
+<p>
+Depois retire Moo:
+<strong>Hmm → Mah</strong>.
+</p>
+
+<p>
+Isso é especialmente útil em transposições mais altas,
+quando abrir diretamente para /a/ provoca aumento abrupto de esforço.
+</p>
+</section>
+
+<section>
+<h3>20. Não tente manter “a mesma ressonância” literalmente</h3>
+
+<p>
+Essa frase da ficha precisa ser interpretada com cuidado.
+Humming e /a/ têm ressonâncias, acoplamentos e espectros diferentes.
+Fisicamente, a configuração não pode permanecer igual.
+</p>
+
+<div class="key">
+Tradução técnica da instrução:
+<strong>mantenha a mesma eficiência percebida, não o mesmo espectro acústico.</strong>
+</div>
+
+<p>
+Os sinais de boa transferência são:
+ataque fácil, estabilidade, fluxo controlado, ausência de pressão e sensação de que o som responde imediatamente.
+</p>
+</section>
+
+<section>
+<h3>21. O humming também pode estabilizar a oscilação</h3>
+
+<p>
+Estudos com eletroglotografia e vídeo laríngeo de alta velocidade encontraram
+redução de irregularidades vibratórias durante humming em participantes com e sem alterações vocais.
+Isso não significa que humming “corrige” qualquer problema laríngeo,
+mas reforça que ele pode criar uma condição fonatória mais regular.
+</p>
+
+<p>
+No seu treino, use isso de modo simples:
+se o Mah estiver instável, volte ao Hmm por uma repetição,
+recupere a coordenação e tente novamente.
+</p>
+</section>
+
+<section>
+<h3>22. O humming não é automaticamente superior a outros SOVT</h3>
+
+<p>
+Um ensaio randomizado recente com cantores de coro comparou quatro semanas de
+<strong>humming, fonação em tubo na água e exercício respiratório</strong>.
+Alguns dos resultados mais claros favoreceram o tubo na água.
+</p>
+
+<p>
+Isso é um lembrete importante:
+<strong>não existe razão para tratar humming como “o melhor SOVT”.</strong>
+Neste exercício ele é valioso porque oferece uma ponte natural para Mah
+e um feedback tátil muito claro.
+</p>
+</section>
+
+<section>
+<h3>23. Tempo e articulação: comece pelo modo mais preciso</h3>
+
+<p>
+Pesquisa com arpejos cantados mostrou maior imprecisão em condições
+<strong>rápidas e staccato</strong>, especialmente em cantores menos treinados,
+e maior dificuldade em tessituras altas.
+</p>
+
+<p>
+Para este exercício:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Base</strong>Legato moderado.</div>
+<div class="box"><strong>Depois</strong>Aumente andamento.</div>
+<div class="box"><strong>Teste</strong>Versão mais separada só quando a afinação estiver firme.</div>
+</div>
+
+<p>
+O foco inicial é coordenação da ressonância e dos intervalos,
+não virtuosismo de velocidade.
+</p>
+</section>
+
+<section>
+<h3>24. Legato não significa deslizar</h3>
+
+<p>
+O ar deve fluir continuamente, mas as frequências precisam chegar aos alvos.
+Não faça:
+<strong>Aaaa↗C#eee↗Eeee↗Aaaa</strong> como uma sirene.
+</p>
+
+<p>
+Faça transições conectadas, porém com percepção clara de
+<strong>1 → 3 → 5 → 8</strong>.
+O violão ajuda a impedir que o arpejo vire um portamento genérico.
+</p>
+</section>
+
+<section>
+<h3>25. Transposição: use o Mah como marcador de limite</h3>
+
+<p>
+Suba meio tom por repetição.
+O Hmm frequentemente continuará fácil por mais tempo que o Mah.
+Isso é informação útil.
+</p>
+
+<table>
+<tr><th>Situação</th><th>Leitura</th></tr>
+<tr><td>Hmm e Mah igualmente fáceis</td><td>Transferência sólida.</td></tr>
+<tr><td>Hmm fácil, Mah pesado</td><td>Problema de abertura/transferência, não necessariamente de pitch.</td></tr>
+<tr><td>Hmm e Mah ficam tensos</td><td>A tessitura já está ultrapassando a coordenação atual.</td></tr>
+<tr><td>Hmm afina, Mah sobe/baixa</td><td>Mudança de trato está alterando o controle do pitch.</td></tr>
+</table>
+
+<p>
+Pare de subir quando o Mah exigir força evidente,
+mesmo que o Hmm ainda consiga alcançar a nota.
+</p>
+</section>
+
+<section>
+<h3>26. Experimento útil: mantenha o pitch e mude só o trato</h3>
+
+<p>
+Sustente uma nota confortável em Hmm por 1 segundo,
+abra para Mah por 1 segundo e volte para Hmm.
+</p>
+
+<div class="key">
+<strong>Hmm → Mah → Hmm</strong>, sem mudar o pitch.
+</div>
+
+<p>
+Esse exercício mostra de maneira muito clara o quanto
+a sensação e o espectro mudam apenas por alterar o trato vocal.
+Ele ensina você a não confundir <strong>mudança de ressonância com mudança de nota.</strong>
+</p>
+</section>
+
+<section>
+<h3>27. Vowel equalization: Mah não precisa ser idêntico em toda tessitura</h3>
+
+<p>
+Estudos de treinamento de vogais mostram que cantores conseguem modificar
+F1 e F2 de maneira mensurável após instruções de equalização.
+Em regiões mais altas, pequenas adaptações de língua e mandíbula podem ajudar
+a manter continuidade de timbre e eficiência.
+</p>
+
+<p>
+Portanto, ao transpor, permita que o /a/ fique
+<strong>ligeiramente menos aberto ou mais central</strong> se isso acontecer naturalmente
+e reduzir esforço. Não transforme a adaptação em outra vogal completamente diferente.
+</p>
+</section>
+
+<section>
+<h3>28. Vibrato: aqui há uma aplicação melhor do que nos exercícios anteriores</h3>
+
+<p>
+Como o arpejo chega à oitava, você pode transformar o A3 em
+um pequeno teste de sustentação musical.
+</p>
+
+<div class="key">
+Chegue ao grau 8 em <strong>Mah</strong> →
+sustente reto por ~1 segundo →
+deixe o vibrato aparecer por mais 1–2 segundos →
+desça o arpejo.
+</div>
+
+<p>
+Use apenas em algumas repetições.
+Se o vibrato quebra a afinação do salto ou exige mais volume,
+mantenha a nota reta.
+</p>
+</section>
+
+<section>
+<h3>29. Um teste avançado: Mah primeiro, Hmm depois</h3>
+
+<p>
+Normalmente o exercício usa Hmm para facilitar Mah.
+Quando estiver dominado, inverta ocasionalmente:
+</p>
+
+<div class="phase">
+<h4>Mah → Hmm → Mah</h4>
+<p>
+Faça o Mah sem preparação, passe para Hmm e volte ao Mah.</p>
+</div>
+
+<p>
+Se o segundo Mah fica nitidamente mais fácil que o primeiro,
+o humming ainda está produzindo um efeito facilitador que você não internalizou totalmente.
+Seu objetivo de longo prazo é diminuir essa diferença.
+</p>
+</section>
+
+<section>
+<h3>30. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Hmm vibra muito, Mah aperta</td><td>Transferência abrupta</td><td>Mmm-ah → Mah; reduzir intensidade.</td></tr>
+<tr><td>Mah fica enorme</td><td>Abertura associada a aumento de pressão</td><td>Primeiro Mah 20% mais leve.</td></tr>
+<tr><td>A3 só sai no Hmm</td><td>Semioclusão facilita, abertura ainda não coordenada</td><td>Hmm→Moo→Mah na região abaixo do limite.</td></tr>
+<tr><td>A3 entra impreciso</td><td>Oitava não está antecipada</td><td>Tônica → oitava isolada com confirmação no violão.</td></tr>
+<tr><td>C#3→A3 falha</td><td>Salto intervalar específico</td><td>Isolar os dois pitches.</td></tr>
+<tr><td>Lábios apertam no Hmm</td><td>Perseguição de vibração</td><td>Contato labial mínimo.</td></tr>
+<tr><td>Mah muda para outra vogal</td><td>Modificação excessiva</td><td>Voltar uma transposição e estabilizar /a/.</td></tr>
+<tr><td>Arpejo vira sirene</td><td>Portamento substituindo alvos</td><td>Violão em cada grau; andamento menor.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>31. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Transferência</strong>Mah começa tão facilmente quanto Hmm.</div>
+<div class="box"><strong>Oitava</strong>Grau 8 entra sem aumento brusco de volume.</div>
+<div class="box"><strong>Intervalos</strong>1–3–5–8 ficam previsíveis antes do violão.</div>
+<div class="box"><strong>Independência</strong>Menos necessidade de guia nota a nota.</div>
+<div class="box"><strong>Vogal</strong>Mah mantém identidade ao transpor.</div>
+<div class="box"><strong>Economia</strong>Você precisa de menos “efeito de humming” para encontrar a emissão.</div>
+</div>
+</section>
+
+<section>
+<h3>32. Sessão-modelo — 7 a 9 minutos</h3>
+
+<div class="phase">
+<h4>1 · Calibração · ~1 min</h4>
+<p>Hmm em uma nota confortável → Mmm-ah → Mah.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Arpejo em Hmm · ~1 min</h4>
+<p>Faça o motivo inteiro apenas em humming, guiado pelo violão.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Hmm Mah original · ~2 min</h4>
+<p>Execute a versão da ficha e transponha por semitom.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Isolamento · ~1–2 min</h4>
+<p>Escolha apenas um problema: A→A, C#→A ou Hmm→Mah no grau 8.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Transferência · ~1 min</h4>
+<p>Hmm→Mah nota por nota ou Hmm→Moo→Mah.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Fechamento · ~1 min</h4>
+<p>Uma execução confortável em Mah. Opcional: grau 8 reto → vibrato natural → descida.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo científico padronizado chamado “Hmm Mah Arpeggio”.
+A aula combina o desenho específico da sua ficha com evidência sobre humming/SOVT,
+vibração facial, voz ressonante, regularidade glótica, dinâmica, arpejos e controle de pitch,
+além de estudos de vogais e ressonâncias. A estratégia de transferência
+Hmm→Mmm-ah→Mah e as progressões com retirada do violão são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Chen FC, Ma EPM, Yiu EML.
+<em>Facial bone vibration in resonant voice production.</em>
+J Voice. 2014;28(5):596–602.
+PMID: 24629644.
+</li>
+<li>
+Ogawa M et al.
+<em>Investigation of the Immediate Effects of Humming on Vocal Fold Vibration Irregularity
+Using Electroglottography and High-speed Laryngoscopy in Patients With Organic Voice Disorders.</em>
+J Voice. 2017.
+DOI: 10.1016/j.jvoice.2016.03.010. PMID: 27178453.
+</li>
+<li>
+Ogawa M et al.
+<em>Humming Facilitates a Gradual Increase in Vocal Intensity by Alleviating the Enhancement
+of Vocal Fold Contact and Supraglottic Constriction.</em>
+J Voice. 2020.
+DOI: 10.1016/j.jvoice.2019.05.004. PMID: 31160181.
+</li>
+<li>
+Guzman M et al.
+<em>Electroglottographic study of seven semi-occluded exercises:
+LaxVox, straw, lip-trill, tongue-trill, humming, hand-over-mouth...</em>
+J Voice. 2015.
+DOI: 10.1016/j.jvoice.2013.11.004. PMID: 24560003.
+</li>
+<li>
+Zenari MS et al.
+<em>Do Professionals Who Use the Voice in a Journalistic Context Benefit from Humming
+as a Semi-occluded Vocal Tract Exercise?</em>
+J Voice. 2023;37(4):634.e19–634.e29.
+DOI: 10.1016/j.jvoice.2021.03.011. PMID: 33895007.
+</li>
+<li>
+Meerschman I et al.
+<em>Effects of Semi-occluded Vocal Tract Training in Adult Choir Singers:
+A Randomized Controlled Trial Comparing Tube Phonation in Water and Humming.</em>
+J Voice. 2026.
+DOI: 10.1016/j.jvoice.2026.01.051. PMID: 41896048.
+</li>
+<li>
+Gu Y et al.
+<em>Efficacy of Resonant Voice Therapy in Individuals With Voice Disorders:
+Systematic Review and Meta-Analysis.</em>
+J Voice. 2026.
+DOI: 10.1016/j.jvoice.2026.02.009. PMID: 41796455.
+</li>
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice:
+Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012. PMID: 26948385.
+</li>
+<li>
+Dromey C, Nissen SL, Roy N, Merrill RM.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2012;26(2):201–206.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+<li>
+Titze IR.
+<em>Voice training and therapy with a semi-occluded vocal tract:
+rationale and scientific underpinnings.</em>
+J Speech Lang Hear Res. 2006;49(2):448–459.
+DOI: 10.1044/1092-4388(2006/035). PMID: 16671856.
+</li>
+<li>
+Riquelme-Muñoz C et al.
+<em>Effectiveness of Vocal Exercises in Singers: A Scoping Review.</em>
+J Voice. 2025.
+DOI: 10.1016/j.jvoice.2025.09.029. PMID: 41058356.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

@@ -3,26 +3,961 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mommy Made Me Mash — foco de estudo</title>
+<title>Mommy Made Me Mash — ID 15</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(9,minmax(58px,1fr));gap:.34rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .24rem;text-align:center}
+.note b{display:block;font-size:.98rem}.note span{font-size:.74rem;color:var(--muted)}
+.phon{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(5,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 15 · Articulação</p>
-  <h2>Dicção clara dentro de uma escala.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Fale a frase ritmicamente antes de cantar.</li><li>Depois encaixe cada sílaba na nota correta.</li><li>Mantenha o legato apesar das consoantes.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>A palavra continua inteligível.</li><li>A escala não quebra nos encontros consonantais.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Articular com a mandíbula inteira.</li><li>Cortar o fluxo entre sílabas.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Aumente o andamento só quando a frase continuar compreensível.</p>
+
+<p class="eyebrow">ID 15 · Mommy Made Me Mash</p>
+<h2>Dicção em movimento: consoantes precisas, vogais cantáveis e articulação cada vez menor</h2>
+
+<p class="lead">
+<strong>Mommy Made Me Mash</strong> transforma uma frase curta em exercício de coordenação articulatória.
+Diferentemente de um treino de vogais sustentadas, aqui o trato vocal precisa mudar rapidamente:
+lábios fecham para vários <strong>/m/</strong>, a língua organiza o <strong>/d/</strong>,
+o final de <strong>Mash</strong> introduz uma fricativa, e as vogais mudam enquanto o pitch percorre
+uma escala de cinco graus e volta.
+A meta é produzir <strong>texto inteligível sem deixar a articulação desmontar a voz</strong>.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+articular “completamente” não é movimentar tudo ao máximo.
+É fazer cada informação fonética importante aparecer <strong>no momento certo,
+com contraste suficiente e com o menor gesto que ainda funciona</strong>.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A sequência é <strong>A2–B2–C#3–D3–E3–D3–C#3–B2–A2</strong>,
+ou <strong>1–2–3–4–5–4–3–2–1</strong>.
+Os intervalos são
+<strong>+2, +2, +1, +2, −2, −1, −2, −2 semitons</strong>.
+O único semitom é <strong>C#3↔D3</strong>.
+</p>
+
+<p>
+Siga a distribuição exata das palavras e sílabas mostrada no áudio.
+A frase possui estrutura linguística própria, e não vale a pena inventar uma divisão
+apenas olhando as nove notas.
+</p>
+</section>
+
+<section>
+<h3>2. Primeiro princípio: a vogal carrega a nota; a consoante torna a palavra reconhecível</h3>
+
+<p>
+No canto, a parte periódica e sustentada da nota acontece principalmente na vogal.
+As consoantes criam fronteiras, transientes e pistas que tornam o texto inteligível.
+</p>
+
+<p>
+Isso produz uma divisão de trabalho muito útil:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Vogais</strong>carregam pitch, duração, legato e grande parte do timbre.</div>
+<div class="box"><strong>Consoantes</strong>marcam identidade lexical, início/fim de sílabas e mudanças articulatórias.</div>
+</div>
+
+<div class="key">
+Se a consoante rouba metade da duração da nota, há articulação demais.<br>
+Se desaparece completamente, há informação fonética de menos.
+</div>
+</section>
+
+<section>
+<h3>3. Clareza não significa exagero muscular</h3>
+
+<p>
+A instrução “articule completamente” pode ser mal interpretada como
+“abra muito a boca e bata todas as consoantes”.
+Isso costuma piorar a velocidade e aumentar movimentos parasitas.
+</p>
+
+<p>
+A literatura sobre inteligibilidade do canto reforça a importância das consoantes,
+mas mostra também que o problema é <strong>contraste acústico e timing</strong>,
+não tamanho visível do gesto.
+</p>
+
+<div class="key">
+Dicção eficiente = <strong>consoante curta e informativa + vogal imediatamente disponível</strong>.
+</div>
+</section>
+
+<section>
+<h3>4. O /m/: a consoante dominante da frase</h3>
+
+<p>
+“Mommy Made Me Mash” repete /m/ muitas vezes.
+Isso torna o exercício excelente para automatizar
+<strong>fechamento labial rápido e leve</strong>.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Fechar</strong>os dois lábios se encontram.</div>
+<div class="box"><strong>Vozeado</strong>a voz não precisa desaparecer durante o /m/.</div>
+<div class="box"><strong>Liberar</strong>a próxima vogal deve aparecer sem atraso.</div>
+</div>
+
+<p>
+A frase não deve virar uma série de impactos labiais.
+O /m/ funciona melhor como um <strong>contato preciso</strong> do que como uma prensagem.
+</p>
+</section>
+
+<section>
+<h3>5. /m/ curto versus /m/ longo: aprenda o limite</h3>
+
+<p>
+Fale “Mommy” uma vez com M exageradamente longo:
+<strong>Mmmmmommy</strong>.
+Depois uma vez com M pequeno demais.
+Depois use a versão clara e natural do áudio.
+</p>
+
+<p>
+Esse contraste ensina a quantidade necessária de informação consonantal.
+</p>
+
+<div class="key">
+A melhor articulação costuma estar <strong>entre os extremos</strong>,
+não no máximo de fechamento possível.
+</div>
+</section>
+
+<section>
+<h3>6. “Made”: o /d/ precisa existir sem virar explosão</h3>
+
+<p>
+O /d/ é uma oclusiva sonora produzida pela língua na região alveolar.
+Ela fornece uma pista importante de palavra.
+Se ficar fraca demais, “Made” perde definição.
+Se ficar enorme, a frase trava.
+</p>
+
+<p>
+Faça o /d/ com:
+<strong>contato pequeno → liberação rápida → próxima sílaba</strong>.
+</p>
+
+<p>
+Estudos de inteligibilidade mostram que plosivas podem ficar relativamente mascaradas
+quando a intensidade das vogais cresce muito no canto.
+Um experimento recente encontrou melhora de reconhecimento quando a intensidade
+dos bursts plosivos foi aumentada em condições com ruído/reverberação.
+Isso apoia a ideia de <strong>tornar o /d/ perceptível</strong>,
+não de transformá-lo em golpe muscular.
+</p>
+</section>
+
+<section>
+<h3>7. O /d/ final é especialmente fácil de perder</h3>
+
+<p>
+Se o áudio realiza claramente o /d/ de “Made”, preserve-o.
+No fluxo rápido para “Me”, há tendência de a língua abandonar cedo a consoante
+e correr diretamente para o próximo /m/.
+</p>
+
+<div class="key">
+Pratique lentamente:
+<strong>Made | Me</strong><br>
+e faça o ponto de contato do /d/ realmente acontecer antes do novo /m/.
+</div>
+
+<p>
+Depois reduza o espaço entre as palavras sem apagar o /d/.
+</p>
+</section>
+
+<section>
+<h3>8. “Mash”: a fricativa final deve terminar a palavra, não a vogal cedo demais</h3>
+
+<p>
+O final de “Mash” contém uma fricativa semelhante a <span class="phon">/ʃ/</span>.
+A vogal precisa receber sua duração musical e, depois, a fricativa fecha a palavra.
+</p>
+
+<p>
+Se você inicia o “sh” cedo demais, rouba duração e pitch da vogal.
+Se deixa para muito tarde, a palavra parece incompleta.
+</p>
+
+<div class="key">
+Pense:
+<strong>MA—SH</strong>.<br>
+A vogal sustenta a nota; o /ʃ/ encerra a palavra com timing preciso.
+</div>
+</section>
+
+<section>
+<h3>9. Consoantes finais realmente importam</h3>
+
+<p>
+Estudos de inteligibilidade em canto coral encontraram efeito especialmente forte
+em <strong>consoantes de coda</strong>, isto é, no fim das palavras.
+Plosivas finais e outros segmentos podem ser confundidos quando várias vozes cantam juntas.
+</p>
+
+<p>
+Mesmo em voz solo, o princípio é útil:
+não trate o fim da palavra como sobra.
+O ouvinte usa essas pistas para decidir qual palavra ouviu.
+</p>
+</section>
+
+<section>
+<h3>10. As vogais de “Mommy Made Me Mash” não são iguais</h3>
+
+<p>
+Use o áudio como referência de pronúncia, pois o inglês muda conforme sotaque.
+Não tente impor uma transcrição diferente do modelo.
+</p>
+
+<p>
+Pedagogicamente, porém, observe que a frase atravessa
+<strong>várias configurações de vogal</strong>.
+Isso exige mudanças rápidas da língua e da mandíbula enquanto o pitch também muda.
+</p>
+
+<div class="key">
+O exercício treina duas trajetórias simultâneas:
+<strong>melodia</strong> e <strong>sequência articulatória</strong>.
+O desafio é evitar que uma controle a outra.
+</div>
+</section>
+
+<section>
+<h3>11. Pitch não deve ser produzido pela boca</h3>
+
+<p>
+Ao subir A2→E3, não faça as palavras ficarem progressivamente maiores.
+Mandíbula, língua e lábios precisam mudar pela fonética da frase,
+não porque o pitch aumentou.
+</p>
+
+<p>
+Estudos com cantores mostram que abertura mandibular pode mudar funcionalmente em regiões altas,
+mas isso depende de vogal e relação entre F0 e ressonâncias.
+Na tessitura-base deste exercício, use uma articulação relativamente econômica.
+</p>
+</section>
+
+<section>
+<h3>12. Protocolo-base: fala antes do canto</h3>
+
+<ol class="protocol">
+<li>Ouça a frase no áudio.</li>
+<li>Fale “Mommy Made Me Mash” lentamente, copiando a pronúncia.</li>
+<li>Fale novamente no ritmo do exercício.</li>
+<li>Toque a escala no violão sem cantar.</li>
+<li>Cante a frase com todas as notas guiadas.</li>
+<li>Observe qual consoante desaparece primeiro.</li>
+<li>Corrija apenas aquele ponto e repita.</li>
+</ol>
+</section>
+
+<section>
+<h3>13. Por que a fala é uma ótima referência</h3>
+
+<p>
+Na fala, você já possui um programa motor altamente automatizado para as palavras.
+Se ao cantar a dicção fica muito maior ou artificial,
+é sinal de que a tarefa musical está interferindo na articulação.
+</p>
+
+<div class="key">
+Comece com <strong>fala clara e econômica</strong>;
+depois adicione pitch sem destruir esse padrão.
+</div>
+</section>
+
+<section>
+<h3>14. Progressão 1 — fala ritmada</h3>
+
+<p>
+Use o violão apenas como pulso.
+Abafe as cordas ou marque batidas regulares
+e fale a frase no ritmo exato do exercício.
+</p>
+
+<p>
+Aqui não há pitch vocal.
+O objetivo é descobrir se você consegue coordenar
+<strong>texto + tempo</strong> antes de acrescentar a terceira variável: melodia.
+</p>
+</section>
+
+<section>
+<h3>15. Progressão 2 — melodia numa única sílaba</h3>
+
+<p>
+Faça a escala inteira em uma sílaba simples, por exemplo <strong>Ma</strong>,
+somente para estabilizar o desenho:
+</p>
+
+<div class="key">
+A2–B2–C#3–D3–E3–D3–C#3–B2–A2
+</div>
+
+<p>
+Depois volte imediatamente ao texto.
+Se a melodia funciona em Ma mas falha no texto,
+o gargalo é articulatório, não tonal.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 3 — texto em uma única nota</h3>
+
+<p>
+Agora faça o inverso:
+toque A2 e cante toda a frase em A2,
+seguindo o ritmo original.
+</p>
+
+<p>
+Isso remove a melodia e preserva a fonação.
+Você consegue estudar:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>/m/</strong>fechamento e liberação.</div>
+<div class="box"><strong>/d/</strong>timing da língua.</div>
+<div class="box"><strong>/ʃ/</strong>fechamento final da frase.</div>
+</div>
+
+<p>
+Depois recoloque a escala.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 4 — metade da escala + texto</h3>
+
+<p>
+Se a frase completa ainda está confusa, use apenas:
+<strong>A2–B2–C#3–B2–A2</strong>
+com a parte correspondente do áudio.
+</p>
+
+<p>
+Depois trabalhe o trecho que chega a E3.
+Dividir a tarefa reduz carga motora e permite corrigir timing específico.
+</p>
+</section>
+
+<section>
+<h3>18. Progressão 5 — “consoantes esqueleto”</h3>
+
+<p>
+Fale lentamente apenas a sequência de contatos consonantais,
+sem tentar fazer uma fala natural:
+os vários <strong>M</strong>, o <strong>D</strong> e o <strong>SH</strong>.
+</p>
+
+<p>
+Não é uma versão para cantar.
+É um diagnóstico para perceber:
+<strong>lábios → língua → lábios → fricativa</strong>.
+</p>
+
+<div class="key">
+Depois volte imediatamente às palavras completas.
+O objetivo é consciência, não mecanização isolada permanente.
+</div>
+</section>
+
+<section>
+<h3>19. Progressão 6 — vogais esqueleto</h3>
+
+<p>
+Faça o oposto:
+cante apenas os núcleos vocálicos aproximados do áudio,
+mantendo o desenho musical.
+</p>
+
+<p>
+Isso permite ouvir:
+pitch, legato, consistência de timbre e transições de vogal
+sem a interrupção das consoantes.
+</p>
+
+<p>
+Depois recoloque o texto e tente conservar essa linha vocal.
+</p>
+</section>
+
+<section>
+<h3>20. A melhor dicção é uma sobreposição de dois sistemas</h3>
+
+<p>
+Pense em duas camadas:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Camada vocal</strong>uma linha de vogais afinadas e conectadas.</div>
+<div class="box"><strong>Camada consonantal</strong>pequenos eventos que recortam essa linha e criam palavras.</div>
+</div>
+
+<div class="key">
+Não deixe a camada consonantal destruir a linha vocal;
+não deixe a linha vocal apagar a linguagem.
+</div>
+</section>
+
+<section>
+<h3>21. Coarticulação: você começa a preparar a próxima palavra antes dela chegar</h3>
+
+<p>
+Em fala e canto fluentes, os articuladores não esperam um som terminar completamente
+para começar a se preparar para o próximo.
+Isso é <strong>coarticulação</strong>.
+</p>
+
+<p>
+Na frase, por exemplo, a transição de uma vogal para /m/
+já começa a organizar o fechamento labial antes de a palavra seguinte ser plenamente produzida.
+</p>
+
+<div class="key">
+A coarticulação é necessária para velocidade.
+O problema aparece quando ela é tão antecipada
+que <strong>apaga o som atual</strong>.
+</div>
+</section>
+
+<section>
+<h3>22. Progressão 7 — articulação exagerada apenas como contraste</h3>
+
+<p>
+Fale uma vez a frase com articulação teatralmente enorme.
+Depois fale de forma quase preguiçosa.
+Por fim, escolha um meio-termo claro e econômico.
+</p>
+
+<p>
+Não cante repetidamente a versão exagerada.
+Ela serve apenas para construir percepção de escala articulatória.
+</p>
+</section>
+
+<section>
+<h3>23. “Mais claro” versus “mais forte”</h3>
+
+<p>
+Um /d/ ou /m/ pode ficar mais perceptível porque o timing ficou melhor,
+sem receber mais força.
+</p>
+
+<p>
+Isso é especialmente importante no canto:
+as vogais já podem ter nível acústico alto,
+e aumentar brutalmente as consoantes pode alterar fluxo e coordenação.
+</p>
+
+<div class="key">
+Primeira estratégia para clareza:
+<strong>melhor timing</strong>.<br>
+Só depois pense em aumentar levemente a energia consonantal.
+</div>
+</section>
+
+<section>
+<h3>24. Evidência interessante sobre plosivas</h3>
+
+<p>
+Em gravações de cantores clássicos, um estudo encontrou que o aumento de intensidade
+das vogais ao passar da fala para o canto foi maior que o aumento dos bursts de plosivas.
+No teste perceptivo, reforçar os bursts melhorou o reconhecimento sobretudo com
+reverberação e/ou ruído simulando acompanhamento.
+</p>
+
+<p>
+Isso não significa “bater o D”.
+Significa que <strong>consoantes podem precisar de saliência suficiente para sobreviver ao contexto musical</strong>.
+</p>
+</section>
+
+<section>
+<h3>25. Progressão 8 — /d/ isolado dentro do fluxo</h3>
+
+<p>
+Fale:
+<strong>Mommy Made | Me Mash</strong>.
+Faça uma microseparação depois de “Made”
+apenas para confirmar o /d/.
+</p>
+
+<p>
+Depois reduza progressivamente a separação
+até a frase ficar fluida sem perder o contato alveolar.
+</p>
+</section>
+
+<section>
+<h3>26. Progressão 9 — /ʃ/ colocado no final certo</h3>
+
+<p>
+Sustente “Ma—” pelo valor musical da última vogal
+e acrescente “sh” no fim.
+Depois encurte gradualmente até voltar ao ritmo do áudio.
+</p>
+
+<p>
+Se o /ʃ/ começa cedo, a nota perde duração.
+Se começa tarde, o texto atrasa.
+</p>
+</section>
+
+<section>
+<h3>27. Progressão 10 — aumente velocidade sem aumentar amplitude</h3>
+
+<p>
+Comece devagar o suficiente para cada consoante aparecer.
+Depois aumente o andamento em pequenos passos.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lento</strong>grandes detalhes conscientes.</div>
+<div class="box"><strong>Médio</strong>gestos começam a encolher.</div>
+<div class="box"><strong>Rápido</strong>só o necessário deve permanecer.</div>
+</div>
+
+<div class="key">
+A técnica de alta velocidade não é “fazer os mesmos movimentos mais rápido”.
+É <strong>fazer movimentos menores e mais antecipados</strong>.
+</div>
+</section>
+
+<section>
+<h3>28. Velocidade também aumenta o desafio de afinação</h3>
+
+<p>
+Estudos com cantores mostraram que andamento rápido tende a aumentar
+a imprecisão de pitch, especialmente em tarefas mais articuladas.
+Além disso, treinamento melhora a contribuição do feedback cinestésico.
+</p>
+
+<p>
+Por isso, não aumente velocidade se E3 e a descida já estão começando a perder centro.
+</p>
+</section>
+
+<section>
+<h3>29. C#3→D3: o semitom escondido pela dicção</h3>
+
+<p>
+Na fala rápida, a quantidade de informação linguística pode fazer você perder percepção
+do único semitom da escala:
+<strong>C#3→D3</strong>.
+</p>
+
+<p>
+Faça primeiro no violão.
+Depois cante o trecho correspondente usando somente uma vogal.
+Por fim recoloque as palavras.
+</p>
+
+<div class="key">
+Se o intervalo funciona sem texto e falha com texto,
+a articulação está deslocando sua preparação tonal.
+</div>
+</section>
+
+<section>
+<h3>30. E3: a palavra não precisa ficar maior porque chegou ao topo</h3>
+
+<p>
+No quinto grau, muitos cantores automaticamente:
+abrem mais a boca, aumentam volume ou alongam consoantes.
+</p>
+
+<p>
+Faça o fragmento em torno de E3 cerca de <strong>15% mais leve</strong>.
+Se a dicção continua clara, você removeu energia que não era necessária.
+</p>
+</section>
+
+<section>
+<h3>31. Progressão 11 — mesma frase, duas intensidades</h3>
+
+<p>
+Faça a frase uma vez em volume moderado e outra ligeiramente mais leve.
+</p>
+
+<p>
+Tente conservar:
+<strong>mesmo timing consonantal, mesma pronúncia e mesma precisão tonal.</strong>
+</p>
+
+<p>
+Se a dicção só funciona em volume alto,
+você ainda está usando força como substituto de precisão.
+</p>
+</section>
+
+<section>
+<h3>32. Progressão 12 — violão gradualmente retirado</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as nove notas.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão em A2, C#3, E3, C#3 e A2.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão toca apenas A2 inicial e E3.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque A2, cante tudo e confira o A2 final.</p>
+</div>
+
+<p>
+A retirada deve acontecer apenas depois que a articulação já estiver organizada,
+senão você aumenta duas dificuldades simultaneamente.
+</p>
+</section>
+
+<section>
+<h3>33. O texto não precisa ser “recitado” em cima da melodia</h3>
+
+<p>
+Uma dicção muito falada pode fragmentar a linha vocal.
+Uma dicção excessivamente cantada pode apagar o texto.
+</p>
+
+<div class="key">
+Procure um meio-termo:
+<strong>consoantes de fala + vogais de canto</strong>.
+</div>
+
+<p>
+A frase precisa permanecer musical,
+mas as palavras devem continuar reconhecíveis.
+</p>
+</section>
+
+<section>
+<h3>34. Inteligibilidade não depende só de consoantes</h3>
+
+<p>
+A identificação das vogais também piora quando F0 sobe muito,
+e o contexto consonantal nem sempre consegue compensar isso.
+Um estudo controlado com uma soprano mostrou que o reconhecimento de vogais
+dependia principalmente de F0 e qualidade vocálica nas condições testadas.
+</p>
+
+<p>
+Isso reforça que dicção é um sistema:
+<strong>consoante clara não salva uma vogal completamente deformada</strong>.
+</p>
+</section>
+
+<section>
+<h3>35. “Made” e “Me” precisam manter vogais diferentes</h3>
+
+<p>
+Uma armadilha de velocidade é aproximar demais as duas vogais porque
+os articuladores querem economizar movimento.
+Economia é boa até o ponto em que as palavras começam a se confundir.
+</p>
+
+<p>
+Faça lentamente:
+<strong>Made — Me</strong>.
+Mantenha o contraste do áudio.
+Depois acelere sem deixar a segunda vogal contaminar a primeira.
+</p>
+</section>
+
+<section>
+<h3>36. Progressão 13 — grave sua sensação, não apenas o som</h3>
+
+<p>
+Depois de uma boa passagem, identifique mentalmente:
+qual consoante exigiu mais atenção?
+onde a mandíbula se moveu mais?
+onde a língua pareceu lenta?
+</p>
+
+<p>
+Na próxima repetição, escolha <strong>uma variável</strong>.
+Não tente corrigir /m/, /d/, /ʃ/, vogais, pitch, dinâmica e velocidade ao mesmo tempo.
+</p>
+</section>
+
+<section>
+<h3>37. Transposição: a dicção deve encolher, não endurecer</h3>
+
+<p>
+Suba o exercício em semitons.
+À medida que a tessitura cresce, a configuração vocálica pode precisar de adaptação,
+mas as consoantes ainda precisam ser rápidas.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura</th></tr>
+<tr><td>/m/ começa a apertar os lábios</td><td>Excesso de esforço articulatório.</td></tr>
+<tr><td>/d/ vira impacto</td><td>Clareza sendo comprada com força.</td></tr>
+<tr><td>“Mash” perde /ʃ/</td><td>Final da palavra está sendo sacrificado.</td></tr>
+<tr><td>E equivalente fica mais alto em volume</td><td>Pitch associado a intensidade.</td></tr>
+<tr><td>Vogais mudam discretamente, mas a frase continua clara</td><td>Pode ser adaptação funcional.</td></tr>
+<tr><td>A fala começa a parecer mastigada</td><td>Amplitude articulatória grande demais.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>38. Vibrato: pouco relevante no exercício-base</h3>
+
+<p>
+A prioridade é timing e articulação.
+Notas curtas e palavras rápidas não precisam de vibrato deliberado.
+</p>
+
+<p>
+Se o áudio sustentar alguma vogal,
+permita vibrato natural apenas depois que a palavra e o pitch estiverem estáveis.
+Não use vibrato para esconder um centro tonal impreciso.
+</p>
+</section>
+
+<section>
+<h3>39. Teste avançado — fale rápido, cante lento; fale lento, cante rápido</h3>
+
+<p>
+Faça dois contrastes:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Fala rápida → canto lento</strong>testa economia articulatória.</div>
+<div class="box"><strong>Fala lenta → canto mais rápido</strong>testa se a música preserva a dicção.</div>
+</div>
+
+<p>
+Se fala rápida é clara mas canto rápido não,
+o gargalo está na integração com pitch/fonação.
+Se ambos borram,
+o gargalo é mais articulatório.
+</p>
+</section>
+
+<section>
+<h3>40. Critério de alta velocidade: inteligibilidade sem sensação de corrida</h3>
+
+<p>
+Você atingiu uma velocidade útil quando a frase parece
+<strong>menor, mais automática e ainda clara</strong>.
+</p>
+
+<p>
+Se a sensação é de correr atrás das palavras,
+o andamento excedeu a coordenação atual.
+Reduza cerca de 10–15% e consolide.
+</p>
+</section>
+
+<section>
+<h3>41. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Todos os M batem</td><td>Contato labial exagerado</td><td>Fala rápida com M mínimo; depois cantar.</td></tr>
+<tr><td>“Made” perde o D</td><td>Antecipação do M seguinte</td><td>Made | Me com microseparação.</td></tr>
+<tr><td>“Mash” termina sem SH</td><td>Final consonantal sacrificado</td><td>MA—SH e reduzir progressivamente a duração.</td></tr>
+<tr><td>Frase parece mastigada</td><td>Mandíbula acompanhando cada sílaba</td><td>Menor amplitude; língua/lábios fazem mais trabalho.</td></tr>
+<tr><td>Afinação piora ao acelerar</td><td>Carga temporal excessiva</td><td>Reduzir andamento e recuperar notas.</td></tr>
+<tr><td>E3 explode</td><td>Topo tratado como esforço especial</td><td>Trecho do topo 15% mais leve.</td></tr>
+<tr><td>Texto claro, linha vocal quebrada</td><td>Consoantes dominam demais</td><td>Cantar “esqueleto de vogais”, depois recolar texto.</td></tr>
+<tr><td>Linha bonita, palavras somem</td><td>Consoantes insuficientes</td><td>Treinar esqueleto consonantal e finais de palavra.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>42. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>/m/</strong>rápido, completo e leve.</div>
+<div class="box"><strong>/d/</strong>perceptível sem impacto.</div>
+<div class="box"><strong>/ʃ/</strong>fecha Mash no momento certo.</div>
+<div class="box"><strong>Pitch</strong>permanece estável apesar do texto.</div>
+<div class="box"><strong>Velocidade</strong>aumenta enquanto os movimentos diminuem.</div>
+<div class="box"><strong>Integração</strong>texto e linha vocal deixam de competir.</div>
+</div>
+</section>
+
+<section>
+<h3>43. Sessão-modelo — 7 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Fala · ~1 min</h4>
+<p>Frase lenta → frase no ritmo → frase rápida e econômica.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Separar sistemas · ~1–2 min</h4>
+<p>Escala em Ma; depois texto inteiro numa única nota.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Motivo completo · ~2 min</h4>
+<p>Violão em todas as notas e frase exatamente como no áudio.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Consoante-alvo · ~1 min</h4>
+<p>Escolha somente /m/, /d/ ou /ʃ/.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Velocidade · ~1–2 min</h4>
+<p>Aumente gradualmente mantendo gestos cada vez menores.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Independência · ~1 min</h4>
+<p>Reduza o guia do violão.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Fechamento</h4>
+<p>Uma execução confortável em que a frase pareça falada com clareza,
+mas sustentada por uma linha vocal contínua.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Mommy Made Me Mash”.
+A aula usa o desenho e a finalidade da sua ficha e os conecta a estudos primários
+sobre inteligibilidade de texto cantado, reconhecimento de consoantes,
+intensidade de bursts plosivos, contexto consonantal, articulação rápida,
+controle de pitch em diferentes tempi e feedback auditivo/cinestésico.
+As práticas de “esqueleto consonantal”, “esqueleto vocálico”, redução progressiva dos gestos
+e separação fala→ritmo→melodia são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Sundberg J, Romedahl C.
+<em>Text intelligibility and the singer's formant—A relationship?</em>
+J Voice. 2009;23(5):539–545.
+DOI: 10.1016/j.jvoice.2008.01.010. PMID: 18468842.
+</li>
+<li>
+<em>The intensities of vowels and plosive bursts and their impact on text intelligibility in singing.</em>
+J Acoust Soc Am. 2023;154.
+DOI: 10.1121/10.0021968. PMID: 37877771.
+O estudo analisou dez cantores clássicos e mostrou que reforçar bursts plosivos
+pode melhorar seu reconhecimento em condições com ruído/reverberação.
+</li>
+<li>
+Condit-Schultz N, Huron D.
+<em>Word Intelligibility in Multi-voice Singing: The Influence of Chorus Size.</em>
+J Voice. 2017;31(1):121.e1–121.e8.
+DOI: 10.1016/j.jvoice.2016.02.011. PMID: 27068550.
+</li>
+<li>
+Deme A.
+<em>Intelligibility of sung vowels: the effect of consonantal context and the onset of voicing.</em>
+J Voice. 2014;28(4):523.e19–523.e25.
+DOI: 10.1016/j.jvoice.2014.01.003. PMID: 24698886.
+</li>
+<li>
+Smith LA, Scott BL.
+<em>Increasing the intelligibility of sung vowels.</em>
+J Acoust Soc Am. 1980;67(5):1795–1797.
+DOI: 10.1121/1.384308. PMID: 7372935.
+</li>
+<li>
+Gregg JW, Scherer RC.
+<em>Vowel intelligibility in classical singing.</em>
+J Voice. 2006;20(2):198–210.
+DOI: 10.1016/j.jvoice.2005.01.007. PMID: 16139988.
+</li>
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice: Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012. PMID: 26948385.
+</li>
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Effects of a professional solo singer education on auditory and kinesthetic feedback:
+a longitudinal study of singers' pitch control.</em>
+J Voice. 2004;18(2):236–241.
+DOI: 10.1016/j.jvoice.2003.05.001. PMID: 15193657.
+</li>
+<li>
+Sundberg J, Skoog J.
+<em>Dependence of jaw opening on pitch and vowel in singers.</em>
+J Voice. 1997;11(3):301–306.
+DOI: 10.1016/S0892-1997(97)80008-2. PMID: 9297674.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

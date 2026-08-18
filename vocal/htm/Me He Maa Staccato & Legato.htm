@@ -3,26 +3,849 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Me He Maa Staccato &amp; Legato — foco de estudo</title>
+<title>Me He Maa Staccato &amp; Legato — ID 9</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{
+content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;
+display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem
+}
+.notes{display:grid;grid-template-columns:repeat(9,minmax(58px,1fr));gap:.34rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .24rem;text-align:center}
+.note b{display:block;font-size:.98rem}.note span{font-size:.74rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}
+.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(5,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 9 · Tom</p>
-  <h2>Alternar staccato e legato mantendo o mesmo pitch.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Primeiro faça tudo legato.</li><li>Depois faça os ataques curtos de ‘Me/He’.</li><li>Compare: a nota deve permanecer no mesmo lugar nos dois modos.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Ataque limpo sem golpe de glote.</li><li>Maa abre sem cair de afinação.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Confundir staccato com força.</li><li>Sorriso exagerado que tensione a boca.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Use o afinador só nas notas suspeitas; depois retire o apoio visual.</p>
+
+<p class="eyebrow">ID 9 · Me He Maa Staccato &amp; Legato</p>
+<h2>Do ataque isolado à linha contínua: clareza sem perder espaço vocal</h2>
+
+<p class="lead">
+Este exercício combina três desafios em uma sequência curta:
+<strong>ataques diferentes</strong> em Me e He, uma <strong>vogal mais aberta</strong> em Maa
+e a alternância entre <strong>staccato e legato</strong>.
+Isso permite estudar como a voz muda quando cada nota precisa nascer separadamente
+e, depois, como essa precisão pode ser preservada dentro de uma linha contínua.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+o staccato ensina você a <strong>preparar cada nota</strong>;
+o legato ensina você a <strong>conectar as notas sem perder o centro de cada uma</strong>.
+Me, He e Maa devem soar como partes da mesma voz — não três técnicas independentes.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A sequência é <strong>A2–B2–A2–B2–A2–B2–C#3–B2–A2</strong>,
+ou em graus <strong>1–2–1–2–1–2–3–2–1</strong>.
+Ela parece simples, mas isso é uma vantagem:
+o ouvido não precisa resolver grandes saltos, então você consegue concentrar atenção
+em <strong>onset, articulação, continuidade e timbre</strong>.
+</p>
+</section>
+
+<section>
+<h3>2. O staccato é mais difícil para a afinação — e isso é útil</h3>
+
+<p>
+No legato, uma nota nasce da coordenação que já estava funcionando na nota anterior.
+No staccato, o sistema precisa <strong>reconstruir a preparação para cada ataque</strong>.
+</p>
+
+<p>
+Estudos com cantores treinados e não treinados encontraram maior erro de pitch
+em <strong>staccato do que em legato</strong>, e maior erro em andamento rápido do que lento.
+Isso torna o staccato um bom teste de precisão, mas não necessariamente o melhor ponto de partida
+quando a sequência ainda está sendo aprendida.
+</p>
+
+<div class="key">
+Primeiro construa a frequência e a forma da sílaba.
+Depois use o staccato para perguntar:
+<strong>“consigo chegar à nota de primeira, sem a ajuda da nota anterior?”</strong>
+</div>
+</section>
+
+<section>
+<h3>3. O que diferencia staccato de “cortar a garganta”</h3>
+
+<p>
+Staccato significa que as notas são <strong>curtas e separadas acusticamente</strong>.
+Não significa fechar violentamente a glote depois de cada uma.
+</p>
+
+<p>
+Imagem laríngea de alta velocidade mostra que gestos de onset staccato possuem
+uma preparação adutória específica. Isso confirma que o ataque exige coordenação precisa,
+mas não implica que a melhor técnica seja uma colisão glótica máxima.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Entrada</strong>Rápida e definida.</div>
+<div class="box"><strong>Núcleo</strong>Pitch presente imediatamente.</div>
+<div class="box"><strong>Saída</strong>Liberação limpa, deixando o sistema disponível.</div>
+</div>
+
+<p>
+Pense em <strong>nota curta</strong>, não em <strong>nota estrangulada</strong>.
+</p>
+</section>
+
+<section>
+<h3>4. O legato também pode esconder erro</h3>
+
+<p>
+Legato não é simplesmente “mais fácil”.
+Ele pode permitir que você deslize gradualmente até a próxima nota e,
+com isso, esconda uma preparação tonal imprecisa.
+</p>
+
+<div class="key">
+O legato ideal deste exercício é:
+<strong>fluxo contínuo + alvos tonais claros.</strong>
+</div>
+
+<p>
+A voz não precisa interromper completamente entre A2 e B2,
+mas B2 deve aparecer como uma nota definida — não como o ponto arbitrário de um portamento.
+</p>
+</section>
+
+<section>
+<h3>5. Me: ataque definido pela consoante, não pela glote</h3>
+
+<p>
+Siga a pronúncia do áudio de referência.
+Se o “Me” for produzido como <strong>/mi/</strong> ou próximo disso,
+a vogal anterior/fechada cria uma configuração acústica brilhante,
+com F2 relativamente elevado.
+</p>
+
+<p>
+A consoante /m/ oferece um início nasal com contato labial.
+Isso dá feedback tátil e pode facilitar uma entrada organizada.
+</p>
+
+<div class="key">
+O <strong>M</strong> organiza a entrada.
+Não acrescente um “golpe” glótico por baixo dele.
+</div>
+
+<p>
+Lábios encostam levemente; a vogal aparece rapidamente.
+Não sustente “mmmm” a menos que esteja fazendo uma variação específica.
+</p>
+</section>
+
+<section>
+<h3>6. He: fluxo primeiro, voz quase imediatamente depois</h3>
+
+<p>
+O /h/ faz o oposto do /m/ em um aspecto importante:
+ele permite um início de fluxo antes da vogal plenamente vozeada.
+Por isso, Me e He são um contraste pedagógico excelente.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Me</strong>Entrada organizada por contato labial/nasal.</div>
+<div class="box"><strong>He</strong>Entrada organizada por fluxo aspirado curto.</div>
+</div>
+
+<p>
+O risco do He é exagerar:
+<strong>HHHHH-ee</strong>.
+Nesse caso, a nota demora para ganhar núcleo e você desperdiça ar.
+</p>
+
+<div class="key">
+Faça <strong>H-ee</strong>.
+O /h/ abre a porta; a vogal entra imediatamente.
+</div>
+</section>
+
+<section>
+<h3>7. Maa: abrir a vogal sem abandonar a coordenação</h3>
+
+<p>
+Maa muda a geometria do trato vocal muito mais do que Me/He.
+A vogal /a/ geralmente envolve maior abertura de mandíbula e um padrão de formantes diferente.
+</p>
+
+<p>
+Por isso, Maa funciona como teste:
+<strong>a voz continua organizada quando a boca abre?</strong>
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Mandíbula</strong>Abre o necessário, sem cair de repente.</div>
+<div class="box"><strong>Língua</strong>Não recua para “criar espaço”.</div>
+<div class="box"><strong>Volume</strong>Não aumenta só porque a vogal ficou aberta.</div>
+</div>
+</section>
+
+<section>
+<h3>8. “Palato mole elevado”: útil como cue, impreciso como regra anatômica</h3>
+
+<p>
+A ficha pede palato mole elevado.
+Isso pode ajudar como sensação de espaço, sobretudo em Maa,
+mas estudos com cantores clássicos mostram que o comportamento velofaríngeo
+<strong>não é uma simples regra de “sempre fechado e elevado”</strong>.
+</p>
+
+<p>
+Já foram observados tanto maior tempo de fechamento em canto quanto
+<strong>fluxo nasal regular em vogais não nasais</strong> em cantores treinados,
+dependendo de pitch, loudness, vogal e indivíduo.
+</p>
+
+<div class="key">
+Use “palato elevado” como:
+<strong>não deixar Maa colapsar para uma sensação apertada/achatada</strong>.<br>
+Não tente controlar anatomicamente o véu palatino como se fosse um interruptor.
+</div>
+</section>
+
+<section>
+<h3>9. “Som nos dentes superiores”: uma metáfora somatossensorial</h3>
+
+<p>
+A sensação de som “na frente” ou “nos dentes” pode ser útil como cue de brilho.
+Mas o som não é fisicamente colocado nos incisivos.
+</p>
+
+<p>
+O que muda de fato é o espectro resultante da interação entre fonte glótica e trato vocal,
+incluindo posição de língua, lábios, mandíbula, faringe e intensidade.
+</p>
+
+<div class="key">
+Use a imagem <strong>“nos dentes superiores”</strong> somente se ela produzir:
+clareza, facilidade e boa presença.<br>
+Se produzir sorriso rígido e som espremido, descarte a metáfora.
+</div>
+</section>
+
+<section>
+<h3>10. O sorriso deve ser pequeno e funcional</h3>
+
+<p>
+Espalhar ligeiramente os lábios pode clarear a percepção da vogal e alterar ressonâncias,
+mas sorriso largo pode elevar demais as comissuras, tensionar bochechas
+e tornar algumas vogais artificiais.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Útil</strong>Expressão viva, leve elevação das bochechas, boca disponível.</div>
+<div class="box"><strong>Exagerado</strong>Lábios esticados lateralmente, mandíbula presa e timbre fino por tensão.</div>
+</div>
+
+<p>
+A expressão deve parecer <strong>comunicativa</strong>, não uma posição muscular a ser mantida.
+</p>
+</section>
+
+<section>
+<h3>11. Protocolo-base</h3>
+
+<ol class="protocol">
+<li>Ouça a pronúncia do áudio e reproduza Me, He e Maa em fala.</li>
+<li>Toque A2 e B2 no violão.</li>
+<li>Faça a sequência primeiro em andamento moderado.</li>
+<li>Use exatamente a articulação staccato/legato indicada no áudio.</li>
+<li>Nos Me/He, observe especialmente o primeiro instante da vogal.</li>
+<li>No Maa, observe se abrir a boca aumenta esforço ou volume.</li>
+<li>Repita apenas para corrigir uma variável específica.</li>
+</ol>
+</section>
+
+<section>
+<h3>12. Treino isolado: Me versus He na mesma nota</h3>
+
+<p>
+Antes da sequência:
+</p>
+
+<div class="key">
+<strong>Me(A2) → He(A2) → Me(A2) → He(A2)</strong>
+</div>
+
+<p>
+Tente igualar:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>Pitch</strong>Mesmo centro tonal.</div>
+<div class="box"><strong>Duração</strong>Mesmo comprimento.</div>
+<div class="box"><strong>Volume</strong>Sem explosão em Me nem queda em He.</div>
+<div class="box"><strong>Vogal</strong>Se forem equivalentes no áudio, mantenha a mesma.</div>
+</div>
+
+<p>
+O contraste deve existir principalmente <strong>antes da vogal</strong>.
+Depois que a vogal está estabelecida, as duas produções devem se aproximar bastante.
+</p>
+</section>
+
+<section>
+<h3>13. Progressão 1 — Me → He → vogal pura</h3>
+
+<p>
+Faça três entradas na mesma nota:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Me</strong>Consoante nasal.</div>
+<div class="box"><strong>He</strong>Fluxo aspirado curto.</div>
+<div class="box"><strong>Ee</strong>Vogal direta, se esta for a vogal do áudio.</div>
+</div>
+
+<p>
+A vogal direta mostra se você já consegue iniciar a nota sem depender
+nem do /m/ nem do /h/.
+</p>
+
+<p>
+Se Ee dá golpe:
+<strong>He → H menor → Ee</strong>.
+Se Ee fica soproso:
+<strong>Me → M menor → Ee</strong>.
+</p>
+</section>
+
+<section>
+<h3>14. Progressão 2 — staccato lento antes do staccato rápido</h3>
+
+<p>
+Faça os ataques em aproximadamente <strong>60–72 bpm</strong>,
+uma nota por pulso, com silêncio perceptível entre elas.
+</p>
+
+<p>
+Isso permite verificar se cada nota nasce já afinada.
+Depois passe para 80–96 bpm.
+</p>
+
+<div class="key">
+Se acelerar e a afinação piorar,
+isso não é fracasso: pesquisas mostram exatamente essa tendência.
+Volte ao andamento em que o onset ainda é controlado.
+</div>
+</section>
+
+<section>
+<h3>15. Progressão 3 — transforme staccato em legato sem mudar pitch</h3>
+
+<p>
+Faça uma passagem staccato.
+Imediatamente depois, repita em legato.
+</p>
+
+<p>
+O que deve mudar é <strong>a conexão entre as notas</strong>,
+não:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Pitch</strong>Os alvos continuam iguais.</div>
+<div class="box"><strong>Vogal</strong>A identidade continua igual.</div>
+<div class="box"><strong>Intensidade</strong>Não precisa aumentar no legato.</div>
+</div>
+
+<p>
+Essa comparação ensina que staccato e legato são
+<strong>modos de organizar tempo e continuidade</strong>,
+não duas “vozes” diferentes.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 4 — legato → staccato</h3>
+
+<p>
+Inverta a ordem.
+Faça legato primeiro para estabelecer o mapa,
+depois staccato tentando reproduzir exatamente os mesmos centros tonais.
+</p>
+
+<p>
+Essa versão é particularmente eficiente quando a afinação do staccato ainda está instável:
+o legato funciona como <strong>prime</strong> auditivo-motor.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 5 — nota repetida sem apoio da anterior</h3>
+
+<p>
+A sequência alterna A2 e B2 várias vezes.
+Escolha um deles e faça:
+</p>
+
+<div class="key">
+A2 → silêncio maior → B2<br>
+B2 → silêncio maior → A2
+</div>
+
+<p>
+Quanto maior o silêncio, menor a ajuda cinestésica da nota anterior.
+Você é obrigado a reconstruir a frequência internamente.
+</p>
+
+<p>
+Estudos com mascaramento auditivo e treinamento mostram que
+controle de pitch depende de feedback auditivo e cinestésico,
+e que o componente cinestésico pode melhorar com treinamento.
+</p>
+</section>
+
+<section>
+<h3>18. Progressão 6 — C#3 como alvo, não como “nota alta”</h3>
+
+<p>
+C#3 é apenas o terceiro grau, mas por ser o topo do motivo
+pode receber esforço desnecessário.
+</p>
+
+<p>
+Isole:
+<strong>B2 → C#3 → B2</strong>.
+Faça em Me, depois He, depois Maa se a distribuição do áudio permitir.
+</p>
+
+<div class="key">
+C#3 deve ser <strong>uma nota diferente</strong>, não uma nota “mais forte”.
+</div>
+</section>
+
+<section>
+<h3>19. Progressão 7 — o Maa como teste de abertura</h3>
+
+<p>
+Faça uma nota confortável em:
+</p>
+
+<div class="phase">
+<h4>Mee → Meh → Mah</h4>
+<p>Abra gradualmente a vogal.</p>
+</div>
+
+<p>
+Observe em qual ponto mandíbula, língua ou volume começam a mudar demais.
+Depois volte um estágio.
+</p>
+
+<p>
+Estudos de produção vocal mostram que modificações de vogal alteram F1/F2
+e podem ser treinadas deliberadamente.
+Essa progressão faz você experimentar isso de maneira controlada.
+</p>
+</section>
+
+<section>
+<h3>20. Progressão 8 — Maa com abertura econômica</h3>
+
+<p>
+Faça Maa com três aberturas mandibulares:
+pequena, natural e grande.
+Use apenas uma nota confortável.
+</p>
+
+<p>
+Compare timbre e esforço.
+Depois escolha a menor abertura que ainda produz um /a/ claro e livre.
+</p>
+
+<div class="key">
+Abertura maior não significa automaticamente
+<strong>mais ressonância</strong>.
+Ela significa outra configuração de ressonâncias.
+</div>
+</section>
+
+<section>
+<h3>21. Formantes: por que Me e Maa nunca terão o mesmo timbre</h3>
+
+<p>
+Vogais são definidas em grande parte pelas frequências de ressonância do trato vocal,
+especialmente F1 e F2.
+Uma vogal anterior/fechada e /a/ ocupam regiões muito diferentes no espaço formântico.
+</p>
+
+<p>
+Por isso, “manter o mesmo timbre” entre Me e Maa seria uma meta ruim.
+A melhor meta é manter <strong>a mesma identidade vocal</strong>:
+mesma facilidade, intenção, estabilidade e nível de pressão,
+permitindo que o espectro mude como a vogal exige.
+</p>
+</section>
+
+<section>
+<h3>22. “Timbre aberto” não é sinônimo de boca aberta</h3>
+
+<p>
+Um som percebido como aberto pode resultar de várias combinações de trato vocal,
+addução, intensidade e espectro.
+Abrir demais a boca pode inclusive afastar você do resultado desejado.
+</p>
+
+<p>
+Pesquisas com perfis de formantes mostram que cantores conseguem produzir
+formas acústicas muito diferentes com configurações “megafone”, neutra e “megafone invertido”.
+Portanto, abertura externa é apenas uma parte da equação.
+</p>
+</section>
+
+<section>
+<h3>23. Progressão 9 — dinâmica constante primeiro</h3>
+
+<p>
+Faça a sequência inteira com intensidade quase uniforme.
+Isso é importante porque notas staccato frequentemente ficam mais fortes
+por causa do impulso de ataque.
+</p>
+
+<p>
+Só depois faça uma versão com pequeno crescendo até C#3
+e decrescendo na volta.
+</p>
+
+<div class="key">
+Se o crescendo torna Me duro ou He soproso,
+reduza a amplitude dinâmica.
+</div>
+</section>
+
+<section>
+<h3>24. Progressão 10 — final de nota</h3>
+
+<p>
+No staccato, observe não apenas como a nota começa,
+mas também como termina.
+</p>
+
+<p>
+Faça uma nota curta e pergunte:
+o fim veio por <strong>liberação</strong> ou por <strong>fechamento brusco</strong>?
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Liberação</strong>O sistema fica pronto para a próxima nota.</div>
+<div class="box"><strong>Fechamento</strong>Sensação de “trancar” a garganta entre ataques.</div>
+</div>
+
+<p>
+Prefira a primeira estratégia.
+</p>
+</section>
+
+<section>
+<h3>25. O staccato deve ficar menor conforme acelera</h3>
+
+<p>
+Ao aumentar o andamento,
+não tente executar o mesmo gesto grande mais rapidamente.
+A articulação precisa se tornar <strong>mais econômica</strong>.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lento</strong>Você consegue observar todos os detalhes.</div>
+<div class="box"><strong>Médio</strong>Movimentos ficam menores.</div>
+<div class="box"><strong>Rápido</strong>Somente o essencial sobrevive.</div>
+</div>
+
+<p>
+Essa redução de amplitude é parte da automatização motora.
+</p>
+</section>
+
+<section>
+<h3>26. Transposição: monitore primeiro o C# equivalente</h3>
+
+<p>
+Suba a sequência meio tom por repetição.
+O marcador mais útil é o terceiro grau superior.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura</th></tr>
+<tr><td>Me/He continuam entrando limpos</td><td>Onset estável.</td></tr>
+<tr><td>He começa a vazar mais ar</td><td>Coordenação de onset está se perdendo.</td></tr>
+<tr><td>Me começa a bater</td><td>Adução/pressão excessiva.</td></tr>
+<tr><td>Maa abre demais</td><td>Compensação articulatória prematura.</td></tr>
+<tr><td>C# equivalente fica mais forte</td><td>Pitch sendo “comprado” com intensidade.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>27. O violão: três níveis de dependência</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão toca todas as notas junto.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão toca A2, B2, C#3 e A2 final, deixando algumas repetições sem guia.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Toque apenas A2 inicial; cante toda a sequência e confira A2 final.</p>
+</div>
+
+<p>
+O staccato sem guia é um teste particularmente bom porque cada nota precisa
+ser preparada internamente.
+</p>
+</section>
+
+<section>
+<h3>28. “Ataque nos dentes” sem perseguição de sensação</h3>
+
+<p>
+Se você sente vibração ou clareza na região anterior da face durante Me,
+use isso como informação.
+Mas não tente reproduzir exatamente a mesma sensação em Maa.
+</p>
+
+<p>
+A mudança de vogal altera a distribuição de energia acústica.
+A sensação somatossensorial pode mudar mesmo quando a técnica continua eficiente.
+</p>
+
+<div class="key">
+<strong>Critério superior à sensação:</strong>
+a nota responde rápido, está afinada, livre e repetível.
+</div>
+</section>
+
+<section>
+<h3>29. Vibrato: use só depois do legato estar estável</h3>
+
+<p>
+No staccato, vibrato não tem função prática.
+No legato, se o áudio sustentar algum Maa,
+você pode ocasionalmente prolongar o C#3 equivalente:
+</p>
+
+<div class="key">
+nota reta ~1–2 s → vibrato natural ~1–2 s.
+</div>
+
+<p>
+Isso funciona como teste de liberdade.
+Não use vibrato para esconder instabilidade de pitch.
+</p>
+</section>
+
+<section>
+<h3>30. Experimento avançado: mesma sequência, quatro graus de conexão</h3>
+
+<p>
+Faça a mesma tonalidade quatro vezes:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>1 · Muito separado</strong>Silêncio claro entre notas.</div>
+<div class="box"><strong>2 · Staccato normal</strong>Curto e musical.</div>
+<div class="box"><strong>3 · Portato</strong>Notas apoiadas, mas não totalmente ligadas.</div>
+<div class="box"><strong>4 · Legato</strong>Fluxo contínuo.</div>
+</div>
+
+<p>
+Seu objetivo é manter <strong>os mesmos alvos de pitch</strong>
+enquanto muda apenas o grau de conexão.
+Isso transforma o exercício numa aula real de articulação musical,
+não apenas numa sequência de sílabas.
+</p>
+</section>
+
+<section>
+<h3>31. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Me entra duro</td><td>Consoante + golpe glótico</td><td>M menor; volume menor; sem impulso laríngeo.</td></tr>
+<tr><td>He demora a afinar</td><td>/h/ longo demais</td><td>Encurtar H progressivamente.</td></tr>
+<tr><td>Maa fica pesado</td><td>Abertura ligada a pressão</td><td>Mee→Meh→Mah em volume leve.</td></tr>
+<tr><td>Staccato desafina, legato não</td><td>Preparação de cada onset ainda fraca</td><td>Staccato lento com mais silêncio.</td></tr>
+<tr><td>Legato vira glide</td><td>Alvos tonais pouco definidos</td><td>Violão nota a nota e portato intermediário.</td></tr>
+<tr><td>Sorriso tensiona</td><td>Cue levado literalmente</td><td>Reduzir expressão; voltar à fala natural.</td></tr>
+<tr><td>C#3 explode em volume</td><td>Compensação de pitch</td><td>Topo 15–20% mais leve.</td></tr>
+<tr><td>Som fica nasal em Maa</td><td>Acoplamento/articulação inadequados ou simplesmente percepção</td><td>Não force palato; ajuste língua/vogal e julgue pelo som.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>32. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Me</strong>Entra definido sem impacto.</div>
+<div class="box"><strong>He</strong>Entra livre sem longa preexalação.</div>
+<div class="box"><strong>Maa</strong>Abre sem aumentar esforço.</div>
+<div class="box"><strong>Staccato</strong>Cada nota nasce já próxima do centro.</div>
+<div class="box"><strong>Legato</strong>Conecta sem virar portamento.</div>
+<div class="box"><strong>Transferência</strong>As três sílabas parecem pertencer à mesma voz.</div>
+</div>
+</section>
+
+<section>
+<h3>33. Sessão-modelo — 7 a 9 minutos</h3>
+
+<div class="phase">
+<h4>1 · Calibração · ~1 min</h4>
+<p>Me↔He na mesma nota; depois uma transição Mee→Meh→Mah.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Legato lento · ~1–2 min</h4>
+<p>Aprenda os centros tonais com violão completo.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Staccato lento · ~2 min</h4>
+<p>Cada nota separada e preparada, sem aumentar volume.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Contraste · ~1 min</h4>
+<p>Staccato → portato → legato na mesma tonalidade.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Transposição · ~1–2 min</h4>
+<p>Suba por semitom enquanto Me, He e Maa preservarem a coordenação.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Independência · ~1 min</h4>
+<p>Reduza o guia do violão e faça uma passagem limpa para encerrar.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Me He Maa Staccato &amp; Legato”.
+A aula usa o desenho e as instruções da sua ficha e os conecta a estudos sobre controle de pitch
+em staccato/legato, feedback auditivo e cinestésico, onset de fonação,
+comportamento velofaríngeo em cantores e estratégias de formantes/vogais.
+As progressões Me→He→vogal, staccato→portato→legato e Mee→Meh→Mah
+são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice: Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012. PMID: 26948385.
+</li>
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Effects of a professional solo singer education on auditory and kinesthetic feedback:
+a longitudinal study of singers' pitch control.</em>
+J Voice. 2004;18(2):236–241.
+DOI: 10.1016/j.jvoice.2003.05.001. PMID: 15193657.
+</li>
+<li>
+Freeman E, Woo P, Saxman JH, Murry T.
+<em>A comparison of sung and spoken phonation onset gestures using high-speed digital imaging.</em>
+J Voice. 2012;26(2):226–238.
+DOI: 10.1016/j.jvoice.2010.11.005. PMID: 21256709.
+</li>
+<li>
+Mergell P, Herzel H, Wittenberg T, Tigges M, Eysholdt U.
+<em>Phonation onset: vocal fold modeling and high-speed glottography.</em>
+J Acoust Soc Am. 1998;104(1):464–470.
+DOI: 10.1121/1.423250. PMID: 9670538.
+</li>
+<li>
+Tanner K, Roy N, Merrill RM, Power D.
+<em>Velopharyngeal port status during classical singing.</em>
+J Speech Lang Hear Res. 2005;48(6):1311–1324.
+DOI: 10.1044/1092-4388(2005/091). PMID: 16478373.
+</li>
+<li>
+<em>Movement of the velum during speech and singing in classically trained singers.</em>
+J Voice. 1997.
+DOI: 10.1016/S0892-1997(97)80080-X. PMID: 9181545.
+</li>
+<li>
+Sundberg J, Lã FMB, Gill BP.
+<em>Professional male singers' formant tuning strategies for the vowel /a/.</em>
+Logoped Phoniatr Vocol. 2011;36(4):156–167.
+DOI: 10.3109/14015439.2011.587448. PMID: 21756222.
+</li>
+<li>
+Titze IR et al.
+<em>A Formant Range Profile for Singers.</em>
+J Voice. 2018.
+DOI: 10.1016/j.jvoice.2016.08.014. PMID: 28029556.
+</li>
+<li>
+Dromey C, Nissen SL, Roy N, Merrill RM.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2012;26(2):201–206.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+<li>
+Bloothooft G, Plomp R.
+<em>The sound level of the singer's formant in professional singing.</em>
+J Acoust Soc Am. 1986;79(6):2028–2033.
+DOI: 10.1121/1.393211. PMID: 3722610.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

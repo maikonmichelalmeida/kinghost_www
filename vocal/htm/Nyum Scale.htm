@@ -3,26 +3,678 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Nyum Scale — foco de estudo</title>
+<title>Nyum Scale — ID 6</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1140px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.38rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.82rem .96rem;margin:.88rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.18rem;position:relative}
+.protocol li::before{
+content:counter(step);position:absolute;left:0;top:.08rem;width:1.5rem;height:1.5rem;border-radius:50%;
+display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem
+}
+.notes{display:grid;grid-template-columns:repeat(9,minmax(58px,1fr));gap:.35rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:.6rem .3rem;text-align:center}
+.note b{display:block;font-size:1.02rem}.note span{font-size:.78rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.25rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}
+.refs li{margin:.4rem 0}
+@media(max-width:860px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.notes{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 6 · Tom</p>
-  <h2>Escala curta com mandíbula livre.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Faça o ‘Nyum’ como uma palavra contínua.</li><li>Suba e desça sem acelerar no topo.</li><li>Observe se a mandíbula começa a travar em notas mais altas.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Mesma vogal em toda a escala.</li><li>Fluxo contínuo.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Mastigar exageradamente.</li><li>Mudar a vogal para alcançar o topo.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Repita em semitons; a meta é preservar conforto, não maximizar alcance.</p>
+
+<p class="eyebrow">ID 6 · Nyum Scale</p>
+<h2>Mandíbula disponível, língua independente e pitch sem movimentos parasitas</h2>
+
+<p class="lead">
+A <strong>Nyum Scale</strong> é uma escala de cinco graus que sobe e retorna:
+<strong>1–2–3–4–5–4–3–2–1</strong>.
+Sua principal utilidade aqui é aprender a mudar pitch sem transformar a mandíbula em uma alavanca.
+A articulação de <strong>Nyum</strong> ainda exige coordenação fina entre língua, lábios e mandíbula,
+o que torna este exercício especialmente útil para separar movimentos que precisam acontecer
+daqueles que aparecem apenas por tensão ou hábito.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+a frequência sobe e desce; a mandíbula permanece <strong>livre, disponível e economicamente estável</strong>.
+“Relaxar a mandíbula” não significa deixá-la mole nem movimentá-la deliberadamente em cada nota.
+Significa não usá-la para fabricar o pitch.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+Os intervalos são:
+<strong>+2, +2, +1, +2, −2, −1, −2, −2 semitons</strong>.
+O semitom <strong>C#3↔D3</strong> é o ponto mais estreito do desenho e merece precisão,
+mas o desafio técnico principal não é intervalar: é fazer a escala inteira
+sem que a mandíbula “suba com o pitch” e “desça com o pitch”.
+</p>
+</section>
+
+<section>
+<h3>2. Mandíbula e pitch estão relacionados — mas não da forma simplista que parece</h3>
+
+<p>
+A abertura da mandíbula altera o comprimento e a geometria do trato vocal,
+e por isso modifica as ressonâncias acústicas. Estudos com cantores profissionais mostram
+que a abertura mandibular pode aumentar em regiões mais altas, especialmente quando a frequência fundamental
+se aproxima de uma ressonância importante da vogal.
+</p>
+
+<p>
+Isso significa duas coisas aparentemente opostas:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Em região confortável</strong>Movimentos grandes da mandíbula para cada nota geralmente são desnecessários.</div>
+<div class="box"><strong>Em regiões altas</strong>Alguma adaptação de abertura pode se tornar funcional e acústica, dependendo da vogal e do cantor.</div>
+</div>
+
+<div class="key">
+Portanto, o alvo não é <strong>“mandíbula imóvel para sempre”</strong>.
+É eliminar movimento reflexo e excessivo, para depois permitir somente a adaptação que o som realmente exige.
+</div>
+</section>
+
+<section>
+<h3>3. Na tessitura-base deste exercício, use pouca mudança de mandíbula</h3>
+
+<p>
+Entre A2 e E3, para a maioria das vozes adultas, estamos muito abaixo da situação extrema em que
+F0 se aproxima do primeiro formante de várias vogais.
+Por isso, como estratégia pedagógica, é razoável exigir que a forma mandibular permaneça
+<strong>quase constante</strong> nessa versão-base.
+</p>
+
+<p>
+Essa é uma aplicação pedagógica dos estudos de ressonância:
+se uma mudança grande de mandíbula ainda não é acústicamente necessária,
+ela vira uma boa variável para observar e reduzir.
+</p>
+</section>
+
+<section>
+<h3>4. “Nyum”: use o áudio como autoridade de pronúncia</h3>
+
+<p>
+A grafia <strong>Nyum</strong> não define com precisão uma vogal em português.
+Use a pronúncia do áudio de referência como modelo.
+Pedagogicamente, a sílaba tem três eventos:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>N + Y</strong>A língua organiza o início e desliza rapidamente para a vogal.</div>
+<div class="box"><strong>Vogal</strong>Carrega a maior parte do pitch e deve permanecer estável.</div>
+<div class="box"><strong>M</strong>Fecha nos lábios e fornece um pequeno “reset” tátil antes da próxima sílaba.</div>
+</div>
+
+<p>
+Não transforme a sílaba em três partes separadas.
+O alvo é uma palavra compacta:
+<strong>Nyum–Nyum–Nyum…</strong>
+</p>
+</section>
+
+<section>
+<h3>5. A coordenação mais importante: língua se move, mandíbula não precisa acompanhá-la</h3>
+
+<p>
+O início “Ny” exige trabalho da língua.
+Um erro muito comum é mover a mandíbula junto porque o sistema articulatório aprendeu
+a funcionar como um bloco: língua sobe, mandíbula sobe; língua muda, mandíbula muda.
+</p>
+
+<div class="key">
+Neste exercício, treine <strong>independência articulatória</strong>:
+a língua faz o trabalho fino; a mandíbula oferece espaço e permanece disponível.
+</div>
+
+<p>
+Fale lentamente cinco Nyums olhando no espelho.
+Se o queixo “mastiga” cada sílaba, reduza o movimento pela metade.
+Você deve conseguir articular claramente com movimentos externos discretos.
+</p>
+</section>
+
+<section>
+<h3>6. Relaxamento não significa boca pendurada</h3>
+
+<p>
+Uma mandíbula completamente caída pode deformar a vogal, alterar formantes e até exigir
+mais trabalho da língua para compensar.
+O estado útil é <strong>tônus baixo, mas controle presente</strong>.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Dentes</strong>Sem apertar.</div>
+<div class="box"><strong>Masseter</strong>Sem endurecimento crescente.</div>
+<div class="box"><strong>Queixo</strong>Não projeta para frente ao subir.</div>
+</div>
+
+<p>
+Se você consegue mover levemente a mandíbula para os lados entre duas repetições sem desconforto,
+é um bom sinal de que ela não ficou rigidamente presa.
+Não faça esse movimento lateral enquanto canta; use-o apenas entre séries como checagem.
+</p>
+</section>
+
+<section>
+<h3>7. Teste do masseter: feedback simples e útil</h3>
+
+<p>
+Coloque dois dedos suavemente sobre os masseteres, na lateral da mandíbula.
+Faça a escala em volume moderado.
+</p>
+
+<p>
+Você perceberá alguma atividade porque cantar envolve articulação,
+mas procure evitar uma mudança abrupta no caminho para E3.
+</p>
+
+<div class="key">
+<strong>Pergunta útil:</strong>
+“meus masseteres ficam progressivamente mais duros à medida que o pitch sobe?”
+Se sim, reduza volume e movimento mandibular.
+</div>
+</section>
+
+<section>
+<h3>8. Protocolo-base com o violão</h3>
+
+<ol class="protocol">
+<li>Toque A2 e forme mentalmente a primeira sílaba.</li>
+<li>Cante A2–B2–C#3–D3–E3–D3–C#3–B2–A2.</li>
+<li>Use o violão junto com cada nota nas primeiras repetições.</li>
+<li>Faça uma sílaba Nyum por nota.</li>
+<li>Mantenha volume moderado e articulação compacta.</li>
+<li>Observe se E3 provoca abertura ou projeção repentina do queixo.</li>
+<li>Repita apenas se souber qual detalhe quer corrigir.</li>
+</ol>
+</section>
+
+<section>
+<h3>9. Tempo-base: lento o suficiente para perceber, rápido o suficiente para não “posar”</h3>
+
+<p>
+Comece em aproximadamente <strong>72–88 bpm</strong>, uma nota por pulso.
+Muito lento pode induzir você a reorganizar conscientemente a boca em cada grau;
+muito rápido pode esconder tensão.
+</p>
+
+<p>
+Quando a coordenação estiver boa, aumente para 96–112 bpm.
+A aceleração deve tornar a articulação <strong>menor e mais econômica</strong>, não mais agressiva.
+</p>
+</section>
+
+<section>
+<h3>10. Não “mastigue” a escala</h3>
+
+<p>
+Um erro típico é produzir:
+<strong>Nyaum ↓ Nyáum ↓ Nyáum</strong>
+com a mandíbula abrindo e fechando como se cada nota fosse uma mordida.
+</p>
+
+<p>
+Faça uma passagem no espelho e procure a menor amplitude de movimento mandibular
+que ainda deixa a palavra clara.
+</p>
+
+<div class="key">
+A mandíbula deve parecer <strong>plataforma</strong>, não metrônomo.
+</div>
+</section>
+
+<section>
+<h3>11. Progressão 1 — fale antes de cantar</h3>
+
+<div class="phase">
+<h4>Etapa A · fala</h4>
+<p>Diga nove Nyums no ritmo da escala, numa única altura de fala.</p>
+</div>
+
+<div class="phase">
+<h4>Etapa B · duas alturas</h4>
+<p>Alterne apenas A2 e E3 no violão: Nyum baixo → Nyum alto.</p>
+</div>
+
+<div class="phase">
+<h4>Etapa C · escala completa</h4>
+<p>Reintroduza todos os graus mantendo o mesmo tamanho articulatório da fala.</p>
+</div>
+
+<p>
+Essa progressão separa dois problemas:
+primeiro a articulação; depois o pitch.
+</p>
+</section>
+
+<section>
+<h3>12. Progressão 2 — “mandíbula quieta, língua ativa”</h3>
+
+<p>
+Faça uma repetição deliberadamente lenta e observe somente o início <strong>Ny</strong>.
+Tente produzir a consoante/glide com movimento mínimo do queixo.
+</p>
+
+<p>
+Depois faça a mesma escala em velocidade normal.
+Se a dicção continuar clara, você eliminou movimento redundante sem perder articulação.
+</p>
+</section>
+
+<section>
+<h3>13. Progressão 3 — retire o N e teste a transferência</h3>
+
+<p>
+Faça três versões na mesma tonalidade:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Nyum</strong>Versão completa.</div>
+<div class="box"><strong>Yum</strong>Menos preparação nasal.</div>
+<div class="box"><strong>Vogal</strong>Use apenas a vogal aproximada do áudio.</div>
+</div>
+
+<p>
+O objetivo é verificar se a mandíbula continua livre quando a consoante deixa de organizar a entrada.
+Se a vogal pura causa imediatamente mais movimento ou tensão,
+o Nyum ainda está servindo como “muleta” articulatória.
+</p>
+</section>
+
+<section>
+<h3>14. Progressão 4 — “M fechado” como reset tátil</h3>
+
+<p>
+Em uma repetição ocasional, prolongue discretamente o <strong>M final</strong> por uma fração de segundo.
+Sinta os lábios encostarem sem pressão.
+Na repetição seguinte, volte ao Nyum normal.
+</p>
+
+<p>
+Essa pequena ênfase ajuda a perceber se você chega ao fim de cada sílaba ainda organizado,
+ou se a boca vai se abrindo progressivamente ao longo da escala.
+</p>
+
+<div class="key">
+Não transforme isso em exercício de humming.
+É apenas um <strong>reset articulatório</strong>.
+</div>
+</section>
+
+<section>
+<h3>15. Progressão 5 — subida e descida com intenções diferentes</h3>
+
+<p>
+Na subida, pense em <strong>economia</strong>.
+Na descida, pense em <strong>não desmontar</strong>.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>1→5</strong>Não aumente mandíbula, volume ou peso proporcionalmente ao pitch.</div>
+<div class="box"><strong>5→1</strong>Não deixe a articulação ficar progressivamente larga ou relaxada demais.</div>
+</div>
+
+<p>
+Isso evita dois vícios diferentes: tensionar para subir e “desabar” para descer.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 6 — controle do semitom C#↔D</h3>
+
+<p>
+Isole:
+<strong>C#3–D3–C#3</strong>.
+Faça primeiro junto ao violão e depois com confirmação posterior.
+</p>
+
+<p>
+Como a diferença é de apenas um semitom, uma mandíbula muito móvel pode mascarar a sensação do intervalo:
+você muda timbre e pitch ao mesmo tempo.
+Mantenha a forma externa especialmente estável aqui.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 7 — escala em uma única vogal</h3>
+
+<p>
+Depois de uma boa execução de Nyum, cante o mesmo desenho usando apenas a vogal central do exercício.
+</p>
+
+<p>
+Isso muda o problema: sem as consoantes, você escuta melhor
+<strong>continuidade de timbre, estabilidade de formante e pequenas mudanças de mandíbula</strong>.
+</p>
+
+<p>
+Estudos de treinamento de vogais mostram que pequenas alterações articulatórias
+podem mudar F1 e F2 de modo mensurável mesmo após períodos breves de treinamento.
+Portanto, consistência de vogal não é apenas impressão subjetiva.
+</p>
+</section>
+
+<section>
+<h3>18. Progressão 8 — dinâmica uniforme → arco leve</h3>
+
+<p>
+Primeiro mantenha as nove notas em intensidade aproximadamente uniforme.
+Depois, em uma tonalidade muito confortável:
+</p>
+
+<div class="key">
+1–2–3–4–5: <strong>crescendo pequeno</strong><br>
+5–4–3–2–1: <strong>decrescendo pequeno</strong>
+</div>
+
+<p>
+A mandíbula não deve responder à dinâmica.
+Se abrir mais quando você canta mais forte, reduza a amplitude do crescendo.
+</p>
+</section>
+
+<section>
+<h3>19. O que acontece quando você transpõe para cima</h3>
+
+<p>
+Suba meio tom por repetição.
+Nas primeiras transposições, procure manter quase a mesma articulação.
+Em algum momento, porém, mudanças acústicas legítimas podem aparecer.
+</p>
+
+<p>
+Pesquisas com cantores mostram que, à medida que F0 se aproxima de F1,
+especialmente em algumas vogais, <strong>a abertura mandibular pode aumentar</strong>
+para ajudar a ajustar a primeira ressonância.
+MRI também mostra alterações de mandíbula, língua, lábios e faringe em regiões altas.
+</p>
+
+<div class="key">
+Por isso, não lute contra toda mudança.
+A pergunta é:
+<strong>“essa adaptação apareceu gradualmente porque o pitch exige, ou eu abri a boca por medo da nota?”</strong>
+</div>
+</section>
+
+<section>
+<h3>20. Como diferenciar adaptação funcional de tensão</h3>
+
+<table>
+<tr><th>Sinal</th><th>Provável interpretação</th></tr>
+<tr><td>Abertura aumenta pouco e gradualmente ao transpor</td><td>Pode ser adaptação acústica funcional.</td></tr>
+<tr><td>Queixo dá um salto exatamente na nota mais alta</td><td>Provável compensação motora.</td></tr>
+<tr><td>Masseter endurece</td><td>Tensão, não simples ajuste de ressonância.</td></tr>
+<tr><td>Vogal muda muito antes de a tessitura exigir</td><td>Modificação prematura.</td></tr>
+<tr><td>A nota fica mais fácil com pequena adaptação e sem esforço</td><td>Provável estratégia útil.</td></tr>
+<tr><td>A nota só sai com boca enorme e volume maior</td><td>Excesso de compensação.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>21. Um experimento didático: três aberturas na mesma nota</h3>
+
+<p>
+Em uma nota confortável, produza Nyum com:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Pequena</strong>Mandíbula um pouco mais fechada que o normal.</div>
+<div class="box"><strong>Natural</strong>Sua articulação confortável.</div>
+<div class="box"><strong>Grande</strong>Abertura claramente maior, mas sem dor.</div>
+</div>
+
+<p>
+Observe como o timbre e a vogal mudam.
+Depois volte à posição natural.
+</p>
+
+<p>
+Este contraste ensina uma coisa importante:
+<strong>mandíbula não é apenas tensão muscular; é também um controlador acústico.</strong>
+O treino consiste em aprender a usar esse controlador deliberadamente em vez de deixá-lo reagir sozinho.
+</p>
+</section>
+
+<section>
+<h3>22. Não fixe a mandíbula com a mão</h3>
+
+<p>
+Evite segurar ou impedir mecanicamente o movimento enquanto canta.
+Isso pode criar outra forma de rigidez e impede que você aprenda o controle ativo.
+</p>
+
+<p>
+Você pode <strong>tocar levemente</strong> queixo ou masseter como feedback,
+mas sem empurrar, puxar ou estabilizar à força.
+</p>
+</section>
+
+<section>
+<h3>23. Atenção à articulação temporomandibular</h3>
+
+<p>
+Cantar envolve carga repetitiva sobre o sistema mastigatório.
+Estudos populacionais com músicos encontraram que vocalistas relatam dor e sons articulares,
+embora o canto em si não tenha permanecido como fator independente após ajuste por outros comportamentos e carga.
+</p>
+
+<p>
+Para este exercício:
+<strong>cliques isolados sem dor não são motivo para “forçar soltura”</strong>.
+Se houver dor mandibular, travamento, redução de abertura ou sintomas persistentes,
+não use o exercício para tentar resolver mecanicamente a articulação.
+</p>
+</section>
+
+<section>
+<h3>24. Velocidade: articulação menor, não mandíbula mais rápida</h3>
+
+<p>
+Quando aumentar o andamento, não tente fazer a mandíbula acompanhar cada Nyum mais rapidamente.
+O que deve acelerar é a <strong>coordenação da língua e dos lábios</strong>,
+enquanto a amplitude mandibular tende a ficar pequena.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>72–88 bpm</strong>Mapear e reduzir tensão.</div>
+<div class="box"><strong>96–112 bpm</strong>Automatizar articulação econômica.</div>
+<div class="box"><strong>Mais rápido</strong>Só se dicção, pitch e mandíbula continuarem independentes.</div>
+</div>
+</section>
+
+<section>
+<h3>25. Vibrato: não é prioridade</h3>
+
+<p>
+Como as notas são curtas, vibrato não tem função central.
+O exercício é melhor com pitches claros e articulação observável.
+</p>
+
+<p>
+Se quiser testar liberdade, sustente apenas o grau 5 em uma repetição:
+chegue a E3, mantenha reto por 1–2 segundos e depois permita vibrato natural.
+Se a mandíbula começa a oscilar junto com o vibrato, pare:
+o vibrato deve ser vocal, não uma movimentação rítmica do queixo.
+</p>
+</section>
+
+<section>
+<h3>26. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>O que provavelmente está acontecendo</th><th>Correção</th></tr>
+<tr><td>Queixo sobe com a escala</td><td>Pitch associado a gesto mandibular</td><td>Menos volume; espelho; fala antes do canto.</td></tr>
+<tr><td>Mandíbula “mastiga” cada Nyum</td><td>Língua e mandíbula estão acopladas demais</td><td>Ny lento com movimento mínimo do queixo.</td></tr>
+<tr><td>Vogal muda muito no E3</td><td>Abertura excessiva/prematura</td><td>Voltar ao tamanho articulatório da fala.</td></tr>
+<tr><td>Masseter endurece</td><td>Rigidez progressiva</td><td>Encurtar série e reduzir intensidade.</td></tr>
+<tr><td>C#→D fica impreciso</td><td>Semitom pouco internalizado</td><td>Isolar C#–D–C#.</td></tr>
+<tr><td>Vogal pura piora</td><td>Dependência da consoante</td><td>Nyum → Yum → vogal.</td></tr>
+<tr><td>Ao acelerar a dicção borra</td><td>Coordenação articulatória ainda não automatizada</td><td>Voltar 10–15 bpm.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>27. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Independência</strong>Pitch muda sem gesto evidente do queixo.</div>
+<div class="box"><strong>Masseter</strong>Menos endurecimento ao chegar ao 5º grau.</div>
+<div class="box"><strong>Vogal</strong>Permanece reconhecível nas nove notas.</div>
+<div class="box"><strong>Articulação</strong>Ny continua claro com movimentos menores.</div>
+<div class="box"><strong>Velocidade</strong>Andamento sobe sem aumentar amplitude mandibular.</div>
+<div class="box"><strong>Transferência</strong>Yum e vogal pura mantêm a liberdade.</div>
+</div>
+</section>
+
+<section>
+<h3>28. Sessão-modelo — 6 a 8 minutos</h3>
+
+<div class="phase">
+<h4>1 · Fala · ~30 s</h4>
+<p>Nove Nyums em ritmo, observando mandíbula pequena e língua ativa.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Escala guiada · ~2 min</h4>
+<p>Violão em todas as notas; andamento 72–88 bpm.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Controle específico · ~1 min</h4>
+<p>Escolha: masseter, C#↔D ou “mandíbula quieta/língua ativa”.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Transposição · ~1–2 min</h4>
+<p>Suba por semitom enquanto a articulação continuar econômica.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Transferência · ~1 min</h4>
+<p>Uma passagem Nyum, uma Yum e uma somente na vogal.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Fechamento</h4>
+<p>Uma passagem limpa em tonalidade confortável. Opcional: sustentar o grau 5 e liberar vibrato.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo científico padronizado chamado “Nyum Scale”.
+A aula usa a intenção específica da sua ficha — liberdade mandibular —
+e a relaciona a estudos de abertura da mandíbula, pitch, formantes, MRI do trato vocal,
+estratégias de ressonância e treinamento de vogais. As progressões Nyum→Yum→vogal,
+fala→canto e redução deliberada de movimento são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Sundberg J, Skoog J.
+<em>Dependence of jaw opening on pitch and vowel in singers.</em>
+J Voice. 1997;11(3):301–306.
+DOI: 10.1016/S0892-1997(97)80008-2. PMID: 9297674.
+</li>
+<li>
+Erickson ML.
+<em>The interaction of formant frequency and pitch in the perception of voice category and jaw opening in female singers.</em>
+J Voice. 2004;18(1):24–37.
+DOI: 10.1016/j.jvoice.2003.08.001. PMID: 15070221.
+</li>
+<li>
+Echternach M et al.
+<em>Vocal tract in female registers—A dynamic real-time MRI study.</em>
+J Voice. 2010. PMID: 19185452.
+O estudo observou mudanças de lábios, mandíbula, língua e faringe quando F0 se aproximou de F1.
+</li>
+<li>
+Echternach M et al.
+<em>Vocal tract and register changes analysed by real-time MRI in male professional singers—A pilot study.</em>
+Logoped Phoniatr Vocol. PMID: 18569645.
+</li>
+<li>
+Henrich N, Smith J, Wolfe J.
+<em>Vocal tract resonances in singing: Strategies used by sopranos, altos, tenors, and baritones.</em>
+J Acoust Soc Am. 2011;129(2):1024–1035.
+DOI: 10.1121/1.3518766. PMID: 21361458.
+</li>
+<li>
+Dromey C, Nissen SL, Roy N, Merrill RM.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2012;26(2):201–206.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+<li>
+Titze IR et al.
+<em>A Formant Range Profile for Singers.</em>
+J Voice. 2018.
+DOI: 10.1016/j.jvoice.2016.08.014. PMID: 28029556. PMCID: PMC5409887.
+</li>
+<li>
+Traser L et al.
+<em>Vocal tract configurations in tenors' passaggio in different vowel conditions—A real-time MRI study.</em>
+J Voice. PMID: 24412038.
+</li>
+<li>
+Harper RP, de Bruin H, Burcea I.
+<em>Muscle activity during mandibular movements in normal and mandibular retrognathic subjects.</em>
+J Oral Maxillofac Surg. 1997;55(3):225–233.
+DOI: 10.1016/S0278-2391(97)90530-9. PMID: 9054910.
+</li>
+<li>
+van Selms MKA et al.
+<em>Are vocalists prone to temporomandibular disorders?</em>
+J Oral Rehabil. 2019.
+DOI: 10.1111/joor.12849. PMID: 31321795. PMCID: PMC6899656.
+</li>
+<li>
+Echternach M et al.
+<em>Articulatory and acoustic differences between lyric and dramatic singing in Western classical music.</em>
+J Acoust Soc Am. 2024.
+DOI: 10.1121/10.0025751. PMID: 38634661.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

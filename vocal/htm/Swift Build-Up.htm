@@ -3,26 +3,1009 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Swift Build-Up — foco de estudo</title>
+<title>Swift Build-Up — ID 28</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1200px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4,.grid5{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.notes{display:grid;grid-template-columns:repeat(7,minmax(64px,1fr));gap:.32rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .22rem;text-align:center}
+.note b{display:block;font-size:.95rem}.note span{font-size:.71rem;color:var(--muted)}
+.pattern{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:.75rem .85rem;margin:.55rem 0}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:950px){.notes{grid-template-columns:repeat(5,1fr)}.grid5{grid-template-columns:repeat(3,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr}.notes{grid-template-columns:repeat(4,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 28 · Agilidade</p>
-  <h2>Construção progressiva de agilidade.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Separe em grupos de 3, 5 e depois sequências maiores.</li><li>Use uma vogal simples primeiro.</li><li>Só depois varie vogais como no exercício original.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Ritmo estável.</li><li>Notas intermediárias continuam claras.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Acelerar porque decorou o contorno.</li><li>Deixar a língua marcar cada nota.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Aumente o BPM em pequenos passos.</p>
+
+<p class="eyebrow">ID 28 · Swift Build-Up</p>
+<h2>Construir velocidade por camadas: o padrão cresce, a boca muda e a precisão precisa permanecer</h2>
+
+<p class="lead">
+O <strong>Swift Build-Up</strong> é um exercício de agilidade com uma arquitetura muito inteligente:
+ele começa com um pequeno movimento em torno de E3 e, a cada bloco,
+<strong>acrescenta um novo grau superior</strong> antes de retornar à base.
+No final, a linha alcança B3.
+A ficha ainda adiciona uma segunda dificuldade:
+<strong>cada repetição deve ser feita com uma vogal diferente</strong>.
+Assim, o exercício testa se a agilidade pertence realmente ao controle de pitch
+ou se depende de uma única configuração confortável da boca.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+aumentar velocidade sem perder nenhuma nota
+e conseguir transportar a mesma precisão entre vogais diferentes,
+mantendo uma sensação respiratória contínua.
+</div>
+
+<section>
+<h3>1. A sequência completa</h3>
+
+<div class="notes">
+<div class="note"><b>E3</b><span>1</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>E3</b><span>1</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>G#3</b><span>3</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>E3</b><span>1</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>G#3</b><span>3</span></div>
+<div class="note"><b>A3</b><span>4</span></div>
+<div class="note"><b>G#3</b><span>3</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>E3</b><span>1</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>G#3</b><span>3</span></div>
+<div class="note"><b>A3</b><span>4</span></div>
+<div class="note"><b>B3</b><span>5</span></div>
+<div class="note"><b>A3</b><span>4</span></div>
+<div class="note"><b>G#3</b><span>3</span></div>
+<div class="note"><b>F#3</b><span>2</span></div>
+<div class="note"><b>E3</b><span>1</span></div>
+</div>
+
+<p>
+A extensão total é de <strong>E3 a B3</strong>, uma quinta justa.
+O que aumenta não é tanto a extensão absoluta,
+mas o <strong>comprimento do fragmento</strong> e o número de decisões rápidas.
+</p>
+</section>
+
+<section>
+<h3>2. O segredo está nos blocos</h3>
+
+<div class="pattern">Bloco 1: E3 – F#3 – E3</div>
+<div class="pattern">Bloco 2: F#3 – G#3 – F#3 – E3</div>
+<div class="pattern">Bloco 3: F#3 – G#3 – A3 – G#3 – F#3 – E3</div>
+<div class="pattern">Bloco 4: F#3 – G#3 – A3 – B3 – A3 – G#3 – F#3 – E3</div>
+
+<p>
+Cada bloco acrescenta um <strong>novo teto</strong>:
+F#3, G#3, A3 e B3.
+Depois retorna pela sequência já conhecida.
+</p>
+
+<div class="key">
+Não memorize 21 notas como uma fila.
+Memorize:
+<strong>“subo um degrau a mais e volto pela escada.”</strong>
+</div>
+</section>
+
+<section>
+<h3>3. A estrutura é cumulativa</h3>
+
+<p>
+O bloco seguinte reutiliza material que você já executou.
+Isso é didaticamente poderoso:
+o novo desafio é quase sempre apenas <strong>uma nota adicional no topo</strong>.
+</p>
+
+<p>
+Se o bloco 4 falha, não recomece obrigatoriamente as 21 notas.
+Pergunte:
+<strong>o problema apareceu ao acrescentar B3 ou no retorno B3→A3?</strong>
+</p>
+</section>
+
+<section>
+<h3>4. A nota nova deve ser tratada como extensão do bloco anterior</h3>
+
+<p>
+Quando você chega a um novo teto,
+não crie uma nova técnica.
+</p>
+
+<div class="grid4">
+<div class="box"><strong>F#3</strong>primeiro teto.</div>
+<div class="box"><strong>G#3</strong>F# + um tom.</div>
+<div class="box"><strong>A3</strong>G# + um semitom.</div>
+<div class="box"><strong>B3</strong>A + um tom.</div>
+</div>
+
+<p>
+O salto G#3→A3 é o único semitom do crescimento.
+Isso o torna um excelente ponto de precisão.
+</p>
+</section>
+
+<section>
+<h3>5. Agilidade não é tocar “por cima” das notas</h3>
+
+<p>
+Em andamento rápido,
+é possível produzir a impressão geral de uma escala
+sem que cada centro tonal esteja realmente definido.
+</p>
+
+<p>
+O objetivo é que,
+mesmo comprimidas no tempo,
+as notas continuem suficientemente diferenciadas para formar o desenho correto.
+</p>
+
+<div class="key">
+Velocidade boa =
+<strong>menos tempo por nota, não menos notas.</strong>
+</div>
+</section>
+
+<section>
+<h3>6. O topo de cada bloco funciona como checkpoint</h3>
+
+<p>
+Aprenda a ouvir:
+F#3 no bloco 1,
+G#3 no bloco 2,
+A3 no bloco 3,
+B3 no bloco 4.
+</p>
+
+<p>
+Esses quatro pontos permitem avaliar o run sem precisar analisar conscientemente todas as 21 notas.
+</p>
+
+<div class="key">
+Se os checkpoints entram no lugar,
+o esqueleto do exercício está provavelmente organizado.
+</div>
+</section>
+
+<section>
+<h3>7. Primeiro protocolo: tocar antes de cantar</h3>
+
+<p>
+No violão, toque os quatro blocos separadamente.
+Depois toque somente os quatro tetos:
+<strong>F#3 – G#3 – A3 – B3</strong>.
+</p>
+
+<p>
+Por fim toque a sequência completa.
+</p>
+
+<p>
+Isso cria primeiro uma representação estrutural,
+antes da tentativa motora rápida.
+</p>
+</section>
+
+<section>
+<h3>8. Progressão 1 — só bloco 1</h3>
+
+<p>
+Faça:
+<strong>E3–F#3–E3</strong>.
+</p>
+
+<p>
+Procure três centros claros,
+uma única corrente respiratória
+e a mesma configuração de vogal nas três alturas.
+</p>
+
+<p>
+Quando esse bloco parecer pequeno e automático,
+passe ao próximo.
+</p>
+</section>
+
+<section>
+<h3>9. Progressão 2 — bloco 2 isolado</h3>
+
+<p>
+Faça:
+<strong>F#3–G#3–F#3–E3</strong>.
+</p>
+
+<p>
+A nova informação é G#3.
+Depois dela,
+a descida já deve parecer conhecida.
+</p>
+
+<div class="key">
+Aprenda a sentir:
+<strong>novo topo → caminho de volta familiar.</strong>
+</div>
+</section>
+
+<section>
+<h3>10. Progressão 3 — bloco 3 e o semitom G#→A</h3>
+
+<p>
+Faça:
+<strong>F#3–G#3–A3–G#3–F#3–E3</strong>.
+</p>
+
+<p>
+Isole:
+<strong>G#3–A3–G#3</strong>.
+</p>
+
+<p>
+Esse semitom deve continuar pequeno
+mesmo quando o andamento sobe.
+</p>
+</section>
+
+<section>
+<h3>11. Progressão 4 — bloco 4</h3>
+
+<p>
+Faça:
+<strong>F#3–G#3–A3–B3–A3–G#3–F#3–E3</strong>.
+</p>
+
+<p>
+Agora o novo elemento é B3.
+Isole A3→B3→A3.
+</p>
+
+<div class="key">
+Não deixe B3 virar uma “nota de chegada”.
+Ela é apenas o ponto de reversão do último bloco.
+</div>
+</section>
+
+<section>
+<h3>12. Depois concatene 1→2, 2→3 e 3→4</h3>
+
+<p>
+Antes de cantar tudo,
+treine as fronteiras:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>1→2</strong>E3 | F#3.</div>
+<div class="box"><strong>2→3</strong>E3 | F#3.</div>
+<div class="box"><strong>3→4</strong>E3 | F#3.</div>
+</div>
+
+<p>
+Observe algo interessante:
+cada bloco termina em E3 e o próximo reinicia em F#3.
+A fronteira é sempre <strong>E3→F#3</strong>.
+</p>
+
+<div class="key">
+Você pode automatizar a “costura” entre blocos como um único gesto recorrente.
+</div>
+</section>
+
+<section>
+<h3>13. A ficha pede uma vogal diferente em cada repetição</h3>
+
+<p>
+Isso não significa trocar de vogal <strong>dentro</strong> das 21 notas.
+Faça a sequência completa com uma vogal;
+na repetição seguinte, troque.
+</p>
+
+<p>
+Uma ordem prática:
+</p>
+
+<div class="grid5">
+<div class="box"><strong>Ah</strong>/a/</div>
+<div class="box"><strong>Eh</strong>/e/ ou /ɛ/ conforme o modelo</div>
+<div class="box"><strong>Ee</strong>/i/</div>
+<div class="box"><strong>Oh</strong>/o/</div>
+<div class="box"><strong>Oo</strong>/u/</div>
+</div>
+
+<p class="mini">
+Essas são categorias pedagógicas. Ajuste a pronúncia ao modelo vocal usado no áudio e ao estilo.
+</p>
+</section>
+
+<section>
+<h3>14. Por que trocar vogais é tecnicamente importante</h3>
+
+<p>
+Vogais não são “capas” acústicas neutras.
+Elas mudam a configuração do trato vocal
+e podem produzir pequenas perturbações transitórias de F0.
+</p>
+
+<p>
+Em cantores experientes,
+mudanças de vogal em uma nota sustentada já foram associadas
+a alterações mensuráveis da frequência fundamental.
+</p>
+
+<div class="key">
+O ID 28 pergunta:
+<strong>“você mantém o desenho melódico mesmo quando o filtro vocal muda?”</strong>
+</div>
+</section>
+
+<section>
+<h3>15. Não busque a mesma sensação em todas as vogais</h3>
+
+<p>
+/i/, /a/ e /u/ têm geometrias muito diferentes.
+É normal a sensação de boca, língua e ressonância mudar.
+</p>
+
+<p>
+O que deve permanecer estável é:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>pitch</strong>mesmos alvos.</div>
+<div class="box"><strong>ritmo</strong>mesmas durações.</div>
+<div class="box"><strong>fluxo</strong>sem impulsos desnecessários.</div>
+<div class="box"><strong>economia</strong>sem tensão crescente.</div>
+</div>
+</section>
+
+<section>
+<h3>16. Equalização não significa fazer todas as vogais iguais</h3>
+
+<p>
+Treinamento de equalização vocálica em cantores produziu
+mudanças mensuráveis nos formantes,
+frequentemente em direção a uma postura lingual menos extrema.
+</p>
+
+<p>
+Isso fornece uma ferramenta prática:
+se uma vogal exige movimentos enormes para acompanhar o run,
+experimente <strong>reduzir o extremo articulatório</strong>
+sem apagar sua identidade.
+</p>
+
+<div class="key">
+Mesma agilidade, vogais diferentes.<br>
+Não:
+<strong>uma única vogal disfarçada cinco vezes.</strong>
+</div>
+</section>
+
+<section>
+<h3>17. Progressão 5 — encontre a vogal mais fácil</h3>
+
+<p>
+Faça o padrão em andamento moderado
+com duas ou três vogais.
+</p>
+
+<p>
+Identifique a mais fácil.
+Use-a inicialmente para consolidar o desenho melódico.
+</p>
+
+<p>
+Depois volte às demais.
+</p>
+
+<div class="key">
+A vogal fácil ensina o <strong>mapa motor do pitch</strong>;
+as outras testam se esse mapa transfere.
+</div>
+</section>
+
+<section>
+<h3>18. Progressão 6 — encontre a vogal mais difícil</h3>
+
+<p>
+A vogal que mais piora o run é extremamente informativa.
+</p>
+
+<p>
+Não acelere nela.
+Reduza o andamento
+e descubra qual trecho degrada primeiro:
+G#→A?
+A→B?
+retorno?
+</p>
+
+<p>
+Treine somente esse trecho na vogal difícil.
+</p>
+</section>
+
+<section>
+<h3>19. Não altere pitch e vogal ao mesmo tempo para corrigir</h3>
+
+<p>
+Se /i/ falha no B3,
+não mude simultaneamente:
+vogal, volume, andamento e articulação.
+</p>
+
+<p>
+Primeiro mantenha o pitch fixo em B3
+e compare a vogal.
+Depois recoloque o trecho A3–B3–A3.
+</p>
+
+<div class="key">
+Uma variável por vez revela a causa.
+</div>
+</section>
+
+<section>
+<h3>20. “Fluxo de ar estável” significa ausência de bombeamento</h3>
+
+<p>
+A sequência cresce de 3 para vários eventos rápidos.
+É fácil começar a “empurrar” cada pico com o abdômen.
+</p>
+
+<p>
+Evite:
+<strong>uma mini-expulsão de ar para F#, outra para G#, outra para A...</strong>
+</p>
+
+<div class="key">
+Pense numa única <strong>esteira de ar</strong>
+sobre a qual o pitch se reorganiza.
+</div>
+</section>
+
+<section>
+<h3>21. Estável não significa fisiologicamente constante</h3>
+
+<p>
+Em cantores profissionais,
+mudanças de pitch envolvem interação entre comportamentos laríngeos e respiratórios.
+Logo, não é necessário imaginar fluxo idêntico a cada instante.
+</p>
+
+<p>
+A instrução é perceptivo-motora:
+<strong>não articule o run com golpes respiratórios.</strong>
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 7 — uma nota longa versus o bloco</h3>
+
+<p>
+Sustente E3 por uma duração semelhante ao primeiro bloco.
+Depois faça E3–F#3–E3
+com a mesma intenção respiratória.
+</p>
+
+<p>
+Repita com os blocos maiores.
+</p>
+
+<p>
+A sensação de continuidade deve sobreviver
+mesmo quando o número de notas aumenta.
+</p>
+</section>
+
+<section>
+<h3>23. Andamento rápido realmente aumenta a dificuldade</h3>
+
+<p>
+Estudos com cantores profissionais e não profissionais
+mostram maior imprecisão de pitch em andamento rápido,
+com efeitos adicionais de articulação, direção melódica e tessitura.
+</p>
+
+<p>
+Na população geral,
+reduzir o tempo de execução também pode melhorar muito a afinação.
+</p>
+
+<div class="key">
+Velocidade deve ser <strong>resultado da automatização</strong>,
+não substituto dela.
+</div>
+</section>
+
+<section>
+<h3>24. Progressão 8 — escada de tempo</h3>
+
+<p>
+Escolha um andamento em que todas as 21 notas sejam claras.
+Depois aumente em pequenos passos,
+por exemplo <strong>6–10 bpm</strong>.
+</p>
+
+<p>
+Os números são referência pedagógica.
+O critério real é:
+</p>
+
+<div class="key">
+<strong>o primeiro erro define o teto do dia.</strong>
+</div>
+</section>
+
+<section>
+<h3>25. Não treine repetidamente acima do primeiro colapso</h3>
+
+<p>
+Quando uma nota começa a desaparecer,
+reduza 10–15% o andamento
+e faça algumas repetições de alta qualidade.
+</p>
+
+<p>
+Agilidade melhora pela consolidação de transições corretas,
+não pela repetição contínua de uma versão borrada.
+</p>
+</section>
+
+<section>
+<h3>26. Progressão 9 — “subir rápido, voltar lento”</h3>
+
+<p>
+Num bloco isolado,
+faça a subida em andamento normal
+e prolongue um pouco a descida.
+</p>
+
+<p>
+Depois faça o contrário.
+</p>
+
+<p>
+Essa deformação temporária separa
+<strong>preparação ascendente</strong> e <strong>controle de retorno</strong>.
+</p>
+</section>
+
+<section>
+<h3>27. Progressão 10 — ritmo pontuado</h3>
+
+<p>
+Use temporariamente padrões:
+<strong>longa–curta</strong> e <strong>curta–longa</strong>.
+</p>
+
+<p>
+Depois retorne a durações uniformes.
+</p>
+
+<div class="key">
+Mudar o ritmo obriga as notas a ocupar posições temporais diferentes
+e pode desmontar automatismos imprecisos.
+</div>
+</section>
+
+<section>
+<h3>28. Progressão 11 — teto acentuado</h3>
+
+<p>
+Dê leve destaque apenas à nota mais alta de cada bloco:
+F#, G#, A, B.
+</p>
+
+<p>
+Depois retire os acentos,
+mas mantenha a clareza estrutural.
+</p>
+
+<p>
+Esse procedimento transforma os tetos em landmarks auditivos.
+</p>
+</section>
+
+<section>
+<h3>29. Progressão 12 — E3 como âncora de retorno</h3>
+
+<p>
+Todos os blocos terminam em E3.
+Use essa repetição a seu favor.
+</p>
+
+<p>
+Cada E3 deve funcionar como
+<strong>reset tonal sem reset muscular</strong>.
+</p>
+
+<div class="key">
+Voltar ao E3 não significa desmontar a técnica;
+significa apenas voltar ao ponto de referência.
+</div>
+</section>
+
+<section>
+<h3>30. Precisão e acurácia não são a mesma coisa</h3>
+
+<p>
+Uma execução pode estar, em média, perto dos alvos
+e ainda variar muito de repetição para repetição.
+</p>
+
+<p>
+Na literatura de canto,
+<strong>accuracy</strong> descreve proximidade média do alvo;
+<strong>precision</strong>, consistência entre tentativas.
+</p>
+
+<div class="key">
+Para o Swift Build-Up,
+o objetivo é ter <strong>as duas</strong>:
+notas corretas e repetíveis.
+</div>
+</section>
+
+<section>
+<h3>31. Progressão 13 — cinco repetições da mesma vogal</h3>
+
+<p>
+Antes de trocar vogais,
+faça cinco repetições numa única vogal.
+</p>
+
+<p>
+Avalie:
+o B3 sobe de afinação?
+o último E3 muda?
+o terceiro bloco começa a correr?
+</p>
+
+<p>
+Se cada repetição é diferente,
+ainda falta precisão motora.
+</p>
+</section>
+
+<section>
+<h3>32. Depois, cinco vogais — uma repetição por vogal</h3>
+
+<p>
+Quando a mesma vogal estiver repetível:
+</p>
+
+<div class="pattern">Ah → Eh → Ee → Oh → Oo</div>
+
+<p>
+Mantenha exatamente o mesmo andamento.
+Não dê à vogal difícil uma velocidade mais rápida “por embalo”.
+</p>
+
+<p>
+Marque mentalmente qual vogal altera mais o pitch
+e qual altera mais a sensação de esforço.
+</p>
+</section>
+
+<section>
+<h3>33. O ouvido precisa ser treinado antes de a velocidade chegar</h3>
+
+<p>
+Respostas corretivas auditivas de pitch têm latência mensurável,
+na ordem de centenas de milissegundos em muitos paradigmas.
+Em runs rápidos, uma nota pode terminar antes de uma correção completa.
+</p>
+
+<div class="key">
+Por isso:
+<strong>treino lento constrói feedforward;
+feedback auditivo verifica e refina.</strong>
+</div>
+</section>
+
+<section>
+<h3>34. O violão em quatro níveis</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão acompanha todas as 21 notas.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão toca cada bloco antes; a voz responde sem acompanhamento simultâneo.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão marca apenas E3 e os tetos F#3, G#3, A3 e B3.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque E3; cante tudo e confira E3 final.</p>
+</div>
+
+<p>
+Para agilidade, o nível 2 é particularmente valioso:
+<strong>ouvir o desenho inteiro e depois executá-lo</strong>.
+</p>
+</section>
+
+<section>
+<h3>35. Progressão 14 — teto fantasma</h3>
+
+<p>
+Escolha um bloco e retire do violão apenas sua nota superior.
+</p>
+
+<p>
+Exemplo:
+toque F#3–G#3,
+não toque A3,
+e continue acompanhando G#3–F#3–E3.
+</p>
+
+<p>
+A voz precisa preencher A3 no lugar correto.
+</p>
+</section>
+
+<section>
+<h3>36. Progressão 15 — bloco fantasma</h3>
+
+<p>
+Toque bloco 1.
+Depois faça bloco 2 completamente sem violão.
+Volte a tocar bloco 3.
+</p>
+
+<p>
+Troque o bloco omitido nas repetições seguintes.
+</p>
+
+<div class="key">
+Isso testa <strong>memória sequencial</strong>,
+não apenas imitação imediata.
+</div>
+</section>
+
+<section>
+<h3>37. Em pitches mais altos, as vogais podem convergir acusticamente</h3>
+
+<p>
+Estudo recente com cantores clássicos profissionais,
+produzindo sete vogais ao longo da extensão,
+encontrou mudanças sistemáticas do envelope espectral com aumento do pitch
+e tendência de convergência entre alvos vocálicos em regiões mais altas.
+</p>
+
+<p>
+Isso não é motivo para cantar todas as vogais iguais.
+Mostra que <strong>alguma adaptação dependente de pitch é normal</strong>,
+principalmente quando o exercício for transposto.
+</p>
+</section>
+
+<section>
+<h3>38. Transposição: mantenha o padrão, permita microadaptações</h3>
+
+<p>
+Suba o exercício por semitom.
+O padrão intervalar continua o mesmo.
+</p>
+
+<p>
+Permita pequenas adaptações de vogal se a tessitura pedir,
+mas não deixe a transposição apagar a diferença entre Ah, Ee e Oo.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>Nota do meio de um bloco desaparece</td><td>Velocidade acima da coordenação.</td></tr>
+<tr><td>G#→A vira glissando</td><td>Semitom sem centro suficiente.</td></tr>
+<tr><td>B3 equivalente exige mais volume</td><td>Topo comprado com intensidade.</td></tr>
+<tr><td>Uma vogal piora tudo</td><td>Configuração articulatória interfere no mapa.</td></tr>
+<tr><td>Vogais ficam idênticas</td><td>Equalização passou a apagamento.</td></tr>
+<tr><td>Abdômen pulsa a cada teto</td><td>Fluxo sendo usado como articulador de pitch.</td></tr>
+<tr><td>Último E equivalente muda do primeiro</td><td>Tensão ou drift acumulado.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>39. Vibrato: não é útil no núcleo do exercício</h3>
+
+<p>
+As notas são curtas e a prioridade é discriminação tonal.
+Não acrescente vibrato deliberado.
+</p>
+
+<p>
+Se quiser trabalhar vibrato,
+faça em outro exercício sustentado.
+Aqui ele apenas dificultaria a comparação entre centros.
+</p>
+</section>
+
+<section>
+<h3>40. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Estrutura</strong>você reconhece os quatro blocos sem decorar 21 notas isoladas.</div>
+<div class="box"><strong>Tetos</strong>F#, G#, A e B entram precisamente.</div>
+<div class="box"><strong>Semitom</strong>G#↔A permanece pequeno mesmo rápido.</div>
+<div class="box"><strong>Vogais</strong>cinco configurações preservam o mesmo desenho.</div>
+<div class="box"><strong>Fluxo</strong>não há bombeamento respiratório nota a nota.</div>
+<div class="box"><strong>Repetibilidade</strong>execuções sucessivas permanecem semelhantes.</div>
+</div>
+</section>
+
+<section>
+<h3>41. Sessão-modelo — 8 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Mapa · ~1 min</h4>
+<p>Toque os quatro blocos e depois apenas seus tetos.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Blocos · ~2 min</h4>
+<p>1, 2, 3 e 4 separadamente; isole G#↔A e A↔B.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Uma vogal · ~1–2 min</h4>
+<p>Sequência inteira com a vogal mais confortável.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Troca de vogal · ~2 min</h4>
+<p>Uma repetição em Ah, Eh, Ee, Oh e Oo, no mesmo andamento.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Velocidade · ~1 min</h4>
+<p>Aumente em pequenos passos; pare no primeiro borramento.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Independência · ~1 min</h4>
+<p>Teto fantasma, bloco fantasma ou violão somente antes.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Fechamento</h4>
+<p>Volte a um andamento confortável e faça uma passagem
+em que o padrão pareça <strong>pequeno, previsível e transferível entre vogais</strong>.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Swift Build-Up”.
+A aula parte da ficha específica — transições rápidas, fluxo estável e troca de vogal entre repetições —
+e relaciona o exercício a estudos primários sobre tempo,
+articulação, feedback auditivo/cinestésico,
+perturbações de F0 durante mudanças vocálicas,
+equalização de vogais e controle motor de pitch.
+As progressões por blocos, tetos, ritmos e notas fantasmas
+são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice: Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012.
+PMID: 26948385. PMCID: PMC5010534.
+</li>
+
+<li>
+Ternström S, Sundberg J, Colldén A.
+<em>Articulatory F0 perturbations and auditory feedback.</em>
+J Speech Hear Res. 1988;31(2):187–192.
+DOI: 10.1044/jshr.3102.187. PMID: 3398492.
+</li>
+
+<li>
+Dromey C, Heaton E, Hopkin JA.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2011;25(6):678–682.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+
+<li>
+Howard DM et al.
+<em>Influence of vowels on note pitching in a cappella vocal quartet performance.</em>
+J Voice. 2023.
+DOI: 10.1016/j.jvoice.2023.11.008. PMID: 38036379.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Effects of a professional solo singer education on auditory and kinesthetic feedback:
+a longitudinal study of singers' pitch control.</em>
+J Voice. 2004;18(2):236–241.
+DOI: 10.1016/j.jvoice.2003.05.001. PMID: 15193657.
+</li>
+
+<li>
+Keough D, Jones JA.
+<em>The sensitivity of auditory-motor representations to subtle changes in auditory feedback while singing.</em>
+J Acoust Soc Am. 2009;126(2):837–846.
+DOI: 10.1121/1.3158600.
+PMID: 19640048. PMCID: PMC2730714.
+</li>
+
+<li>
+Grell A, Sundberg J, Ternström S, Ptok M, Altenmüller E.
+<em>Rapid pitch correction in choir singers.</em>
+J Acoust Soc Am. 2009;126(1):407–413.
+DOI: 10.1121/1.3147508. PMID: 19603897.
+</li>
+
+<li>
+Dalla Bella S, Giguère JF, Peretz I.
+<em>Singing proficiency in the general population.</em>
+J Acoust Soc Am. 2007;121(2):1182–1189.
+DOI: 10.1121/1.2427111. PMID: 17348539.
+</li>
+
+<li>
+Lam Tang JA, Boliek CA, Rieger JM.
+<em>Laryngeal and respiratory behavior during pitch change in professional singers.</em>
+J Voice. 2008;22(6):622–633.
+DOI: 10.1016/j.jvoice.2007.04.002. PMID: 18191375.
+</li>
+
+<li>
+Pfordresher PQ, Brown S.
+<em>Imprecise singing is widespread.</em>
+J Acoust Soc Am. 2010;128(4):2182–2190.
+DOI: 10.1121/1.3478782. PMID: 20968388.
+</li>
+
+<li>
+<em>Principal component analysis of the interaction between spectral band power and pitch in classical singing voices.</em>
+J Acoust Soc Am. 2025.
+DOI: 10.1121/10.0041780. PMID: 41343470.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

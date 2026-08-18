@@ -3,26 +3,951 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>1.5 Octave Go — foco de estudo</title>
+<title>1.5 Octave Go — ID 25</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1200px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4,.grid5{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.notes{display:grid;grid-template-columns:repeat(12,minmax(58px,1fr));gap:.30rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .20rem;text-align:center}
+.note b{display:block;font-size:.94rem}.note span{font-size:.71rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:1050px){.notes{grid-template-columns:repeat(6,1fr)}.grid5{grid-template-columns:repeat(3,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr}.notes{grid-template-columns:repeat(4,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 25 · Alcance</p>
-  <h2>Amplitude grande com economia.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Aprenda em blocos: subida até E4 e descida de E4 até A2.</li><li>Use o violão para os saltos grandes.</li><li>Não trate E4 como teste de força.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>O padrão é reconhecível mesmo em volume moderado.</li><li>A descida não despenca de afinação.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Segurar laringe baixa à força.</li><li>Fazer muitas repetições no limite.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Uma ou duas passadas boas valem mais do que várias cansadas.</p>
+
+<p class="eyebrow">ID 25 · 1.5 Octave Go</p>
+<h2>Extensão de 1,5 oitava: subir sem “puxar” a laringe e retornar sem desabar a coordenação</h2>
+
+<p class="lead">
+O <strong>1.5 Octave Go</strong> é um exercício de alcance amplo:
+parte de A2, chega a E4 e retorna.
+A subida não é uma escala; ela comprime vários saltos harmônicos numa sequência curta:
+<strong>A2→E3→A3→C#4→E4</strong>.
+Isso exige antecipação tonal e reorganização progressiva da voz antes do topo.
+A instrução de “manter a laringe baixa” é útil se entendida como
+<strong>evitar uma elevação excessiva associada a aperto</strong>,
+mas não como uma ordem para empurrar a laringe para baixo contra sua tendência funcional.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+chegar a E4 com a sensação de que a voz <strong>se reorganizou gradualmente</strong>,
+não de que você manteve a mesma configuração de A2 e a empurrou 19 semitons para cima.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>C#4</b><span>10</span></div>
+<div class="note"><b>E4</b><span>12</span></div>
+<div class="note"><b>D4</b><span>11</span></div>
+<div class="note"><b>B3</b><span>9</span></div>
+<div class="note"><b>G#3</b><span>7</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>D3</b><span>4</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+A subida é:
+<strong>A2→E3 (+7) → A3 (+5) → C#4 (+4) → E4 (+3)</strong>.
+Ela vai diminuindo progressivamente o tamanho dos saltos:
+quinta justa, quarta justa, terça maior e terça menor.
+</p>
+
+<p>
+A descida é diferente:
+<strong>E4→D4→B3→G#3→E3→D3→B2→A2</strong>.
+Não é simplesmente a subida invertida.
+</p>
+
+<p class="mini">
+Na ficha, a última nota aparece apenas como “A”.
+Como a frase retorna ao ponto inicial e a variação termina em −1 a partir de B2,
+a leitura musical coerente é <strong>A2</strong>.
+</p>
+</section>
+
+<section>
+<h3>2. A extensão total é de 19 semitons</h3>
+
+<p>
+De A2 a E4 há uma oitava mais uma quinta justa:
+<strong>19 semitons</strong>.
+O nome “1.5 Octave” é uma descrição prática desse alcance amplo,
+não uma afirmação matemática de exatamente 18 semitons.
+</p>
+
+<div class="key">
+O exercício não mede apenas “qual é sua nota máxima”.
+Ele mede se você consegue <strong>conectar regiões distantes da voz numa única estratégia coerente</strong>.
+</div>
+</section>
+
+<section>
+<h3>3. “Laringe baixa” não deve ser interpretado literalmente demais</h3>
+
+<p>
+MRI em cantores e estudantes mostrou que, em muitos participantes,
+a laringe subia com pitches mais altos.
+Cantores profissionais apresentaram, em média, variações verticais menores que estudantes,
+mas isso não significa laringe imóvel.
+</p>
+
+<p>
+Estudos endoscópicos também observaram elevação laríngea durante aumento de frequência
+em diferentes qualidades vocais.
+</p>
+
+<div class="key">
+A meta prática é:
+<strong>não deixar a laringe disparar para cima como reação de esforço</strong>.<br>
+Não: forçá-la a permanecer na altura de A2 até E4.
+</div>
+</section>
+
+<section>
+<h3>4. Uma laringe artificialmente deprimida também pode ser problema</h3>
+
+<p>
+Empurrar a laringe para baixo com músculos extrínsecos,
+“engolir” a voz ou fabricar uma cavidade enorme
+pode criar uma coordenação tão artificial quanto elevar demais.
+</p>
+
+<p>
+O exercício deve produzir um trato <strong>estável e adaptável</strong>,
+não uma posição fixa.
+</p>
+
+<div class="key">
+Pense em <strong>laringe não puxada</strong>,
+em vez de “laringe o mais baixa possível”.
+</div>
+</section>
+
+<section>
+<h3>5. O que cantores profissionais realmente fazem</h3>
+
+<p>
+Em MRI de tenores profissionais atravessando o passaggio,
+a voz de palco foi associada, em muitas condições,
+a maior abertura de mandíbula/lábios e posição laríngea mais baixa
+que o falsete na mesma região de pitch.
+</p>
+
+<p>
+Isso demonstra que posição laríngea pode fazer parte da estratégia de registro,
+mas também mostrou grande dependência de vogal e cantor.
+</p>
+
+<div class="key">
+A posição da laringe é <strong>uma variável do sistema</strong>,
+não um único comando isolado.
+</div>
+</section>
+
+<section>
+<h3>6. Estratégias de ressonância variam muito entre cantores</h3>
+
+<p>
+Medições diretas das ressonâncias do trato em cantores profissionais
+mostram diferentes estratégias conforme tipo de voz, pitch e registro.
+Não existe uma estratégia de tuning universal usada por todos.
+</p>
+
+<p>
+Portanto, evite procurar uma “configuração perfeita de Go”
+que precise permanecer geometricamente idêntica em toda a extensão.
+</p>
+</section>
+
+<section>
+<h3>7. O Go é particularmente útil porque /o/ favorece um trato alongado</h3>
+
+<p>
+A vogal de “Go”, seguindo o áudio, envolve arredondamento labial
+e uma configuração relativamente posterior.
+O arredondamento aumenta o comprimento acústico efetivo do trato
+e tende a reduzir frequências de ressonância.
+</p>
+
+<p>
+Isso combina pedagogicamente com uma sensação menos “espalhada”
+e pode ajudar a evitar a reação de abrir horizontalmente a boca no topo.
+</p>
+
+<div class="key">
+Mas não faça um <strong>bico rígido</strong>.
+O arredondamento precisa continuar móvel.
+</div>
+</section>
+
+<section>
+<h3>8. O G organiza o onset</h3>
+
+<p>
+/g/ é uma oclusiva velar vozeada.
+A parte posterior da língua cria um fechamento breve,
+libera e entrega a vogal.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>G</strong>define o início.</div>
+<div class="box"><strong>liberação</strong>deve ser rápida.</div>
+<div class="box"><strong>O</strong>carrega pitch e duração.</div>
+</div>
+
+<div class="key">
+Enfatizar G significa <strong>clareza de ataque</strong>,
+não esmagar a língua contra o palato.
+</div>
+</section>
+
+<section>
+<h3>9. Cry: use como intenção, não como anatomia</h3>
+
+<p>
+A ficha combina Go com uma “sensação de choro”.
+Use uma qualidade ligeiramente lamentosa ou implorante,
+em pequena quantidade.
+</p>
+
+<p>
+Essa intenção pode desencorajar a tendência de produzir cada salto
+com uma emissão cada vez mais pesada.
+</p>
+
+<div class="key">
+Cry útil:
+<strong>menos luta, mesma clareza.</strong><br>
+Cry ruim:
+som soproso, comprimido ou teatralmente exagerado.
+</div>
+</section>
+
+<section>
+<h3>10. Evidência recente pede cautela com o cry</h3>
+
+<p>
+Um estudo de 2025 com cantores profissionais de teatro musical
+avaliou um onset chamado <em>crack-sob</em>.
+Não encontrou mudanças significativas em diversas medidas glóticas e acústicas
+durante a fonação sustentada.
+</p>
+
+<p>
+Isso sugere que cues dessa família podem ter valor principalmente
+<strong>perceptivo e pedagógico</strong>,
+sem implicar automaticamente uma transformação fisiológica específica.
+</p>
+
+<div class="key">
+Use cry se ele melhora sua coordenação.
+Não tente “provar” o cry por uma sensação corporal obrigatória.
+</div>
+</section>
+
+<section>
+<h3>11. Primeiro domínio: A2→E3</h3>
+
+<p>
+O primeiro salto já é uma <strong>quinta justa</strong>.
+Toque A2 e E3 no violão.
+Depois:
+</p>
+
+<div class="key">
+<strong>Go A2 → Go E3 → Go A2</strong>
+</div>
+
+<p>
+Procure a menor mudança corporal necessária.
+Não projete o queixo nem aumente volume.
+</p>
+</section>
+
+<section>
+<h3>12. Segundo domínio: E3→A3</h3>
+
+<p>
+Agora uma quarta justa.
+Faça:
+<strong>E3→A3→E3</strong>.
+</p>
+
+<p>
+Perceba que a preparação da região média/alta já precisa começar aqui.
+Se você conserva a mesma sensação pesada de A2,
+C#4 e E4 ficarão caros demais.
+</p>
+</section>
+
+<section>
+<h3>13. Terceiro domínio: A3→C#4</h3>
+
+<p>
+É uma terça maior.
+Musicalmente o salto ficou menor,
+mas fisiologicamente você está entrando numa região mais exigente.
+</p>
+
+<div class="key">
+A distância musical diminui.
+<strong>O esforço não deveria aumentar explosivamente.</strong>
+</div>
+</section>
+
+<section>
+<h3>14. Quarto domínio: C#4→E4</h3>
+
+<p>
+Uma terça menor.
+Esse é o salto final para o topo.
+</p>
+
+<p>
+Treine:
+<strong>C#4→E4→C#4</strong>
+em volume moderado.
+Se E4 só aparece ao aumentar muito intensidade,
+a coordenação ainda não está pronta.
+</p>
+</section>
+
+<section>
+<h3>15. A subida é uma “escada de saltos encolhendo”</h3>
+
+<div class="grid4">
+<div class="box"><strong>A→E</strong>7 semitons.</div>
+<div class="box"><strong>E→A</strong>5 semitons.</div>
+<div class="box"><strong>A→C#</strong>4 semitons.</div>
+<div class="box"><strong>C#→E</strong>3 semitons.</div>
+</div>
+
+<p>
+Essa arquitetura é didaticamente excelente:
+quanto mais alto você chega,
+menor fica o próximo salto.
+</p>
+
+<div class="key">
+Use isso mentalmente:
+<strong>“o próximo salto é menor que o anterior”.</strong>
+</div>
+</section>
+
+<section>
+<h3>16. Progressão 1 — apenas os cinco pontos da subida</h3>
+
+<p>
+Faça:
+<strong>A2–E3–A3–C#4–E4</strong>.
+Pare.
+</p>
+
+<p>
+Não faça ainda a descida.
+Avalie:
+pitch, volume, formato do Go e sensação laríngea.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 2 — toque o acorde antes</h3>
+
+<p>
+A subida contém notas do acorde de A maior em diferentes extensões:
+A, E, A, C#, E.
+</p>
+
+<p>
+Toque um A maior no violão,
+depois a sequência.
+</p>
+
+<div class="key">
+O mapa harmônico reduz a sensação de “saltos aleatórios”.
+</div>
+</section>
+
+<section>
+<h3>18. Progressão 3 — E4 fantasma</h3>
+
+<p>
+Toque A2–E3–A3–C#4.
+Não toque E4.
+Cante E4 e confira depois.
+</p>
+
+<p>
+Isso testa se o topo foi internalizado
+ou se você depende de imitação simultânea do violão.
+</p>
+</section>
+
+<section>
+<h3>19. Progressão 4 — A3 fantasma</h3>
+
+<p>
+Toque A2 e E3.
+Cante A3 sem o instrumento e confira.
+</p>
+
+<p>
+Esse teste é útil porque A3 funciona como ponto de transição
+entre os grandes saltos inferiores e a região acima da oitava.
+</p>
+</section>
+
+<section>
+<h3>20. O E4 não pode ser preparado com a garganta</h3>
+
+<p>
+É comum antecipar a nota máxima elevando a laringe,
+tensionando a base da língua ou abrindo a boca cedo demais.
+</p>
+
+<div class="key">
+Antecipação correta é <strong>auditiva e coordenativa</strong>.<br>
+Antecipação ruim é <strong>tensão aparecendo uma nota antes.</strong>
+</div>
+
+<p>
+Observe especialmente C#4:
+se ele já fica tenso “porque E4 vem depois”,
+a preparação está errada.
+</p>
+</section>
+
+<section>
+<h3>21. Progressão 5 — C#4 neutro antes do E4</h3>
+
+<p>
+Faça A3→C#4 e pare.
+Repita C#4 sozinho até ele parecer confortável.
+Só então acrescente E4.
+</p>
+
+<p>
+O penúltimo degrau não deve carregar o medo do último.
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 6 — E4 15–20% mais leve</h3>
+
+<p>
+Faça a subida normal,
+mas pense E4 um pouco mais leve.
+</p>
+
+<p>
+Se a nota continua firme e afinada,
+você demonstra que parte do volume anterior era compensação.
+</p>
+
+<div class="key">
+Mais alto ≠ automaticamente mais forte.
+</div>
+</section>
+
+<section>
+<h3>23. “Laringe baixa” como teste auditivo indireto</h3>
+
+<p>
+Você não consegue medir posição laríngea com precisão apenas pela sensação.
+Em vez de tentar “sentir centímetros”,
+observe sinais funcionais:
+</p>
+
+<div class="grid4">
+<div class="box"><strong>timbre</strong>fica subitamente estridente?</div>
+<div class="box"><strong>pescoço</strong>endurece?</div>
+<div class="box"><strong>queixo</strong>sobe?</div>
+<div class="box"><strong>Go</strong>perde arredondamento?</div>
+</div>
+
+<p>
+Esses sinais não provam posição laríngea,
+mas ajudam a identificar reação de esforço.
+</p>
+</section>
+
+<section>
+<h3>24. Progressão 7 — contraste “engolido” versus livre</h3>
+
+<p>
+Faça uma única vez um Go propositalmente escuro e “engolido”.
+Depois faça um Go neutro,
+ainda arredondado, mas sem forçar profundidade.
+</p>
+
+<div class="key">
+A segunda versão deve mostrar que
+<strong>estabilidade não exige fabricar uma garganta cavernosa.</strong>
+</div>
+</section>
+
+<section>
+<h3>25. A descida começa por grau conjunto</h3>
+
+<p>
+Depois de E4, vem D4:
+apenas um tom abaixo.
+Esse retorno pequeno é valioso.
+</p>
+
+<p>
+Não “solte” toda a coordenação assim que sai do topo.
+Faça:
+<strong>E4→D4</strong> mantendo a mesma organização geral.
+</p>
+</section>
+
+<section>
+<h3>26. Depois a descida abre saltos maiores</h3>
+
+<p>
+D4→B3 = terça menor.<br>
+B3→G#3 = terça menor.<br>
+G#3→E3 = terça maior.
+</p>
+
+<p>
+A voz começa a reintegrar regiões mais baixas,
+mas não precisa ficar progressivamente mais pesada a cada salto.
+</p>
+</section>
+
+<section>
+<h3>27. Progressão 8 — só a descida</h3>
+
+<p>
+Toque E4 no violão e faça:
+<strong>E4–D4–B3–G#3–E3–D3–B2–A2</strong>.
+</p>
+
+<p>
+Treinar a descida isoladamente é essencial,
+porque seu desenho não é a simples inversão da subida.
+</p>
+</section>
+
+<section>
+<h3>28. O erro de “despencar” depois de E4</h3>
+
+<p>
+Depois de conseguir a nota alta,
+muitos cantores relaxam a organização e deixam D4/B3 cair em pitch ou peso.
+</p>
+
+<div class="key">
+A descida ainda é canto ativo.
+<strong>Retornar ≠ abandonar.</strong>
+</div>
+</section>
+
+<section>
+<h3>29. Progressão 9 — E4→D4→E4</h3>
+
+<p>
+Isole o primeiro retorno:
+<strong>E4–D4–E4</strong>.
+</p>
+
+<p>
+Isso testa se D4 continua perto da organização superior
+e se E4 pode ser reencontrado sem reconstrução completa.
+</p>
+</section>
+
+<section>
+<h3>30. Progressão 10 — E4→B3</h3>
+
+<p>
+Depois:
+<strong>E4→D4→B3</strong>.
+</p>
+
+<p>
+O objetivo é evitar que B3 fique exageradamente pesado
+só porque está mais abaixo.
+</p>
+</section>
+
+<section>
+<h3>31. O violão em quatro níveis</h3>
+
+<div class="phase">
+<h4>Nível 1</h4>
+<p>Violão em todas as notas.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2</h4>
+<p>Violão marca A2, E3, A3, C#4, E4, B3, E3 e A2.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3</h4>
+<p>Violão toca apenas A2, A3 e E4 antes da frase.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 4</h4>
+<p>Toque A2; cante tudo e confira A2 final.</p>
+</div>
+</section>
+
+<section>
+<h3>32. O topo deve ser pré-ouvido</h3>
+
+<p>
+Estudos de controle de pitch mostram que cantores treinados
+conseguem iniciar notas muito próximos do alvo
+antes que o feedback auditivo da própria emissão possa corrigi-las.
+</p>
+
+<div class="key">
+Para saltos largos:
+<strong>ouça internamente → prepare → ataque.</strong><br>
+Não: ataque → procure → deslize.
+</div>
+</section>
+
+<section>
+<h3>33. Progressão 11 — “cantar por pontos”</h3>
+
+<p>
+Antes de vocalizar, toque e nomeie mentalmente:
+A2, E3, A3, C#4, E4.
+</p>
+
+<p>
+Depois feche os olhos e imagine os cinco alvos
+sem cantar.
+Só então faça Go.
+</p>
+
+<p>
+Isso treina representação auditiva antes do gesto motor.
+</p>
+</section>
+
+<section>
+<h3>34. A vogal pode precisar de adaptação no topo</h3>
+
+<p>
+À medida que F0 sobe,
+a relação entre harmônicos e ressonâncias do trato muda.
+Cantores profissionais usam diferentes estratégias de tuning,
+e não há uma única solução universal.
+</p>
+
+<p>
+Se o Go precisa ficar discretamente menos fechado ou menos escuro para E4 funcionar,
+isso pode ser adaptação funcional.
+</p>
+
+<div class="key">
+Mantenha <strong>Go reconhecível</strong>;
+não preserve uma geometria impossível só para obedecer à vogal de A2.
+</div>
+</section>
+
+<section>
+<h3>35. Não abra o O até virar A</h3>
+
+<p>
+Adaptação não significa abandonar a identidade vocálica.
+Se E4 vira claramente “Ga” ou “Gah”,
+a modificação passou do ponto.
+</p>
+
+<p>
+Procure a menor mudança que melhora a coordenação.
+</p>
+</section>
+
+<section>
+<h3>36. Dramático versus lírico mostra que laringe e ressonâncias são escolhas estilísticas</h3>
+
+<p>
+MRI recente em profissionais mostrou que cantar de forma mais dramática
+foi associado a SPL maior e ressonâncias mais baixas,
+provavelmente relacionadas a posição laríngea mais baixa,
+mas com grande variabilidade individual.
+</p>
+
+<p>
+Isso reforça que “laringe baixa” também participa de <strong>estilo e timbre</strong>,
+não apenas de alcance.
+</p>
+
+<div class="key">
+Para o ID 25, não transforme uma característica de canto clássico/dramático
+em regra absoluta para qualquer voz.
+</div>
+</section>
+
+<section>
+<h3>37. Transposição: não use E4 equivalente como único critério</h3>
+
+<p>
+Suba o exercício por semitom.
+O limite técnico aparece quando a sequência perde integração.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>E equivalente só aparece com pescoço rígido</td><td>Elevação/força extrínseca excessiva.</td></tr>
+<tr><td>Go fica “engolido”</td><td>Laringe deprimida/escurecimento forçado.</td></tr>
+<tr><td>Go abre até perder o O</td><td>Modificação vocálica excessiva.</td></tr>
+<tr><td>C# equivalente já fica tenso</td><td>Tensão antecipada antes do topo.</td></tr>
+<tr><td>Topo sai, mas descida desmonta</td><td>Coordenação não é reversível.</td></tr>
+<tr><td>Pequena adaptação do O reduz esforço mantendo identidade</td><td>Pode ser funcional.</td></tr>
+<tr><td>Último A equivalente está mais pesado que o primeiro</td><td>Acúmulo de tensão/fadiga.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>38. Primeiro A2 versus último A2</h3>
+
+<p>
+Esse é um dos melhores controles do exercício.
+Compare o primeiro Go em A2 com o último.
+</p>
+
+<div class="key">
+Se o último A2 está mais pesado, escuro ou cansado,
+a subida e a descida <strong>deixaram resíduos de esforço</strong>.
+</div>
+
+<p>
+A meta é retornar à base praticamente com a mesma organização inicial.
+</p>
+</section>
+
+<section>
+<h3>39. Vibrato: só depois de E4 estar estável</h3>
+
+<p>
+Na versão-base, use centros tonais relativamente claros.
+Depois, ocasionalmente, sustente E4:
+<strong>1–2 s reto → vibrato natural → D4 e descida.</strong>
+</p>
+
+<p>
+Se vibrato exige mais pressão, mandíbula ou elevação do que a nota reta,
+retorne ao centro estável.
+</p>
+</section>
+
+<section>
+<h3>40. Critério decisivo: alcance + retorno</h3>
+
+<p>
+A melhor métrica não é apenas:
+“cheguei em E4”.
+</p>
+
+<div class="key">
+É:
+<strong>cheguei em E4 sem desmontar C#4,
+voltei por D4/B3 sem desabar,
+e terminei A2 tão livre quanto comecei?</strong>
+</div>
+</section>
+
+<section>
+<h3>41. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>A2→E3 já pesa</td><td>Primeira quinta pouco antecipada</td><td>A2↔E3 isolado com violão.</td></tr>
+<tr><td>A3 fica “fim da voz”</td><td>Peso não reduz progressivamente</td><td>E3→A3 mais leve; pare antes do topo.</td></tr>
+<tr><td>C#4 endurece antes de E4</td><td>Tensão antecipatória</td><td>C#4 isolado e confortável antes de acrescentar E4.</td></tr>
+<tr><td>E4 só sai com queixo/pescoço</td><td>Compensação extrínseca</td><td>E4 mais leve; C#→E isolado; transpor para baixo.</td></tr>
+<tr><td>Go fica engolido</td><td>“Laringe baixa” forçada</td><td>Voltar a Go neutro, menos escuro.</td></tr>
+<tr><td>G fica duro</td><td>Ênfase virou pressão de língua</td><td>G menor; liberação mais rápida.</td></tr>
+<tr><td>Cry fica soproso</td><td>Cue exagerado</td><td>Reduzir efeito e recuperar núcleo vocal.</td></tr>
+<tr><td>Descida cai pesada</td><td>Coordenação superior abandonada cedo</td><td>E4→D4→B3 isolado.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>42. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>A2→E3</strong>quinta entra limpa.</div>
+<div class="box"><strong>E3→A3</strong>não exige aumento brusco de peso.</div>
+<div class="box"><strong>C#4</strong>continua neutro antes do topo.</div>
+<div class="box"><strong>E4</strong>entra com Go reconhecível e sem força laríngea.</div>
+<div class="box"><strong>Descida</strong>permanece ativa e afinada.</div>
+<div class="box"><strong>A2 final</strong>parece tão livre quanto o inicial.</div>
+</div>
+</section>
+
+<section>
+<h3>43. Sessão-modelo — 8 a 11 minutos</h3>
+
+<div class="phase">
+<h4>1 · Go + cry · ~1 min</h4>
+<p>Go neutro → cry leve → voltar ao neutro. G pequeno e O móvel.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Saltos inferiores · ~1–2 min</h4>
+<p>A2↔E3 e E3↔A3.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Região superior · ~1–2 min</h4>
+<p>A3→C#4→E4 e C#4↔E4.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Subida completa · ~1 min</h4>
+<p>A2–E3–A3–C#4–E4.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Descida · ~1–2 min</h4>
+<p>E4–D4–B3–G#3–E3–D3–B2–A2.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Exercício completo · ~1 min</h4>
+<p>Violão completo e comparação do primeiro/último A2.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Independência · ~1 min</h4>
+<p>E4 fantasma ou redução parcial do violão.</p>
+</div>
+
+<div class="phase">
+<h4>8 · Transposição</h4>
+<p>Suba apenas enquanto o topo e o retorno permanecerem igualmente organizados.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “1.5 Octave Go”.
+A aula parte da ficha — grande extensão, Go, cry e controle de posição laríngea —
+e a relaciona a estudos primários de MRI/endoscopia sobre altura laríngea,
+passaggio, ressonâncias do trato, registros e estratégias de canto.
+A interpretação mais importante é conservadora:
+“manter a laringe baixa” é usado como cue para evitar elevação excessiva,
+não como ordem para fixar ou deprimir a laringe em toda a extensão.
+</p>
+
+<ol class="refs">
+<li>
+Neuschaefer-Rube C, Wein B, Angerstein W, Klajman S.
+<em>MRI examination of laryngeal height during vowel singing.</em>
+Folia Phoniatr Logop. 1996;48(4):201–209.
+DOI: 10.1159/000266409. PMID: 8924947.
+</li>
+
+<li>
+Yanagisawa E, Mambrino L, Estill J, Talkin D.
+<em>Supraglottic Contributions to Pitch Raising: Videoendoscopic Study with Spectroanalysis.</em>
+Ann Otol Rhinol Laryngol. 1991;100(1):19–30.
+DOI: 10.1177/000348949110000104. PMID: 1985524.
+</li>
+
+<li>
+Echternach M, Traser L, Richter B.
+<em>Vocal tract configurations in tenors' passaggio in different vowel conditions:
+a real-time magnetic resonance imaging study.</em>
+J Voice. 2014;28(2):262.e1–262.e8.
+DOI: 10.1016/j.jvoice.2013.10.009. PMID: 24412038.
+</li>
+
+<li>
+Echternach M et al.
+<em>Vocal tract and register changes analysed by real-time MRI in male professional singers:
+a pilot study.</em>
+Logoped Phoniatr Vocol. 2008.
+DOI: 10.1080/14015430701875653. PMID: 18569645.
+</li>
+
+<li>
+Henrich N, Smith J, Wolfe J.
+<em>Vocal tract resonances in singing: Strategies used by sopranos, altos, tenors, and baritones.</em>
+J Acoust Soc Am. 2011;129(2):1024–1035.
+DOI: 10.1121/1.3518766. PMID: 21361458.
+</li>
+
+<li>
+Bernardoni NH, Smith J, Wolfe J.
+<em>Vocal tract resonances in singing: variation with laryngeal mechanism for male operatic singers
+in chest and falsetto registers.</em>
+J Acoust Soc Am. 2014;135(1):491–501.
+DOI: 10.1121/1.4836255. PMID: 24437789.
+</li>
+
+<li>
+Echternach M et al.
+<em>Articulatory and acoustic differences between lyric and dramatic singing in Western classical music.</em>
+J Acoust Soc Am. 2024.
+DOI: 10.1121/10.0025751. PMID: 38634661.
+</li>
+
+<li>
+Crosby T, Ruckles M, Johnson AM.
+<em>Effects of Intentional Register Instability During Onset of High-Intensity Phonation.</em>
+J Voice. 2025.
+DOI: 10.1016/j.jvoice.2025.02.043. PMID: 40087078.
+</li>
+
+<li>
+Miller DG, Schutte HK.
+<em>'Mixing' the registers: glottal source or vocal tract?</em>
+Folia Phoniatr Logop. 2005;57(5–6):278–291.
+DOI: 10.1159/000087081. PMID: 16280630.
+</li>
+
+<li>
+Watts C, Murphy J, Barnes-Burroughs K.
+<em>Pitch matching accuracy of trained singers, untrained subjects with talented singing voices,
+and untrained subjects with nontalented singing voices in conditions of varying feedback.</em>
+J Voice. 2003;17(2):185–194.
+DOI: 10.1016/S0892-1997(03)00023-7. PMID: 12825651.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

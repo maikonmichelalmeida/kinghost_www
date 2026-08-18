@@ -3,26 +3,861 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yum Ya — foco de estudo</title>
+<title>Yum Ya — ID 10</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1160px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.4rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{
+content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;
+display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem
+}
+.notes{display:grid;grid-template-columns:repeat(9,minmax(58px,1fr));gap:.34rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.58rem .24rem;text-align:center}
+.note b{display:block;font-size:.98rem}.note span{font-size:.74rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}
+.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(5,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 10 · Tom</p>
-  <h2>Mandíbula livre durante mudanças de altura.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Cante ‘Yum-Ya’ quase falado no começo.</li><li>Observe se a mandíbula continua solta nos saltos.</li><li>Mantenha o ‘Ya’ claro sem abrir demais.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>A articulação não altera a afinação.</li><li>O salto para E3 continua fácil.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Projetar o queixo.</li><li>Aumentar o volume no salto.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Transponha até o primeiro sinal de rigidez; então volte um semitom.</p>
+
+<p class="eyebrow">ID 10 · Yum Ya</p>
+<h2>Mandíbula livre durante mudança de vogal: mobilidade sem “mastigar” o pitch</h2>
+
+<p class="lead">
+O <strong>Yum Ya</strong> trabalha uma habilidade mais sofisticada do que simplesmente “relaxar a mandíbula”.
+Você precisa permitir que o trato vocal mude de forma entre duas sílabas,
+mantendo a mandíbula <strong>disponível, não rígida e não responsável pelo pitch</strong>.
+O desenho ainda sai da pequena célula 1–2–3–2–1 e depois salta para 1–3–5–3–1,
+o que revela rapidamente se a mandíbula começa a abrir ou avançar para “ajudar” as notas mais altas.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+o Yum ensina <strong>mobilidade e liberdade</strong>;
+o Ya testa se essa liberdade permanece quando a vogal abre.
+A mandíbula pode se mover porque a vogal mudou.
+Ela não precisa se mover porque a nota mudou.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>B2</b><span>2</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+Em graus:
+<strong>1–2–3–2–1–3–5–3–1</strong>.
+A primeira metade usa movimento conjunto.
+A segunda exige dois saltos importantes:
+<strong>1→3</strong> e <strong>3→5</strong>.
+</p>
+
+<p>
+Essa arquitetura é excelente para observar se uma articulação livre numa escala pequena
+continua livre quando aparecem saltos.
+</p>
+</section>
+
+<section>
+<h3>2. “Mandíbula solta” não significa mandíbula imóvel</h3>
+
+<p>
+A mandíbula é parte real do filtro acústico.
+Mudar sua abertura modifica a geometria do trato vocal e pode alterar principalmente
+as ressonâncias mais baixas.
+Estudos com cantores mostram que a abertura mandibular varia com <strong>vogal e pitch</strong>
+e pode aumentar de modo funcional em determinadas regiões da extensão.
+</p>
+
+<div class="key">
+Portanto, a meta não é “travar a mandíbula para provar que ela está relaxada”.
+A meta é <strong>não acrescentar movimentos que o som não precisa</strong>.
+</div>
+
+<p>
+Uma mandíbula livre pode ficar relativamente estável numa sílaba e abrir mais na seguinte.
+Rigidez e movimento são coisas diferentes.
+</p>
+</section>
+
+<section>
+<h3>3. A ficha diz “movimente a mandíbula livremente no Yum”: como interpretar isso</h3>
+
+<p>
+Não recomendo transformar cada Yum em uma mastigação grande.
+Use a instrução como um <strong>teste de disponibilidade</strong>:
+antes de começar, ou entre duas repetições, faça um pequeno movimento lateral ou vertical
+e confirme que a mandíbula não está presa.
+</p>
+
+<p>
+Durante a sequência, deixe a articulação funcionar naturalmente,
+mas evite fazer o queixo marcar cada nota.
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Liberdade</strong>Você poderia mover a mandíbula se quisesse, mas não precisa fazê-lo o tempo todo.</div>
+<div class="box"><strong>Agitação</strong>O queixo sobe, desce ou balança em cada mudança de pitch.</div>
+</div>
+
+<p>
+Queremos a primeira situação.
+</p>
+</section>
+
+<section>
+<h3>4. Yum: língua e mandíbula precisam trabalhar como sistema, não como bloco rígido</h3>
+
+<p>
+Siga a pronúncia do áudio de referência.
+A grafia “Yum” não define sozinha a vogal exata que está sendo usada pedagogicamente.
+</p>
+
+<p>
+O início em <strong>Y</strong> exige mudança rápida da língua.
+O final em <strong>M</strong> fecha nos lábios.
+Entre eles, a vogal carrega o pitch.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Y</strong>Língua organiza a entrada.</div>
+<div class="box"><strong>Vogal</strong>Mandíbula disponível, sem mordida.</div>
+<div class="box"><strong>M</strong>Contato labial leve e curto.</div>
+</div>
+
+<p>
+A articulação deve ser compacta:
+<strong>Yum</strong>, não “Yyyy-uuuu-mmmm”.
+</p>
+</section>
+
+<section>
+<h3>5. Ya: abertura maior, mas não um “despencar” da mandíbula</h3>
+
+<p>
+Em Ya, a vogal se aproxima de /a/, exigindo outra configuração acústica.
+A mandíbula provavelmente abrirá mais do que no Yum.
+Isso é normal e pode ser necessário.
+</p>
+
+<div class="key">
+O teste é:
+<strong>a abertura acontece para formar a vogal ou para alcançar a nota?</strong>
+</div>
+
+<p>
+Se você canta Ya na mesma nota em três alturas diferentes e a boca abre muito mais somente na mais alta,
+pergunte se essa adaptação já é realmente necessária naquela região.
+</p>
+</section>
+
+<section>
+<h3>6. Abertura mandibular realmente afeta ressonância</h3>
+
+<p>
+Em cantores profissionais, estudos mostram que a mandíbula pode abrir mais
+quando F0 se aproxima de F1 em determinadas vogais.
+MRI também demonstra mudanças combinadas de mandíbula, lábios, língua e faringe
+em regiões nas quais o sistema precisa reorganizar a ressonância.
+</p>
+
+<p>
+Isso significa que <strong>mandíbula é uma ferramenta acústica legítima</strong>.
+O problema não é usá-la.
+O problema é ela começar a responder automaticamente a toda nota mais alta,
+mesmo quando ainda não há necessidade acústica.
+</p>
+</section>
+
+<section>
+<h3>7. O experimento que ensina liberdade: três Yum falados</h3>
+
+<p>
+Antes de cantar:
+</p>
+
+<ol class="protocol">
+<li>Diga Yum de forma comum.</li>
+<li>Diga novamente apertando deliberadamente os dentes — só para reconhecer o contraste.</li>
+<li>Diga uma terceira vez com mandíbula livre e pequena abertura confortável.</li>
+</ol>
+
+<p>
+A terceira é a referência.
+Essa comparação sensorial ensina mais do que a ordem abstrata “relaxe a mandíbula”.
+</p>
+</section>
+
+<section>
+<h3>8. Use os dedos no masseter — sem massagear enquanto canta</h3>
+
+<p>
+Encoste dois dedos levemente na lateral do rosto, sobre os masseteres.
+Faça uma passagem em volume moderado.
+</p>
+
+<p>
+Alguma atividade é normal.
+O que interessa é perceber se os músculos ficam
+<strong>progressivamente mais duros</strong> no caminho A2→E3.
+</p>
+
+<div class="key">
+Não tente zerar toda atividade do masseter.
+Procure eliminar <strong>aumento desnecessário de atividade associado ao pitch</strong>.
+</div>
+</section>
+
+<section>
+<h3>9. Protocolo-base com o violão</h3>
+
+<ol class="protocol">
+<li>Fale Yum e Ya algumas vezes copiando o áudio.</li>
+<li>Toque A2 e faça a primeira célula 1–2–3–2–1.</li>
+<li>Use violão junto com cada nota nas primeiras repetições.</li>
+<li>Faça o segundo desenho 1–3–5–3–1.</li>
+<li>Observe principalmente mandíbula e identidade da vogal.</li>
+<li>Não aumente volume automaticamente em E3.</li>
+<li>Suba meio tom apenas se o movimento continuar econômico.</li>
+</ol>
+</section>
+
+<section>
+<h3>10. Primeiro domine 1–2–3–2–1</h3>
+
+<p>
+A célula A2–B2–C#3–B2–A2 é uma calibração.
+Faça-a com pouca amplitude mandibular.
+</p>
+
+<p>
+O objetivo é mostrar ao sistema que
+<strong>pitch pode mudar sem o queixo acompanhar visualmente a escala</strong>.
+</p>
+
+<div class="key">
+Se o queixo já sobe em B2 e C#3,
+não adicione ainda o salto para E3.
+Reduza a intensidade e recupere a independência.
+</div>
+</section>
+
+<section>
+<h3>11. Depois isole 1→3→5</h3>
+
+<p>
+Toque:
+<strong>A2 → C#3 → E3</strong>.
+Cante lentamente.
+</p>
+
+<p>
+Agora observe dois saltos de terça:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>A2→C#3</strong>terça maior, +4 semitons.</div>
+<div class="box"><strong>C#3→E3</strong>terça menor, +3 semitons.</div>
+</div>
+
+<p>
+Eles não têm o mesmo tamanho.
+Isso também é útil para o ouvido:
+não deixe a mandíbula “medir” o intervalo.
+O pitch é preparado auditivamente; a boca apenas forma a sílaba.
+</p>
+</section>
+
+<section>
+<h3>12. “O ouvido sobe; a mandíbula não precisa subir junto”</h3>
+
+<p>
+Antes de C#3 ou E3, ouça a nota internamente.
+Evite preparar o salto projetando queixo, levantando cabeça ou abrindo a boca antecipadamente.
+</p>
+
+<div class="key">
+<strong>Antecipação auditiva é desejável.<br>
+Antecipação muscular excessiva não é.</strong>
+</div>
+</section>
+
+<section>
+<h3>13. Progressão 1 — Yum com mandíbula disponível, não dançante</h3>
+
+<p>
+Faça o motivo inteiro e filme mentalmente apenas o queixo.
+Tente reduzir em aproximadamente metade qualquer movimento que pareça acompanhar
+a melodia e não a articulação.
+</p>
+
+<p>
+Depois faça novamente sem pensar na mandíbula.
+Se a liberdade permanecer, a correção começou a automatizar.
+</p>
+</section>
+
+<section>
+<h3>14. Progressão 2 — Yum → Ya na mesma nota</h3>
+
+<p>
+Escolha A2, C#3 e E3 separadamente.
+Faça:
+</p>
+
+<div class="key">
+<strong>Yum → Ya → Yum → Ya</strong>
+</div>
+
+<p>
+O pitch não muda.
+Agora você consegue sentir quais movimentos mandibulares são de
+<strong>vogal</strong>, não de <strong>altura</strong>.
+</p>
+
+<p>
+Essa é uma das melhores progressões do exercício.
+</p>
+</section>
+
+<section>
+<h3>15. Progressão 3 — Ya → Yum: reversibilidade</h3>
+
+<p>
+Inverta:
+<strong>Ya → Yum</strong>.
+</p>
+
+<p>
+A mandíbula abre para Ya e retorna para Yum sem fechar em forma de mordida.
+O movimento deve parecer contínuo e elástico.
+</p>
+
+<div class="key">
+Liberdade mandibular inclui
+<strong>abrir e voltar</strong>, não apenas “ficar aberta”.
+</div>
+</section>
+
+<section>
+<h3>16. Progressão 4 — vogal contínua, pitch variável</h3>
+
+<p>
+Retire temporariamente as consoantes e use apenas a vogal do Yum,
+conforme o áudio.
+Faça 1–2–3–2–1.
+</p>
+
+<p>
+Depois use apenas <strong>Ah</strong> no mesmo desenho.
+</p>
+
+<p>
+Isso deixa audível o quanto a mandíbula e a língua mudam
+quando as consoantes deixam de “resetar” a boca.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 5 — mesma nota, três aberturas</h3>
+
+<p>
+Em uma nota fácil, faça Ya com:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Pequena</strong>Menor abertura que ainda mantém /a/ reconhecível.</div>
+<div class="box"><strong>Natural</strong>Sua configuração confortável.</div>
+<div class="box"><strong>Grande</strong>Mais aberta, mas sem dor ou força.</div>
+</div>
+
+<p>
+Ouça como o timbre muda.
+Não existe obrigação de escolher a maior.
+</p>
+
+<p>
+Um estudo preliminar de <strong>Low Mandible Maneuver</strong> em adultos saudáveis encontrou
+mudanças de F1/F2 e maior eficiência aerodinâmica numa configuração de mandíbula mais baixa,
+mas os participantes eram não cantores e a amostra foi pequena.
+Use essa ideia como <strong>experimento de trato vocal</strong>, não como regra universal.
+</p>
+</section>
+
+<section>
+<h3>18. “Mais aberta” não significa “mais relaxada”</h3>
+
+<p>
+Você pode abrir muito a boca e ainda estar tenso.
+Também pode usar uma abertura pequena e estar livre.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura</th></tr>
+<tr><td>Grande abertura + masseter macio + som fácil</td><td>Pode ser funcional.</td></tr>
+<tr><td>Grande abertura + pressão sob o queixo</td><td>Provável excesso.</td></tr>
+<tr><td>Pequena abertura + dentes apertados</td><td>Rigidez.</td></tr>
+<tr><td>Movimento variável e fácil conforme a vogal</td><td>Boa disponibilidade.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>19. A língua pode compensar a mandíbula — e vice-versa</h3>
+
+<p>
+Estudos de coordenação articulatória mostram o conceito de
+<strong>equivalência motora</strong>:
+mais de uma combinação de articuladores pode produzir um objetivo acústico semelhante.
+Lábios, mandíbula e língua não funcionam como peças completamente independentes.
+</p>
+
+<p>
+Isso explica por que mandar simplesmente “baixar mais a mandíbula”
+pode fazer a língua mudar de posição para compensar.
+</p>
+
+<div class="key">
+Procure o <strong>resultado mais econômico do sistema inteiro</strong>,
+não a posição ideal de uma única peça.
+</div>
+</section>
+
+<section>
+<h3>20. Progressão 6 — língua ativa, mandíbula passiva</h3>
+
+<p>
+Fale lentamente o início <strong>Y</strong> de Yum e Ya,
+prestando atenção à língua.
+Faça a transição sem mover o queixo junto com a ponta/dorso da língua.
+</p>
+
+<p>
+Depois cante o motivo normalmente.
+Essa pequena prática ajuda a separar
+<strong>gesto lingual necessário</strong> de <strong>gesto mandibular parasita</strong>.
+</p>
+</section>
+
+<section>
+<h3>21. Progressão 7 — retire o Y</h3>
+
+<p>
+Se o exercício está muito estável:
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Yum</strong>Coordenação completa.</div>
+<div class="box"><strong>Um</strong>Menos ajuda do glide.</div>
+<div class="box"><strong>Vogal</strong>Somente o núcleo.</div>
+</div>
+
+<p>
+Faça o mesmo com Ya → Ah.
+</p>
+
+<p>
+Se a mandíbula fica imediatamente mais rígida sem Y,
+o glide ainda está funcionando como organizador motor.
+Volte um nível e retire a ajuda gradualmente.
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 8 — articulação mínima em velocidade crescente</h3>
+
+<p>
+Comece em aproximadamente <strong>72–88 bpm</strong>.
+Quando estiver limpo, vá para 96–112 bpm.
+</p>
+
+<p>
+Ao acelerar, não acelere uma “mastigação grande”.
+A articulação deve ficar <strong>menor e mais precisa</strong>.
+</p>
+
+<div class="key">
+Velocidade boa = menos movimento desnecessário.<br>
+Velocidade ruim = o mesmo gesto grande executado às pressas.
+</div>
+</section>
+
+<section>
+<h3>23. Progressão 9 — dinâmica sem mudança mandibular automática</h3>
+
+<p>
+Na tonalidade confortável:
+faça 1–2–3–2–1 em volume uniforme.
+Depois faça um arco leve:
+cresce até 3 e volta.
+</p>
+
+<p>
+A mandíbula não deve abrir porque o volume aumentou.
+Se isso acontecer, reduza a dinâmica e tente novamente.
+</p>
+</section>
+
+<section>
+<h3>24. Progressão 10 — 1→3→5 cada vez mais leve</h3>
+
+<p>
+Faça A2→C#3→E3 em volume normal.
+Depois repita cerca de <strong>15–20% mais leve</strong>.
+</p>
+
+<p>
+Se a versão leve exige menos movimento e continua afinada,
+ela provavelmente está mais próxima da coordenação que queremos.
+</p>
+
+<div class="key">
+O exercício não é “abrir para conseguir”.
+É <strong>organizar para não precisar forçar</strong>.
+</div>
+</section>
+
+<section>
+<h3>25. Transposição: quando a adaptação de mandíbula passa a ser legítima</h3>
+
+<p>
+Suba o exercício em semitons.
+Nas primeiras tonalidades, tente preservar uma articulação compacta.
+Mais acima, alguma abertura adicional pode aparecer naturalmente.
+</p>
+
+<p>
+Estudos de cantores profissionais mostram que adaptações de mandíbula
+podem surgir quando a relação entre F0 e as ressonâncias da vogal muda.
+Também há grande variabilidade entre estratégias individuais.
+</p>
+
+<div class="key">
+Não pergunte:
+<strong>“a mandíbula se mexeu?”</strong><br>
+Pergunte:
+<strong>“ela se mexeu porque a acústica pediu ou porque eu fiquei com medo da nota?”</strong>
+</div>
+</section>
+
+<section>
+<h3>26. Como diferenciar adaptação acústica de compensação</h3>
+
+<table>
+<tr><th>Comportamento</th><th>Leitura provável</th></tr>
+<tr><td>Abertura cresce gradualmente com a transposição</td><td>Pode ser adaptação funcional.</td></tr>
+<tr><td>Queixo salta exatamente no E equivalente</td><td>Compensação de pitch.</td></tr>
+<tr><td>Vogal continua clara e esforço não aumenta</td><td>Boa estratégia.</td></tr>
+<tr><td>Abertura vem com pescoço rígido</td><td>Tensão.</td></tr>
+<tr><td>Menor abertura deixa a nota igualmente fácil</td><td>A abertura anterior provavelmente era excessiva.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>27. O E3 deve ser continuação, não evento especial</h3>
+
+<p>
+No desenho 1–3–5, o E3 é o topo.
+Faça uma passagem pensando que ele é apenas
+<strong>o quinto grau</strong>, não “a nota alta”.
+</p>
+
+<p>
+Se E3 provoca:
+queixo para baixo, boca maior, cabeça levantada ou volume maior,
+repita o fragmento 20% mais leve.
+</p>
+</section>
+
+<section>
+<h3>28. Use o violão em três níveis</h3>
+
+<div class="phase">
+<h4>Nível 1 · guia completo</h4>
+<p>Violão em todas as notas.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 2 · âncoras</h4>
+<p>Violão toca A2, C#3, E3 e A2 final.</p>
+</div>
+
+<div class="phase">
+<h4>Nível 3 · confirmação</h4>
+<p>Toque A2; cante tudo e confira apenas o A2 final.</p>
+</div>
+
+<p>
+A retirada do violão ajuda a separar
+<strong>preparação auditiva</strong> de <strong>compensação articulatória</strong>.
+</p>
+</section>
+
+<section>
+<h3>29. Vowel equalization: abrir sem abandonar a identidade vocal</h3>
+
+<p>
+Estudos com cantores mostram que treinamento breve de equalização de vogais
+pode produzir mudanças mensuráveis em F1 e F2,
+frequentemente associadas a uma postura lingual mais central.
+</p>
+
+<p>
+No Yum Ya, isso inspira uma técnica prática:
+ao passar para Ya, não precisa transformar /a/ na versão mais aberta possível.
+Procure um <strong>Ya claro, mas integrado ao timbre do Yum</strong>.
+</p>
+
+<div class="key">
+Integração não significa tornar as vogais iguais.
+Significa evitar que a mudança de vogal pareça também
+uma mudança completa de voz.
+</div>
+</section>
+
+<section>
+<h3>30. Um experimento útil: Yum–Ya sem mudar pitch</h3>
+
+<p>
+Faça em A2:
+<strong>Yum–Ya–Yum–Ya</strong>.
+Depois C#3.
+Depois E3.
+</p>
+
+<p>
+Compare quanto a mandíbula precisa abrir em cada região.
+Essa é uma forma simples de descobrir
+<strong>o componente de vogal</strong> e <strong>o componente de pitch</strong> separadamente.
+</p>
+</section>
+
+<section>
+<h3>31. Cuidado com ATM: liberdade não é alongamento agressivo</h3>
+
+<p>
+Não force abertura máxima, não empurre a mandíbula com a mão
+e não faça movimentos laterais grandes como “aquecimento”.
+</p>
+
+<p>
+Um estudo amplo com músicos encontrou mais relatos brutos de dor temporomandibular em vocalistas,
+mas cantar não permaneceu como fator de risco independente depois do ajuste por carga e hábitos orais.
+Ainda assim, dor, travamento ou limitação persistente não devem ser “treinados por cima”.
+</p>
+
+<div class="key">
+Clique sem dor pode acontecer.
+<strong>Dor, travamento ou perda persistente de abertura</strong> pedem avaliação,
+não mais força no exercício.
+</div>
+</section>
+
+<section>
+<h3>32. Vibrato: só como teste eventual no grau 5</h3>
+
+<p>
+O foco é articulação e liberdade mandibular.
+Mantenha as notas relativamente retas.
+</p>
+
+<p>
+Ocasionalmente, sustente o E3:
+1–2 segundos reto e depois vibrato natural.
+Observe especialmente o queixo.
+</p>
+
+<div class="key">
+Se o vibrato aparece também como oscilação rítmica da mandíbula,
+reduza a duração e volte à nota reta.
+</div>
+</section>
+
+<section>
+<h3>33. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Queixo acompanha cada nota</td><td>Pitch e mandíbula acoplados</td><td>1–2–3–2–1 mais leve; espelho.</td></tr>
+<tr><td>Yum fica rígido</td><td>Mandíbula/língua trabalhando como bloco</td><td>Fala lenta; Y com movimento mínimo do queixo.</td></tr>
+<tr><td>Ya “despenca” aberto</td><td>Abertura excessiva</td><td>Yum→Ya na mesma nota; menor abertura funcional.</td></tr>
+<tr><td>E3 só sai com boca grande</td><td>Compensação prematura ou necessidade acústica</td><td>Testar E3 mais leve e comparar aberturas.</td></tr>
+<tr><td>Ya fica muito diferente de Yum</td><td>Mudança de vogal virou mudança de estratégia vocal</td><td>Centralizar levemente o Ya; reduzir volume.</td></tr>
+<tr><td>Sem Y a voz aperta</td><td>Dependência articulatória</td><td>Yum→Um→vogal gradualmente.</td></tr>
+<tr><td>Masseter endurece ao subir</td><td>Tensão associada ao pitch</td><td>Reduzir intensidade/transposição.</td></tr>
+<tr><td>Dor ou travamento</td><td>Não é objetivo do exercício</td><td>Interromper manobras mandibulares e avaliar.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>34. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>Disponibilidade</strong>A mandíbula parece solta sem precisar balançar.</div>
+<div class="box"><strong>Independência</strong>Pitch muda com pouco gesto mandibular.</div>
+<div class="box"><strong>Vogal</strong>Yum→Ya muda a forma sem mudar o esforço.</div>
+<div class="box"><strong>Saltos</strong>1→3→5 entram sem “abrir para alcançar”.</div>
+<div class="box"><strong>Velocidade</strong>Movimentos ficam menores ao acelerar.</div>
+<div class="box"><strong>Transposição</strong>Adaptações surgem gradualmente, não por reação de medo.</div>
+</div>
+</section>
+
+<section>
+<h3>35. Sessão-modelo — 7 a 9 minutos</h3>
+
+<div class="phase">
+<h4>1 · Liberação · ~30 s</h4>
+<p>Yum e Ya falados; pequeno teste de mobilidade mandibular entre repetições.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Célula conjunta · ~1–2 min</h4>
+<p>1–2–3–2–1 com articulação compacta.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Saltos · ~1–2 min</h4>
+<p>1→3→5→3→1, inicialmente com violão completo.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Transferência · ~1 min</h4>
+<p>Yum→Ya na mesma nota; depois Ya→Yum.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Uma variável · ~1–2 min</h4>
+<p>Escolha: velocidade, menor intensidade, vogal pura ou três aberturas.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Transposição · ~1 min</h4>
+<p>Suba por semitom enquanto a mandíbula continuar funcional e sem rigidez.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Fechamento</h4>
+<p>Uma passagem confortável com a sensação de que a boca articula,
+mas não “carrega” a melodia.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Yum Ya”.
+Esta aula parte da finalidade específica da ficha — liberdade mandibular —
+e usa estudos sobre abertura da mandíbula em cantores, ressonâncias,
+MRI do trato vocal, equalização de vogais, equivalência motora
+e saúde temporomandibular. As progressões Yum→Ya na mesma nota,
+Yum→Um→vogal, variação de abertura e separação entre célula conjunta e saltos
+são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Sundberg J, Skoog J.
+<em>Dependence of jaw opening on pitch and vowel in singers.</em>
+J Voice. 1997;11(3):301–306.
+DOI: 10.1016/S0892-1997(97)80008-2. PMID: 9297674.
+</li>
+<li>
+Erickson ML.
+<em>The interaction of formant frequency and pitch in the perception of voice category and jaw opening in female singers.</em>
+J Voice. 2004;18(1):24–37.
+DOI: 10.1016/j.jvoice.2003.08.001. PMID: 15070221.
+</li>
+<li>
+Echternach M et al.
+<em>Vocal tract in female registers—a dynamic real-time MRI study.</em>
+J Voice. 2010.
+DOI: 10.1016/j.jvoice.2008.06.004. PMID: 19185452.
+</li>
+<li>
+Henrich N, Smith J, Wolfe J.
+<em>Vocal tract resonances in singing: Strategies used by sopranos, altos, tenors, and baritones.</em>
+J Acoust Soc Am. 2011;129(2):1024–1035.
+DOI: 10.1121/1.3518766. PMID: 21361458.
+</li>
+<li>
+Dromey C, Nissen SL, Roy N, Merrill RM.
+<em>The acoustic effects of vowel equalization training in singers.</em>
+J Voice. 2012;26(2):201–206.
+DOI: 10.1016/j.jvoice.2010.09.003. PMID: 21216128.
+</li>
+<li>
+Titze IR et al.
+<em>A Formant Range Profile for Singers.</em>
+J Voice. 2018.
+DOI: 10.1016/j.jvoice.2016.08.014.
+PMID: 28029556. PMCID: PMC5409887.
+</li>
+<li>
+Lowell SY et al.
+<em>The Low Mandible Maneuver: Preliminary Study of Its Effects on Aerodynamic and Acoustic Measures.</em>
+J Voice. 2020.
+DOI: 10.1016/j.jvoice.2018.12.005. PMID: 30639152.
+</li>
+<li>
+Hughes OM, Abbs JH.
+<em>Labial-mandibular coordination in the production of speech:
+implications for the operation of motor equivalence.</em>
+Phonetica. 1976;33(3):199–221.
+DOI: 10.1159/000259722. PMID: 996113.
+</li>
+<li>
+de Jong K.
+<em>Labiovelar compensation in back vowels.</em>
+J Acoust Soc Am. 1997;101(4):2221–2233.
+DOI: 10.1121/1.418206. PMID: 9104024.
+</li>
+<li>
+van Selms MKA et al.
+<em>Are vocalists prone to temporomandibular disorders?</em>
+J Oral Rehabil. 2019.
+DOI: 10.1111/joor.12849.
+PMID: 31321795. PMCID: PMC6899656.
+</li>
+<li>
+Sundberg J, Lã FMB, Gill BP.
+<em>Professional male singers' formant tuning strategies for the vowel /a/.</em>
+Logoped Phoniatr Vocol. 2011;36(4):156–167.
+DOI: 10.3109/14015439.2011.587448. PMID: 21756222.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>

@@ -3,26 +3,927 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Blueberry — foco de estudo</title>
+<title>Blueberry — ID 18</title>
 <link rel="stylesheet" href="../style.css">
+<style>
+.lesson-card{max-width:1180px}
+.lesson-card p,.lesson-card li{line-height:1.60}
+.lesson-card h3{margin-top:1.42rem;margin-bottom:.46rem}
+.lead{font-size:1.05rem}
+.mini{font-size:.92rem;color:var(--muted)}
+.key{border-left:3px solid var(--accent2);background:var(--panel2);padding:.84rem .98rem;margin:.9rem 0}
+.grid2,.grid3,.grid4{display:grid;gap:.66rem;margin:.72rem 0 1rem}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box,.phase{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.82rem .92rem}
+.box strong,.phase h4{display:block;color:var(--accent);margin:0 0 .26rem}
+.protocol{counter-reset:step;padding-left:0;list-style:none}
+.protocol li{counter-increment:step;margin:.64rem 0;padding-left:2.2rem;position:relative}
+.protocol li::before{content:counter(step);position:absolute;left:0;top:.08rem;width:1.52rem;height:1.52rem;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem}
+.notes{display:grid;grid-template-columns:repeat(7,minmax(72px,1fr));gap:.36rem;margin:.75rem 0 1rem}
+.note{border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:.64rem .26rem;text-align:center}
+.note b{display:block;font-size:1rem}.note span{font-size:.74rem;color:var(--muted)}
+.phon{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:.72rem 0 1rem}
+th,td{border:1px solid var(--line);padding:.54rem .64rem;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.evidence{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:.95rem}
+.refs{font-size:.88rem;color:var(--muted);padding-left:1.28rem}.refs li{margin:.4rem 0}
+@media(max-width:900px){.notes{grid-template-columns:repeat(4,1fr)}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.notes{grid-template-columns:repeat(3,1fr)}}
+</style>
 </head>
+
 <body class="lesson-page">
 <article class="lesson-card">
-  <p class="eyebrow">ID 18 · Articulação</p>
-  <h2>Articulação em arpejo.</h2>
-  <section>
-    <h3>Como estudar</h3>
-    <ol><li>Mapeie A–C#–E–A antes de usar a palavra.</li><li>Depois encaixe ‘Blueberry’ sem perder os saltos.</li><li>Mantenha o topo leve.</li></ol>
-  </section>
-  <section>
-    <h3>O que observar</h3>
-    <ul><li>Cada salto chega direto.</li><li>A palavra não desloca a afinação.</li></ul>
-  </section>
-  <section>
-    <h3>Evite</h3>
-    <ul><li>Escorregar até a nota.</li><li>Carregar peso no A3.</li></ul>
-  </section>
-  <p class="progression"><strong>Progressão:</strong> Transponha apenas quando o arpejo estiver previsível.</p>
+
+<p class="eyebrow">ID 18 · Blueberry</p>
+<h2>Articulação dentro de saltos: coordenar BL–B–R sem perder o arpejo</h2>
+
+<p class="lead">
+<strong>Blueberry</strong> combina dois tipos de precisão que frequentemente competem:
+uma palavra com mudanças articulatórias rápidas e um <strong>arpejo de uma oitava</strong>.
+Em vez de caminhar por graus conjuntos, a voz salta por 1–3–5–8 e retorna.
+Ao mesmo tempo, os lábios fecham para /b/, a língua organiza /l/, a vogal muda fortemente
+entre <em>Blue</em> e <em>berry</em>, e, conforme a pronúncia do áudio, pode haver um /r/ inglês.
+O exercício é, portanto, um treino de <strong>antecipação auditiva + antecipação articulatória</strong>.
+</p>
+
+<div class="key">
+<strong>Objetivo central:</strong>
+a boca prepara a <em>palavra seguinte</em>;
+o ouvido prepara a <em>nota seguinte</em>.
+Nenhum dos dois deve precisar de força extra.
+</div>
+
+<section>
+<h3>1. O desenho musical</h3>
+
+<div class="notes">
+<div class="note"><b>A2</b><span>1</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>A3</b><span>8</span></div>
+<div class="note"><b>E3</b><span>5</span></div>
+<div class="note"><b>C#3</b><span>3</span></div>
+<div class="note"><b>A2</b><span>1</span></div>
+</div>
+
+<p>
+O padrão é <strong>1–3–5–8–5–3–1</strong>, um acorde maior desdobrado:
+A2–C#3–E3–A3–E3–C#3–A2.
+Os saltos são:
+<strong>+4, +3, +5, −5, −3, −4 semitons</strong>.
+</p>
+
+<p>
+Isso é muito diferente dos exercícios de cinco graus anteriores.
+Aqui não existe uma nota intermediária para “conduzir” seu ouvido até o próximo alvo.
+Cada salto precisa ser <strong>pré-ouvido</strong>.
+</p>
+</section>
+
+<section>
+<h3>2. Pense no arpejo como um acorde, não como sete notas desconectadas</h3>
+
+<p>
+Toque A maior no violão e depois toque as notas individualmente:
+A–C#–E–A.
+A estrutura harmônica ajuda o ouvido a organizar os saltos.
+</p>
+
+<div class="grid4">
+<div class="box"><strong>1 · A</strong>tônica.</div>
+<div class="box"><strong>3 · C#</strong>terça maior.</div>
+<div class="box"><strong>5 · E</strong>quinta justa.</div>
+<div class="box"><strong>8 · A</strong>oitava.</div>
+</div>
+
+<div class="key">
+Em vez de pensar “preciso chegar naquele A3 distante”,
+pense <strong>“estou completando o acorde que já ouvi”</strong>.
+</div>
+</section>
+
+<section>
+<h3>3. Saltos grandes exigem preparação antes do onset</h3>
+
+<p>
+Estudos de pitch matching mostram que cantores podem iniciar a nota já próximos do alvo
+antes que o feedback auditivo daquela própria emissão tenha tempo de corrigi-la.
+Isso implica uma preparação <strong>feedforward</strong>:
+o sistema precisa estimar a altura antes de cantar.
+</p>
+
+<p>
+No Blueberry isso é especialmente importante no A3.
+Não ataque e depois procure a nota.
+</p>
+
+<div class="key">
+<strong>Ouça internamente → prepare → cante.</strong><br>
+Não: cante → deslize → encontre.
+</div>
+</section>
+
+<section>
+<h3>4. O A3 é a oitava, não “uma nota alta aleatória”</h3>
+
+<p>
+Uma oitava possui forte identidade perceptiva:
+A3 é a mesma classe de nota de A2 em outra região.
+Use isso.
+</p>
+
+<p>
+Toque A2 e A3 alternadamente no violão.
+Depois toque somente A2 e cante A3.
+Por fim confira A3.
+</p>
+
+<p>
+Quando o salto fica previsível, recoloque C#3 e E3.
+</p>
+</section>
+
+<section>
+<h3>5. O fragmento E3→A3 merece estudo próprio</h3>
+
+<p>
+Esse salto é uma <strong>quarta justa ascendente</strong>, cinco semitons.
+Ele é o maior salto ascendente entre notas adjacentes do arpejo.
+</p>
+
+<p>
+Treine:
+<strong>E3 → A3 → E3</strong>.
+Primeiro violão + voz.
+Depois violão apenas no E3 e confirmação posterior do A3.
+</p>
+
+<div class="key">
+Se A3 só aparece com mais volume, queixo alto ou boca subitamente maior,
+o salto ainda não está automatizado.
+</div>
+</section>
+
+<section>
+<h3>6. Articulação: siga “Blueberry” do áudio, não uma pronúncia inventada</h3>
+
+<p>
+A pronúncia muda com o sotaque.
+Use o MP3 como autoridade.
+Como referência analítica, uma pronúncia inglesa rótica comum se aproxima de
+<span class="phon">/ˈbluːˌbɛri/</span>,
+mas isso não deve substituir o modelo auditivo do exercício.
+</p>
+
+<p>
+O que importa pedagogicamente é a sequência de tarefas:
+<strong>B + L → vogal arredondada → novo B → nova vogal → possível R → final frontal.</strong>
+</p>
+</section>
+
+<section>
+<h3>7. “BL” é um cluster: não coloque uma vogal entre as consoantes</h3>
+
+<p>
+O início de <em>Blue</em> deve funcionar como uma transição direta de /b/ para /l/.
+Evite:
+<strong>“buh-loo”</strong>,
+a menos que o áudio realmente faça algo parecido.
+</p>
+
+<div class="key">
+Pense:
+<strong>B fecha nos lábios → libera → L já está preparado.</strong>
+</div>
+
+<p>
+A velocidade vem da sobreposição dos gestos,
+não da execução completa de B, pausa, L, pausa, vogal.
+</p>
+</section>
+
+<section>
+<h3>8. O /b/: fechamento completo, mas vozeado e econômico</h3>
+
+<p>
+/b/ é uma oclusiva bilabial sonora.
+Os lábios precisam formar o fechamento,
+mas a entrada da vogal não deve parecer uma explosão.
+</p>
+
+<p>
+Estudos de cinemática de oclusivas bilabiais mostram que lábios e mandíbula formam
+um sistema coordenado capaz de assegurar o fechamento mesmo com variação contextual.
+</p>
+
+<div class="grid3">
+<div class="box"><strong>Lábios</strong>fechamento real.</div>
+<div class="box"><strong>Pressão</strong>sem acúmulo excessivo.</div>
+<div class="box"><strong>Voz</strong>transição rápida para o núcleo vocálico.</div>
+</div>
+</section>
+
+<section>
+<h3>9. O timing do /b/ muda no canto</h3>
+
+<p>
+Um estudo com homens treinados e não treinados comparou oclusivas bilabiais em fala e canto.
+O <strong>Voice Onset Time</strong> de /b/ mudou significativamente entre as duas tarefas.
+Isso é um lembrete importante:
+cantar não é simplesmente “falar mais devagar sobre uma nota”.
+</p>
+
+<div class="key">
+No Blueberry, copie o <strong>timing do áudio</strong>.
+Não tente preservar uma quantidade fixa de fechamento ou de pré-vozeamento baseada na fala.
+</div>
+</section>
+
+<section>
+<h3>10. O B não deve puxar o pitch para baixo</h3>
+
+<p>
+Consoantes vozeadas e a articulação que as cerca podem perturbar transitoriamente F0.
+Há evidência de efeitos sistemáticos de consoantes sobre a frequência fundamental
+e de pequenas perturbações de F0 durante mudanças articulatórias em cantores.
+</p>
+
+<p>
+Portanto, julgue a nota pelo <strong>núcleo da vogal</strong>,
+não pelos primeiros milissegundos do fechamento/liberação.
+</p>
+</section>
+
+<section>
+<h3>11. O /l/: a língua precisa aparecer imediatamente depois do B</h3>
+
+<p>
+No /l/, há constrição da língua e passagem lateral de ar.
+Estudos acústicos e articulatórios mostram que sua realização varia com posição e contexto vocálico,
+e que as transições de formantes para a vogal carregam informação importante.
+</p>
+
+<p>
+Isso significa que não existe motivo para procurar uma posição isolada de L
+e mantê-la rigidamente.
+</p>
+
+<div class="key">
+O /l/ de <em>Blue</em> deve ser treinado como uma <strong>transição</strong>,
+não como uma estátua da língua.
+</div>
+</section>
+
+<section>
+<h3>12. Progressão 1 — B → L sem vogal intermediária</h3>
+
+<p>
+Fale lentamente:
+<strong>BL — BL — BL</strong>.
+Depois:
+<strong>BLoo</strong>, seguindo a vogal do áudio.
+</p>
+
+<p>
+Se aparece “buh-loo”, reduza a distância temporal entre liberação de B e formação de L.
+</p>
+
+<div class="key">
+A meta é <strong>sequência compacta</strong>,
+não velocidade forçada.
+</div>
+</section>
+
+<section>
+<h3>13. Progressão 2 — prolongue o L apenas para localizá-lo</h3>
+
+<p>
+Faça uma vez:
+<strong>Blllue</strong>.
+Sinta a língua assumir o /l/.
+Depois reduza:
+<strong>Bllue → Blue</strong>.
+</p>
+
+<p>
+O prolongamento é diagnóstico.
+A versão final deve permanecer natural.
+</p>
+</section>
+
+<section>
+<h3>14. “Blue”: arredondamento labial sem perder mobilidade</h3>
+
+<p>
+A vogal de <em>Blue</em> costuma envolver arredondamento.
+Mas os lábios acabaram de sair de um fechamento completo em /b/ e logo precisarão
+se reorganizar para o restante da palavra.
+</p>
+
+<p>
+Evite transformar /u/ num bico rígido.
+</p>
+
+<div class="key">
+<strong>Fechamento B → liberação → arredondamento elástico.</strong>
+Não: fechamento → rigidez → arredondamento forçado.
+</div>
+</section>
+
+<section>
+<h3>15. Blue → berry: o segundo B é uma mudança radical de direção</h3>
+
+<p>
+Depois da vogal arredondada de Blue,
+os lábios precisam voltar a fechar para o /b/ de berry.
+É um excelente treino de reversibilidade:
+</p>
+
+<div class="key">
+<strong>fecha → abre/arredonda → fecha → abre novamente.</strong>
+</div>
+
+<p>
+Se o segundo B chega atrasado,
+normalmente a vogal de Blue está sendo mantida grande demais por tempo demais.
+</p>
+</section>
+
+<section>
+<h3>16. Progressão 3 — somente “Blue–B”</h3>
+
+<p>
+Fale:
+<strong>Blue-B · Blue-B · Blue-B</strong>,
+parando logo depois do fechamento do segundo B.
+</p>
+
+<p>
+Isso isola a transição:
+vogal arredondada → fechamento bilabial.
+Depois complete Berry.
+</p>
+</section>
+
+<section>
+<h3>17. Progressão 4 — Blueberry numa única nota</h3>
+
+<p>
+Cante a palavra inteira em A2, sem arpejo.
+Depois C#3, E3 e A3 separadamente.
+</p>
+
+<p>
+Agora você pode descobrir se a articulação muda apenas por causa do pitch.
+</p>
+
+<table>
+<tr><th>Resultado</th><th>Interpretação</th></tr>
+<tr><td>A2 claro, A3 embolado</td><td>Tessitura interfere na articulação.</td></tr>
+<tr><td>Todas as alturas claras</td><td>Articulação está robusta.</td></tr>
+<tr><td>A3 só funciona em volume alto</td><td>Coordenação de pitch/pressão precisa ser revista.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>18. Berry: a vogal precisa contrastar com Blue</h3>
+
+<p>
+A mudança de Blue para Berry deve ser clara mesmo sem aumentar volume.
+É uma mudança importante de configuração vocálica.
+</p>
+
+<p>
+Não tente manter a mesma forma de boca por “consistência”.
+Consistência técnica não significa vogais iguais.
+</p>
+
+<div class="key">
+<strong>Mesma voz, trato diferente.</strong>
+</div>
+</section>
+
+<section>
+<h3>19. Se houver /r/ no áudio, não use o R do português</h3>
+
+<p>
+Em sotaques róticos, Berry contém um /r/ inglês.
+Esse som não é uma vibrante múltipla e não precisa de batidas da ponta da língua.
+</p>
+
+<p>
+Por outro lado, também não existe uma única forma correta de língua.
+MRI de falantes nativos mostra variantes <strong>bunched</strong> e <strong>retroflex</strong>
+com resultados acústicos muito semelhantes nos primeiros formantes relevantes.
+</p>
+
+<div class="key">
+Copie o <strong>som</strong> do áudio.
+Não force uma anatomia específica.
+</div>
+</section>
+
+<section>
+<h3>20. O /r/ inglês pode começar a ser preparado antes</h3>
+
+<p>
+Pesquisas de coarticulação mostram que a trajetória acústica e articulatória de /r/
+pode se sobrepor aos sons vizinhos.
+Isso ajuda a explicar por que a fala rápida não precisa “parar” para produzir R.
+</p>
+
+<p>
+No exercício, permita preparação antecipada,
+mas não tanto a ponto de deformar a vogal anterior.
+</p>
+</section>
+
+<section>
+<h3>21. Progressão 5 — Berry lento → Berry pequeno</h3>
+
+<p>
+Fale Berry lentamente copiando o áudio.
+Depois repita em velocidade natural com a intenção de usar
+<strong>metade do movimento externo</strong>.
+</p>
+
+<p>
+Se a palavra continua reconhecível,
+parte do movimento anterior era redundante.
+</p>
+</section>
+
+<section>
+<h3>22. Progressão 6 — retire temporariamente o R</h3>
+
+<p>
+Se Berry trava especificamente no R,
+faça uma passagem pedagógica sem esse gesto,
+mantendo apenas a trajetória vocálica aproximada.
+Depois recoloque o R gradualmente.
+</p>
+
+<p>
+Isso não é uma pronúncia aceitável para a versão final.
+É uma forma de comprovar se o gargalo é realmente rótico.
+</p>
+</section>
+
+<section>
+<h3>23. Coarticulação é indispensável</h3>
+
+<p>
+Blueberry contém gestos demais para serem executados como uma sequência de poses independentes.
+Lábios, língua e mandíbula precisam preparar parcialmente o próximo evento
+antes de o anterior acabar.
+</p>
+
+<p>
+Estudos de movimento articulatório mostram que o sistema reorganiza
+lábios e mandíbula em tempo real e que trajetórias consonantais dependem do contexto.
+</p>
+
+<div class="key">
+Agilidade não é “terminar cada posição mais rápido”.
+É <strong>sobrepor posições de forma controlada</strong>.
+</div>
+</section>
+
+<section>
+<h3>24. Mas o arpejo também precisa ser antecipado</h3>
+
+<p>
+Agora temos dois futuros sendo preparados simultaneamente:
+</p>
+
+<div class="grid2">
+<div class="box"><strong>Futuro articulatório</strong>qual consoante/vogal vem a seguir?</div>
+<div class="box"><strong>Futuro tonal</strong>qual grau do arpejo vem a seguir?</div>
+</div>
+
+<p>
+Essa é a verdadeira finalidade avançada do exercício.
+Quando ele fica automático, você deixa de reagir nota por nota e fonema por fonema.
+</p>
+</section>
+
+<section>
+<h3>25. Progressão 7 — palavra sem melodia</h3>
+
+<p>
+Cante Blueberry inteira em A2 várias vezes.
+Depois fale no ritmo.
+</p>
+
+<p>
+Se a palavra já é difícil numa única nota,
+não use o arpejo para “treinar por cima” do problema.
+Resolva primeiro a sequência articulatória.
+</p>
+</section>
+
+<section>
+<h3>26. Progressão 8 — arpejo sem palavra</h3>
+
+<p>
+Faça:
+<strong>A2–C#3–E3–A3–E3–C#3–A2</strong>
+numa vogal confortável.
+</p>
+
+<p>
+Se o arpejo é preciso sem texto e piora com Blueberry,
+você identificou interferência articulatória.
+Se já é impreciso sem texto, trabalhe primeiro os intervalos.
+</p>
+</section>
+
+<section>
+<h3>27. Progressão 9 — somente 1–3–5–8</h3>
+
+<p>
+Treine a subida e pare no A3.
+Depois faça somente a descida 8–5–3–1.
+</p>
+
+<p>
+Pesquisas com arpejos cantados encontraram maior imprecisão em condições rápidas
+e, em certas tarefas, maior dificuldade na parte descendente.
+Por isso, trate subida e descida como habilidades que podem precisar de treino separado.
+</p>
+</section>
+
+<section>
+<h3>28. Progressão 10 — 1→8 direto como mapa de oitava</h3>
+
+<p>
+Toque A2 e A3.
+Cante A2→A3.
+Depois:
+A2→C#3→E3→A3.
+</p>
+
+<p>
+O salto direto não substitui o arpejo.
+Ele ensina seu ouvido onde está o destino antes de preencher o caminho harmônico.
+</p>
+</section>
+
+<section>
+<h3>29. Progressão 11 — acorde antes, arpejo depois</h3>
+
+<p>
+Toque o acorde A maior uma vez.
+Espere um instante.
+Cante o arpejo sem o violão acompanhando cada nota.
+</p>
+
+<p>
+Depois confira A3 e A2 final.
+</p>
+
+<div class="key">
+Esse protocolo treina <strong>imagem harmônica</strong>,
+não mera imitação imediata de nota a nota.
+</div>
+</section>
+
+<section>
+<h3>30. Progressão 12 — âncoras no violão</h3>
+
+<div class="phase">
+<h4>Nível 1</h4><p>Violão em todas as sete notas.</p>
+</div>
+<div class="phase">
+<h4>Nível 2</h4><p>Violão apenas em A2, E3, A3, E3 e A2.</p>
+</div>
+<div class="phase">
+<h4>Nível 3</h4><p>Violão em A2 e A3.</p>
+</div>
+<div class="phase">
+<h4>Nível 4</h4><p>Toque apenas A2; confira A3 e A2 final depois.</p>
+</div>
+
+<p>
+Não retire o violão na mesma repetição em que aumenta velocidade ou transpõe.
+Mude uma variável por vez.
+</p>
+</section>
+
+<section>
+<h3>31. O A3 não deve deformar “Blueberry”</h3>
+
+<p>
+Por ser o topo, é comum o cantor aumentar:
+abertura, volume, duração da consoante ou rigidez de língua.
+</p>
+
+<p>
+Faça o trecho do A3 aproximadamente <strong>15–20% mais leve</strong>.
+Se a articulação melhora e a nota continua presente,
+o excesso anterior não era necessário.
+</p>
+</section>
+
+<section>
+<h3>32. Articulação pode perturbar F0 por alguns instantes</h3>
+
+<p>
+Experimentos com cantores mostram pequenas perturbações de frequência fundamental
+durante mudanças articulatórias de vogal.
+Isso é relevante aqui porque Blueberry muda bastante o trato vocal
+ao mesmo tempo em que exige precisão de intervalos.
+</p>
+
+<div class="key">
+Avalie afinação pelo <strong>centro estabilizado da vogal</strong>,
+sem exigir que todo transiente consonantal produza uma linha matemática perfeita de F0.
+</div>
+</section>
+
+<section>
+<h3>33. Mas não use isso como desculpa para deslizar até a nota</h3>
+
+<p>
+Uma perturbação transitória pequena é diferente de começar claramente fora do alvo
+e corrigir depois.
+</p>
+
+<p>
+A preparação auditivo-motora deve colocar o núcleo da nova nota
+já muito perto de sua frequência correta.
+</p>
+</section>
+
+<section>
+<h3>34. Progressão 13 — Blueberry “fantasma”</h3>
+
+<p>
+Toque A2–C#3–E3, mas <strong>não toque A3</strong>.
+Cante A3 no lugar vazio e depois confira.
+</p>
+
+<p>
+Mais tarde faça o mesmo com C#3 na descida.
+</p>
+
+<div class="key">
+O instrumento constrói o mapa.
+Depois você precisa demonstrar que <strong>possui</strong> o mapa.
+</div>
+</section>
+
+<section>
+<h3>35. Velocidade: arpejo e texto não precisam acelerar juntos no começo</h3>
+
+<p>
+Treine primeiro o texto rápido numa única nota
+e o arpejo lento numa única vogal.
+Só depois aumente o andamento da combinação completa.
+</p>
+
+<p>
+Isso evita aumentar simultaneamente
+<strong>carga articulatória + carga intervalar + carga temporal</strong>.
+</p>
+</section>
+
+<section>
+<h3>36. Legato primeiro, separação depois</h3>
+
+<p>
+Estudos com arpejos mostram pior precisão em condições staccato e rápidas,
+especialmente em cantores menos treinados.
+Para o Blueberry, comece com uma sensação de linha relativamente conectada.
+</p>
+
+<p>
+Depois, se quiser testar independência de cada ataque,
+faça uma versão mais destacada sem transformar os Bs em explosões.
+</p>
+</section>
+
+<section>
+<h3>37. Transposição: o limite técnico é multifatorial</h3>
+
+<p>
+Suba meio tom por repetição.
+Pare quando dois ou mais componentes começam a degradar simultaneamente.
+</p>
+
+<table>
+<tr><th>Sinal</th><th>Leitura provável</th></tr>
+<tr><td>A3 equivalente só entra com mais volume</td><td>Coordenação tonal/registro no limite.</td></tr>
+<tr><td>BL vira “buh-l”</td><td>Cluster perdeu agilidade.</td></tr>
+<tr><td>Segundo B atrasa</td><td>Blue está grande demais ou gesto labial lento.</td></tr>
+<tr><td>Berry trava no R</td><td>Gesto lingual excessivo.</td></tr>
+<tr><td>Mandíbula cresce em cada salto</td><td>Pitch associado a articulação externa.</td></tr>
+<tr><td>Pequena modificação de vogal surge sem perder clareza</td><td>Pode ser adaptação funcional.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>38. Vibrato: útil somente como teste posterior no A3</h3>
+
+<p>
+O exercício-base é de articulação e precisão intervalar.
+Mantenha as notas relativamente retas.
+</p>
+
+<p>
+Quando o salto estiver limpo, sustente ocasionalmente A3:
+<strong>reto por 1–2 s → vibrato natural por 1–2 s → descida</strong>.
+</p>
+
+<p>
+Se o vibrato exige mandíbula, volume ou tensão adicionais,
+retorne à nota reta.
+</p>
+</section>
+
+<section>
+<h3>39. Diagnóstico rápido</h3>
+
+<table>
+<tr><th>Problema</th><th>Provável causa</th><th>Intervenção</th></tr>
+<tr><td>Blue vira “buh-loo”</td><td>Vogal inserida no cluster BL</td><td>BL isolado → Blllue → Blue.</td></tr>
+<tr><td>B explode</td><td>Pressão labial/oral excessiva</td><td>Menor fechamento muscular; liberação rápida.</td></tr>
+<tr><td>Segundo B chega tarde</td><td>Vogal de Blue mantida grande demais</td><td>Treinar Blue-B repetidamente.</td></tr>
+<tr><td>Berry trava</td><td>R ou transição lingual excessivamente grande</td><td>Berry lento → pequeno; copiar áudio.</td></tr>
+<tr><td>A3 entra por baixo e desliza</td><td>Antecipação tonal insuficiente</td><td>A2↔A3; E3→A3 isolado.</td></tr>
+<tr><td>A3 explode em volume</td><td>Pitch comprado com intensidade</td><td>Topo 15–20% mais leve.</td></tr>
+<tr><td>Arpejo bom sem texto, ruim com texto</td><td>Interferência articulatória</td><td>Alternar palavra em uma nota e arpejo em vogal.</td></tr>
+<tr><td>Texto bom, arpejo impreciso</td><td>Mapa intervalar insuficiente</td><td>Acorde → 1–3–5–8 → retirada gradual do violão.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>40. Critérios de evolução</h3>
+
+<div class="grid3">
+<div class="box"><strong>BL</strong>cluster direto, sem vogal intrusa.</div>
+<div class="box"><strong>B</strong>fechamento claro e econômico.</div>
+<div class="box"><strong>Berry</strong>transição lingual pequena e reconhecível.</div>
+<div class="box"><strong>Arpejo</strong>1–3–5–8 previsível antes do ataque.</div>
+<div class="box"><strong>A3</strong>entra sem aumento brusco de volume.</div>
+<div class="box"><strong>Integração</strong>texto e saltos deixam de competir.</div>
+</div>
+</section>
+
+<section>
+<h3>41. Sessão-modelo — 8 a 10 minutos</h3>
+
+<div class="phase">
+<h4>1 · Palavra · ~1 min</h4>
+<p>Blueberry em fala → Blue/Berry separados → palavra numa única nota.</p>
+</div>
+
+<div class="phase">
+<h4>2 · Cluster · ~1 min</h4>
+<p>BL → Blllue → Blue; depois Blue-B para o segundo fechamento bilabial.</p>
+</div>
+
+<div class="phase">
+<h4>3 · Arpejo · ~2 min</h4>
+<p>Acorde no violão → 1–3–5–8–5–3–1 numa vogal confortável.</p>
+</div>
+
+<div class="phase">
+<h4>4 · Motivo completo · ~2 min</h4>
+<p>Blueberry com o desenho original e violão completo.</p>
+</div>
+
+<div class="phase">
+<h4>5 · Gargalo · ~1–2 min</h4>
+<p>Escolha apenas um: BL, segundo B, Berry/R, E→A ou A3.</p>
+</div>
+
+<div class="phase">
+<h4>6 · Independência · ~1 min</h4>
+<p>Retire notas do violão ou use o A3 “fantasma”.</p>
+</div>
+
+<div class="phase">
+<h4>7 · Transposição · ~1 min</h4>
+<p>Suba por semitom enquanto palavra e arpejo permanecerem igualmente organizados.</p>
+</div>
+
+<div class="phase">
+<h4>8 · Fechamento</h4>
+<p>Volte a uma tonalidade confortável e faça uma passagem em que
+o A3 pareça consequência natural do acorde e “Blueberry” permaneça pequena e clara.</p>
+</div>
+</section>
+
+<section class="evidence">
+<h3>Base científica desta aula</h3>
+
+<p class="mini">
+Não existe um protocolo experimental padronizado chamado “Blueberry”.
+A aula combina a ficha específica — articulação clara sobre um arpejo 1–3–5–8–5–3–1 —
+com estudos primários sobre oclusivas bilabiais, VOT no canto, laterais,
+róticos ingleses, coarticulação e controle de pitch em arpejos.
+As progressões BL→Blllue→Blue, Blue-B, arpejo sem texto,
+palavra numa única nota, acorde→arpejo e “nota fantasma” são aplicações pedagógicas desses princípios.
+</p>
+
+<ol class="refs">
+<li>
+Bottalico P, Graetzer S, Hunter EJ.
+<em>Effect of Training and Level of External Auditory Feedback on the Singing Voice: Pitch Inaccuracy.</em>
+J Voice. 2017;31(1):122.e9–122.e16.
+DOI: 10.1016/j.jvoice.2016.01.012.
+PMID: 26948385. PMCID: PMC5010534.
+Estudou especificamente arpejos, tempo, articulação, tessitura e feedback auditivo.
+</li>
+
+<li>
+Mürbe D, Pabst F, Hofmann G, Sundberg J.
+<em>Significance of auditory and kinesthetic feedback to singers' pitch control.</em>
+J Voice. 2002;16(1):44–51.
+DOI: 10.1016/S0892-1997(02)00071-1. PMID: 12002886.
+</li>
+
+<li>
+Watts C, Murphy J, Barnes-Burroughs K.
+<em>Pitch matching accuracy of trained singers, untrained subjects with talented singing voices,
+and untrained subjects with nontalented singing voices in conditions of varying feedback.</em>
+J Voice. 2003;17(2):185–194.
+DOI: 10.1016/S0892-1997(03)00023-7. PMID: 12825651.
+</li>
+
+<li>
+Löfqvist A, Gracco VL.
+<em>Lip and jaw kinematics in bilabial stop consonant production.</em>
+J Speech Lang Hear Res. 1997;40(4):877–893.
+DOI: 10.1044/jslhr.4004.877. PMID: 9263951.
+</li>
+
+<li>
+McCrea CR, Morris RJ.
+<em>Effects of vocal training and phonatory task on voice onset time.</em>
+J Voice. 2007;21(1):54–63.
+DOI: 10.1016/j.jvoice.2005.05.002. PMID: 16426814.
+Estudou /p/ e /b/ em fala e canto.
+</li>
+
+<li>
+Ohde RN.
+<em>Fundamental frequency as an acoustic correlate of stop consonant voicing.</em>
+J Acoust Soc Am. 1984;75(1):224–230.
+DOI: 10.1121/1.390399. PMID: 6699284.
+</li>
+
+<li>
+Ternström S, Sundberg J, Colldén A.
+<em>Articulatory F0 perturbations and auditory feedback.</em>
+J Speech Hear Res. 1988;31(2):187–192.
+DOI: 10.1044/jshr.3102.187. PMID: 3398492.
+</li>
+
+<li>
+Zhang Z, Espy-Wilson CY.
+<em>A vocal-tract model of American English /l/.</em>
+J Acoust Soc Am. 2004;115(3):1274–1280.
+DOI: 10.1121/1.1645248. PMID: 15058349.
+</li>
+
+<li>
+<em>Formant Trajectory Patterns of American English /l/ Produced by Adults and Children.</em>
+J Speech Lang Hear Res. 2021.
+DOI: 10.1044/2020_JSLHR-20-00345. PMID: 33630668.
+Mostra a importância das transições entre /l/ e as vogais adjacentes.
+</li>
+
+<li>
+Zhou X, Espy-Wilson CY, Boyce S, Tiede M, Holland C, Choe A.
+<em>A magnetic resonance imaging-based articulatory and acoustic study of
+“retroflex” and “bunched” American English /r/.</em>
+J Acoust Soc Am. 2008;123(6):4466–4481.
+DOI: 10.1121/1.2902168.
+PMID: 18537397. PMCID: PMC2680662.
+</li>
+
+<li>
+Boyce S, Espy-Wilson CY.
+<em>Coarticulatory stability in American English /r/.</em>
+J Acoust Soc Am. 1997;101(6):3741–3753.
+DOI: 10.1121/1.418333. PMID: 9193061.
+</li>
+
+<li>
+Folkins JW, Abbs JH.
+<em>Lip and jaw motor control during speech: responses to resistive loading of the jaw.</em>
+J Speech Hear Res. 1975;18(1):207–219.
+DOI: 10.1044/jshr.1801.207. PMID: 1127904.
+</li>
+</ol>
+</section>
+
 </article>
 </body>
 </html>
