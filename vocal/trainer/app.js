@@ -1636,9 +1636,16 @@ function analyzeFrame() {
     rms: level,
   };
 
+  const guideIndexBeforeUpdate = adaptiveGuide?.index ?? -1;
   const guideDecision = updateAdaptiveGuide(now, midi, true, level);
   if (guideDecision.ignoreForTracker) tracker.noPitch(now);
   else tracker.ingest(frame);
+  const guideIndexForFrame = guideDecision.recognizedEarlyTransition
+    ? (adaptiveGuide?.index ?? guideIndexBeforeUpdate)
+    : guideIndexBeforeUpdate;
+  frame.hiddenDuringLive =
+    guideIndexForFrame >= 0 &&
+    !guidePattern[guideIndexForFrame];
   graphFrames.push(frame);
   voiceStarted = true;
   lastVoicedT = now;
@@ -2065,6 +2072,9 @@ function renderEvaluation(segments) {
   if (!segments.length) {
     summaryEl.innerHTML = "Não encontrei segmentos vocais estáveis suficientes. Tente cantar mais perto do microfone ou diminuir levemente os limiares de RMS/clareza.";
     renderGlobalScore([]);
+    reviewMode = true;
+    evaluationOverlay = null;
+    drawPitchGraph(graphFrames.at(-1)?.t ?? 0);
     resultActions.hidden = false;
     return;
   }
@@ -2225,11 +2235,16 @@ function graphGuideSegments(nowMs) {
     });
   }
 
-  return segments.filter(segment => guidePattern[segment.index]);
+  return segments;
 }
 
 function updateGraphGuideReadout(nowMs) {
   if (!graphNowEl || !graphNextEl) return;
+  if (reviewMode) {
+    graphNowEl.textContent = "Relatório completo";
+    graphNextEl.textContent = "Inclui roteiro, canto detectado e ataques fantasmas.";
+    return;
+  }
   if (graphCountdownLabel != null) {
     graphNowEl.textContent = `Contagem: ${graphCountdownLabel}`;
     graphNextEl.textContent = graphCountdownCaption || "Prepare a entrada";
@@ -2244,16 +2259,18 @@ function updateGraphGuideReadout(nowMs) {
   }
 
   if (state && expectedNotes[state.index]) {
-    const currentVisible = Boolean(guidePattern[state.index]);
-    graphNowEl.textContent = currentVisible
-      ? `Agora: ${expectedNotes[state.index].label}`
-      : "Agora: desafio mudo";
+    const currentGhost = !guidePattern[state.index];
+    graphNowEl.textContent = currentGhost
+      ? `Agora: ${expectedNotes[state.index].label} · ataque fantasma`
+      : `Agora: ${expectedNotes[state.index].label}`;
     const remainingMs = Math.max(0, (state.projectedAdvanceT || nowMs) - nowMs);
     const nextIndex = state.index + 1;
     if (nextIndex >= expectedNotes.length) {
       graphNextEl.textContent = `Fim previsto em ${(remainingMs / 1000).toFixed(1)} s`;
     } else {
-      const nextLabel = guidePattern[nextIndex]?.label || "desafio mudo";
+      const nextLabel = guidePattern[nextIndex]
+        ? expectedNotes[nextIndex].label
+        : `${expectedNotes[nextIndex].label} · fantasma`;
       const anticipated = state.preCuedIndex === nextIndex;
       graphNextEl.textContent = anticipated
         ? `Referência antecipada: ${nextLabel} · troca em ${(remainingMs / 1000).toFixed(1)} s`
@@ -2307,12 +2324,9 @@ function drawPitchGraph(nowMs = 0) {
   const xFor = (t) => ((t - leftT) / (rightT - leftT)) * cssWidth;
   const yFor = (midi) => cssHeight - ((midi - minMidi) / (maxMidi - minMidi)) * cssHeight;
 
-  // As notas deliberadamente mudas continuam sendo avaliadas, mas não ganham
-  // linha nem rótulo: o gráfico não pode entregar a referência do desafio.
-  const referenceMidis = expectedNotes
-    .filter((_, index) => guidePattern[index])
-    .map((note) => note.midi);
-  const uniqueMidis = [...new Set(referenceMidis)];
+  // O alvo escrito permanece visível também nos ataques fantasmas: a ausência
+  // de ajuda é auditiva e corretiva, não a remoção da "partitura" esperada.
+  const uniqueMidis = [...new Set(expectedNotes.map(note => note.midi))];
   ctx.font = "12px system-ui";
   uniqueMidis.forEach((midi) => {
     const y = yFor(midi);
@@ -2335,10 +2349,11 @@ function drawPitchGraph(nowMs = 0) {
     const x1 = xFor(segment.endT);
     if (x1 < 0 || x0 > cssWidth) return;
     const sounding = adaptiveGuide?.soundingIndex === segment.index;
-    ctx.strokeStyle = sounding
+    const currentTarget = segment.live && adaptiveGuide?.index === segment.index;
+    ctx.strokeStyle = sounding || currentTarget
       ? "#ff4f5f"
       : (segment.future ? "rgba(255, 48, 64, 0.58)" : "rgba(255, 48, 64, 0.88)");
-    ctx.lineWidth = sounding ? 7 : 4;
+    ctx.lineWidth = sounding ? 7 : (currentTarget ? 6 : 4);
     ctx.beginPath();
     ctx.moveTo(Math.max(0, x0), yFor(expectedNotes[segment.index].midi));
     ctx.lineTo(Math.min(cssWidth, x1), yFor(expectedNotes[segment.index].midi));
@@ -2346,7 +2361,11 @@ function drawPitchGraph(nowMs = 0) {
   });
   ctx.lineCap = "butt";
 
-  const visible = graphFrames.filter((f) => f.t >= leftT && f.t <= rightT);
+  const visible = graphFrames.filter(frame =>
+    frame.t >= leftT &&
+    frame.t <= rightT &&
+    (reviewMode || !frame.hiddenDuringLive)
+  );
   if (visible.length >= 2) {
     // Traço geral: neutro/azul. Não pinta toda a execução de vermelho.
     ctx.strokeStyle = "#76c7ff";
@@ -2373,7 +2392,7 @@ function drawPitchGraph(nowMs = 0) {
   if (!reviewMode && appState === "LISTENING" && adaptiveGuide && !adaptiveGuide.finished) {
     const xNow = xFor(nowMs);
     const currentIndex = adaptiveGuide.index;
-    const visibleTarget = guidePattern[currentIndex];
+    const ghostTarget = !guidePattern[currentIndex];
     ctx.strokeStyle = "#22c76a";
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -2381,16 +2400,16 @@ function drawPitchGraph(nowMs = 0) {
     ctx.lineTo(xNow, cssHeight);
     ctx.stroke();
 
-    if (visibleTarget) {
-      const yNow = yFor(expectedNotes[currentIndex].midi);
-      ctx.fillStyle = "#22c76a";
-      ctx.beginPath();
-      ctx.arc(xNow, yNow, 13, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const yNow = yFor(expectedNotes[currentIndex].midi);
+    ctx.fillStyle = "#22c76a";
+    ctx.beginPath();
+    ctx.arc(xNow, yNow, 13, 0, Math.PI * 2);
+    ctx.fill();
 
     const remainingMs = Math.max(0, adaptiveGuide.projectedAdvanceT - nowMs);
-    const currentLabel = visibleTarget ? expectedNotes[currentIndex].label : "DESAFIO MUDO";
+    const currentLabel = ghostTarget
+      ? `${expectedNotes[currentIndex].label} · FANTASMA`
+      : expectedNotes[currentIndex].label;
     const badgeX = Math.min(cssWidth - 168, xNow + 12);
     ctx.fillStyle = "rgba(9, 25, 18, 0.92)";
     ctx.fillRect(badgeX, 10, 156, 47);

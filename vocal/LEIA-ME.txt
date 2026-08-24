@@ -57,8 +57,9 @@ TREINO ASSISTIDO
 - Notas não identificadas recebem zero na parcela correspondente da nota global;
   silêncio não é tratado como resultado neutro.
 - O andamento e a quantidade de notas por pulso são ajustados antes de abrir a janela.
-- Notas deliberadamente mudas não tocam e não recebem linha ou rótulo no gráfico,
-  mas continuam sendo avaliadas quando o usuário as canta.
+- Ataques fantasmas não tocam: durante a execução, mantêm alvo vermelho, nome da
+  nota e ponto verde, mas ocultam o traço azul corretivo produzido pelo usuário.
+  No relatório final, o traço azul reaparece e nenhuma informação é omitida.
 - O gráfico combina o roteiro vermelho, a voz azul e um cursor verde de posição.
   A duração visual da nota atual se estende junto com as tolerâncias do usuário.
 
