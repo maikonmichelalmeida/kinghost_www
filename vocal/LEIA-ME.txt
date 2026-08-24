@@ -7,11 +7,14 @@ Estrutura esperada:
 index.htm
 style.css
 style.js
+lesson-trainer.js
+trainer\
 htm\
 tablaturas\
 sample_vocal\
 
-A página funciona offline abrindo index.htm diretamente no navegador.
+A página pode ser aberta diretamente pelo index.htm; o treino assistido usa
+bibliotecas e instrumentos carregados pela internet.
 
 Interface:
 - topo: seleção A–H, exercício direto, Previous, Next e áudio;
@@ -24,16 +27,24 @@ TREINO ASSISTIDO
 
 - O botão "Início" do topo abre o exercício principal.
 - Os trechos praticáveis das aulas recebem seu próprio botão "Início".
-- Cada botão possui uma transposição inteira entre -8 e +8 e uma caixa de direção:
+- Cada trecho possui Início, Ouvir, guia simultâneo, andamento, divisão rítmica,
+  transposição inteira entre -8 e +8 e uma caixa de direção:
   marcada sobe 1 semitom ao concluir; desmarcada desce 1 semitom.
+- A janela começa sozinha: quatro batidas rápidas e entrada imediata, sem botão
+  intermediário e sem demonstração prévia da escala.
+- Com "Guia" marcado, as referências permitidas tocam ao mesmo tempo que a voz.
+  Desmarcado, somente a nota inicial é dada depois das quatro batidas.
+- "Ouvir" permite conferir previamente apenas as referências que o exercício autoriza.
 - "Tentar novamente" e "Fechar" não alteram a transposição.
 - Somente "Concluir", depois do fim automático do treino, avança a transposição.
-- Dia, exercício atual, transposições e direções ficam guardados no localStorage.
+- Dia, exercício atual, transposições, direções, guia e ritmos ficam guardados no localStorage.
 - Notas mudas aparecem como travessões no guia. A sequência vocal continua mostrando
   tudo o que deve ser cantado.
 - Treinos respiratórios usam metrônomo e cronômetro, sem avaliação de afinação.
 - Treinos com pitch mostram avaliação por nota e nota global de 0 a 100.
-- O andamento e a quantidade de notas por pulso podem ser ajustados no painel.
+- O andamento e a quantidade de notas por pulso são ajustados antes de abrir a janela.
+- Notas deliberadamente mudas não tocam e não recebem linha ou rótulo no gráfico,
+  mas continuam sendo avaliadas quando o usuário as canta.
 
 EXECUÇÃO
 

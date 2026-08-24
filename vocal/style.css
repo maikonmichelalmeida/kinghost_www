@@ -83,7 +83,8 @@ button:hover,select:hover{border-color:var(--accent)}
   flex-wrap:wrap;
   gap:.38rem;
 }
-.training-start{
+.training-start,
+.training-listen{
   height:34px;
   padding:0 .8rem;
   border-color:#377e68;
@@ -91,6 +92,14 @@ button:hover,select:hover{border-color:var(--accent)}
   color:#d9fff2;
 }
 .training-start:hover{border-color:#8ce4c6;background:#236e58}
+.training-listen{
+  padding:0 .55rem;
+  border-color:#3a4655;
+  background:#151c26;
+  color:#b8c5d3;
+  font-size:.78rem;
+}
+.training-listen:hover{border-color:#6f8296;color:#fff}
 .transpose-field input{
   width:55px;
   height:34px;
@@ -101,7 +110,11 @@ button:hover,select:hover{border-color:var(--accent)}
   text-align:center;
   font:700 .9rem/1 Inter,Segoe UI,Arial,sans-serif;
 }
-.direction-field{
+.direction-field,
+.guided-field,
+.tempo-field,
+.subdivision-field,
+.instrument-field{
   display:flex;
   align-items:center;
   gap:.26rem;
@@ -112,8 +125,32 @@ button:hover,select:hover{border-color:var(--accent)}
   background:#0d1119;
   cursor:pointer;
 }
-.direction-field input{accent-color:#6cc9ab}
+.direction-field input,.guided-field input{accent-color:#6cc9ab}
 .direction-field span{font-size:1rem;color:var(--accent2)}
+.guided-field span,.tempo-field span,.instrument-field span{font-size:.78rem;color:#c5d0dc}
+.tempo-field input{
+  width:48px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  text-align:center;
+  font:700 .82rem/1 Inter,Segoe UI,Arial,sans-serif;
+}
+.subdivision-field select,.instrument-field select{
+  min-height:30px;
+  border:0;
+  outline:0;
+  background:#0d1119;
+  color:var(--text);
+  font:.78rem/1 Inter,Segoe UI,Arial,sans-serif;
+}
+.instrument-field{
+  width:max-content;
+  max-width:100%;
+  margin-top:.4rem;
+  padding-left:.55rem;
+}
 .sr-only{
   position:absolute!important;
   width:1px!important;
@@ -139,8 +176,12 @@ button:hover,select:hover{border-color:var(--accent)}
   background:#101620;
 }
 .lesson-training-controls .training-start{height:32px}
+.lesson-training-controls .training-listen{height:32px}
 .lesson-training-controls .transpose-field input{height:32px}
-.lesson-training-controls .direction-field{min-height:32px}
+.lesson-training-controls .direction-field,
+.lesson-training-controls .guided-field,
+.lesson-training-controls .tempo-field,
+.lesson-training-controls .subdivision-field{min-height:32px}
 .lesson-training-controls[data-ready="false"]{opacity:.68}
 
 .trainer-overlay{

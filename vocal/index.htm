@@ -29,6 +29,7 @@
       <span>Treino principal</span>
       <div class="training-controls" data-training-key="base">
         <button id="baseStartBtn" class="training-start" type="button">Início</button>
+        <button id="baseListenBtn" class="training-listen" type="button" title="Ouvir o guia deste treino">Ouvir</button>
         <label class="transpose-field" title="Transposição atual em semitons (de -8 a +8)">
           <span class="sr-only">Transposição em semitons</span>
           <input id="baseTranspose" type="number" min="-8" max="8" step="1" value="0" inputmode="numeric">
@@ -37,7 +38,33 @@
           <input id="baseDirection" type="checkbox" checked>
           <span>↑</span>
         </label>
+        <label class="guided-field" title="Marcado: o instrumento guia toca junto com a voz. Desmarcado: toca apenas a nota inicial.">
+          <input id="baseGuided" type="checkbox" checked>
+          <span>Guia</span>
+        </label>
+        <label class="tempo-field" title="Andamento deste treino em batidas por minuto">
+          <span class="sr-only">Batidas por minuto</span>
+          <input id="baseBpm" type="number" min="40" max="180" step="1" value="80" inputmode="numeric">
+          <span>bpm</span>
+        </label>
+        <label class="subdivision-field" title="Quantidade de notas por batida">
+          <span class="sr-only">Notas por batida</span>
+          <select id="baseSubdivision">
+            <option value="1">1/pulso</option>
+            <option value="2">2/pulso</option>
+            <option value="3">3/pulso</option>
+            <option value="4">4/pulso</option>
+          </select>
+        </label>
       </div>
+      <label class="instrument-field" title="Som usado pelo guia auditivo">
+        <span>Som do guia</span>
+        <select id="guideInstrumentSelect">
+          <option value="acoustic_guitar_nylon">Violão nylon</option>
+          <option value="acoustic_guitar_steel">Violão aço</option>
+          <option value="acoustic_grand_piano">Piano acústico</option>
+        </select>
+      </label>
     </div>
   </section>
 
@@ -54,7 +81,7 @@
 <div id="trainerOverlay" class="trainer-overlay" hidden>
   <div class="trainer-dialog" role="dialog" aria-modal="true" aria-label="Treino assistido de afinação">
     <button id="trainerCloseBtn" class="trainer-close" type="button" aria-label="Fechar treino">×</button>
-    <iframe id="trainerFrame" title="Afinador e avaliador do exercício" allow="microphone"></iframe>
+    <iframe id="trainerFrame" src="trainer/index.html" title="Afinador e avaliador do exercício" allow="microphone; autoplay"></iframe>
   </div>
 </div>
 

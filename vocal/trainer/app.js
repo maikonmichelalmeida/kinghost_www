@@ -100,6 +100,7 @@ const CONFIG = {
   preSingCountdownStepMs: 360,
   preSingGuideDurationMs: 420,
   preSingGuideGapMs: 220,
+  quickCountInMs: 300,
 };
 
 // ------------------------------------------------------------
@@ -125,6 +126,7 @@ const trainerContextEl = $("trainerContext");
 const vocalSequenceEl = $("vocalSequence");
 const guideSequenceEl = $("guideSequence");
 const transposeDisplayEl = $("transposeDisplay");
+const tempoDisplayEl = $("tempoDisplay");
 const breathingSection = $("breathingSection");
 const breathingTimerEl = $("breathingTimer");
 const statusEl = $("status");
@@ -1022,7 +1024,7 @@ async function startBreathingFlow() {
   if (!["WAITING", "DONE"].includes(appState)) return;
   resetSessionVisuals();
   setControlsLocked(true);
-  setAppState("COUNTDOWN");
+  setAppState("PREPARING");
   statusEl.textContent = "Preparando metrônomo…";
 
   try {
@@ -1034,14 +1036,8 @@ async function startBreathingFlow() {
     return;
   }
 
-  const beatMs = currentBeatDurationMs();
-  for (let count = 4; count >= 1; count--) {
-    if (appState !== "COUNTDOWN") return;
-    setCue("Prepare-se", "Entrada após quatro pulsos.", String(count));
-    playMetronomeClick(count === 4);
-    await new Promise(resolve => setTimeout(resolve, beatMs));
-  }
-
+  if (appState !== "PREPARING") return;
+  await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
   const durationSec = clampNumber(integrationConfig?.breathingDurationSec, 8, 180, 30);
   breathingEndAt = performance.now() + durationSec * 1000;
@@ -1049,13 +1045,26 @@ async function startBreathingFlow() {
   setAppState("LISTENING");
   setCue("COMECE", "Mantenha a coordenação indicada pela aula até o fim do tempo.", "●");
   statusEl.textContent = `Treino cronometrado por ${durationSec} segundos, sem avaliação de afinação.`;
-  playMetronomeClick(true);
-  metronomeTimerId = setInterval(() => playMetronomeClick(false), beatMs);
+  if (integrationConfig?.guided !== false) {
+    const beatMs = currentBeatDurationMs();
+    playMetronomeClick(true);
+    metronomeTimerId = setInterval(() => playMetronomeClick(false), beatMs);
+  }
   breathingTimerId = setInterval(() => {
     const remaining = (breathingEndAt - performance.now()) / 1000;
     breathingTimerEl.textContent = formatClock(remaining);
     if (remaining <= 0) finishBreathingAutomatically(durationSec);
   }, 100);
+}
+
+async function runQuickCountIn() {
+  setAppState("COUNTDOWN");
+  for (let count = 4; count >= 1; count--) {
+    if (appState !== "COUNTDOWN") return;
+    setCue("Prepare-se", "Quatro batidas rápidas e entrada imediata.", String(count));
+    playMetronomeClick(count === 4);
+    await new Promise(resolve => setTimeout(resolve, CONFIG.quickCountInMs));
+  }
 }
 
 async function finishBreathingAutomatically(durationSec) {
@@ -1101,7 +1110,7 @@ async function startDemoFlow() {
   setControlsLocked(true);
   setAppState("PREPARING");
   setCue("Preparando áudio…", "Carregando o instrumento e preparando o microfone.", "");
-  statusEl.textContent = "Preparando demonstração…";
+  statusEl.textContent = "Preparando o início automático…";
 
   try {
     await Promise.all([prepareMicrophone(), prepareGuideInstrument()]);
@@ -1109,116 +1118,71 @@ async function startDemoFlow() {
     await teardownAnalysisAudio();
     setControlsLocked(false);
     setAppState("WAITING");
-    setCue("Pressione ESPAÇO", "para ouvir o exercício e depois cantar", "ESPAÇO");
+    setCue("Não foi possível iniciar", "Feche e abra novamente para tentar.", "!");
     statusEl.textContent = `Não foi possível preparar o áudio: ${err.message}`;
     return;
   }
 
   if (appState !== "PREPARING") return;
-  playDemonstration();
-}
-
-function playDemonstration() {
-  const runId = ++demoRunId;
-  clearDemoTimers();
-  guideInstrument.stop();
-
-  const noteMs = currentNoteDurationMs();
-  const noteSec = noteMs / 1000;
-  const leadInMs = 120;
-
-  setAppState("DEMO");
-  setCue("Demonstração", "Pressione ESPAÇO novamente para começar a cantar antes do fim.", "OUÇA");
-  statusEl.textContent = `Reproduzindo guia com ${noteMs} ms por nota.`;
-
-  // As notas são disparadas uma a uma, e não todas agendadas de uma vez. Assim,
-  // um segundo ESPAÇO realmente cancela as notas futuras e passa imediatamente
-  // para a preparação da voz.
-  guidePattern.forEach((note, i) => {
-    demoTimers.push(setTimeout(() => {
-      if (runId !== demoRunId || appState !== "DEMO") return;
-      renderDemoNotes(i);
-      const subdivision = clampNumber(subdivisionSelect.value, 1, 4, 1);
-      if (i % subdivision === 0) playMetronomeClick(i === 0);
-      if (note) {
-        guideInstrument.start({
-          note: note.midi,
-          duration: Math.max(0.12, noteSec * 0.82),
-          velocity: 86,
-        });
-      }
-    }, leadInMs + i * noteMs));
-  });
-
-  const totalMs = leadInMs + guidePattern.length * noteMs + 80;
-  demoTimers.push(setTimeout(() => {
-    if (runId !== demoRunId || appState !== "DEMO") return;
-    beginListeningTransition();
-  }, totalMs));
-}
-
-function skipDemonstration() {
-  if (appState !== "DEMO") return;
-  demoRunId++;
-  clearDemoTimers();
-  try { guideInstrument?.stop(); } catch {}
-  beginListeningTransition();
-}
-
-async function beginListeningTransition() {
-  if (!["DEMO", "PREPARING"].includes(appState)) return;
-
-  demoRunId++;
-  clearDemoTimers();
-  try { guideInstrument?.stop(); } catch {}
-  renderDemoNotes(-1);
-
-  setAppState("COUNTDOWN");
-  statusEl.textContent = "Prepare-se para cantar.";
-  pitchSection.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  const steps = [
-    ["Prepare-se", "A análise começa em instantes.", "3"],
-    ["Prepare-se", "Respire e prepare o ataque.", "2"],
-    ["Prepare-se", "Em seguida você ouvirá a nota inicial.", "1"],
-  ];
-
-  const countdownBeatMs = currentBeatDurationMs();
-
-  for (const [title, text, pulse] of steps) {
-    if (appState !== "COUNTDOWN") return;
-    setCue(title, text, pulse);
-    playMetronomeClick(pulse === "3");
-    await new Promise((resolve) => setTimeout(resolve, countdownBeatMs));
-  }
-
+  await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
 
-  // Referência final imediatamente antes do canto. A análise do microfone ainda
-  // NÃO começou, então o instrumento não contamina a primeira nota detectada.
-  const first = expectedNotes[0];
-  if (first && guideInstrument && guidePattern[0]) {
-    setCue("Nota inicial", `Use ${first.label} como referência e entre depois do som.`, first.label);
-    statusEl.textContent = `Nota inicial de referência: ${first.label}.`;
-    renderDemoNotes(first.index);
-    try {
-      guideInstrument.start({
-        note: first.midi,
-        duration: CONFIG.preSingGuideDurationMs / 1000,
-        velocity: 84,
-      });
-    } catch {}
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, CONFIG.preSingGuideDurationMs + CONFIG.preSingGuideGapMs)
-    );
-    if (appState !== "COUNTDOWN") return;
+  const guided = integrationConfig?.guided !== false;
+  if (!guided) {
+    const firstReference = guidePattern[0];
+    if (firstReference && guideInstrument) {
+      setCue("Nota inicial", `Use ${firstReference.label} como referência e entre em seguida.`, firstReference.label);
+      statusEl.textContent = `Referência inicial: ${firstReference.label}. Depois, você canta sem guia.`;
+      renderDemoNotes(0);
+      try {
+        guideInstrument.start({
+          note: firstReference.midi,
+          duration: CONFIG.preSingGuideDurationMs / 1000,
+          velocity: 84,
+        });
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, CONFIG.preSingGuideDurationMs + 90));
+      if (appState !== "COUNTDOWN") return;
+    }
   }
 
   renderDemoNotes(-1);
-  setCue("CANTE", "Agora. O microfone começa a ouvir sua execução.", "●");
-  statusEl.textContent = "Comece pela nota inicial que acabou de ouvir.";
+  setCue(
+    "CANTE",
+    guided ? "O guia entra junto com a sua voz. Use fones para evitar retorno no microfone." : "Sem guia contínuo: siga a pulsação memorizada.",
+    "●"
+  );
+  statusEl.textContent = guided
+    ? "Microfone ativo e guia simultâneo. As notas de desafio permanecem mudas."
+    : "Microfone ativo. Somente a nota inicial foi usada como referência.";
   await startAnalysisFromPreparedMic();
+  if (guided && appState === "LISTENING") scheduleSimultaneousGuide();
+}
+
+function scheduleSimultaneousGuide() {
+  const runId = ++demoRunId;
+  clearDemoTimers();
+  const noteMs = currentNoteDurationMs();
+  const noteSec = noteMs / 1000;
+
+  guidePattern.forEach((note, index) => {
+    demoTimers.push(setTimeout(() => {
+      if (runId !== demoRunId || appState !== "LISTENING") return;
+      renderDemoNotes(index);
+      if (!note) return;
+      try {
+        guideInstrument.start({
+          note: note.midi,
+          duration: Math.max(.12, noteSec * .82),
+          velocity: 80,
+        });
+      } catch {}
+    }, index * noteMs));
+  });
+
+  demoTimers.push(setTimeout(() => {
+    if (runId === demoRunId) renderDemoNotes(-1);
+  }, guidePattern.length * noteMs + 40));
 }
 
 async function startAnalysisFromPreparedMic() {
@@ -1560,7 +1524,10 @@ function checkAutomaticFinish(now) {
 async function cancelListeningSession() {
   if (appState !== "LISTENING") return;
 
+  demoRunId++;
+  clearDemoTimers();
   clearBreathingTimers();
+  try { guideInstrument?.stop(); } catch {}
   stoppingAutomatically = true;
   setAppState("CANCELLING");
   setCue("Tentativa cancelada", "Nenhuma avaliação será gerada.", "ESPAÇO");
@@ -1583,7 +1550,7 @@ async function cancelListeningSession() {
   summaryEl.textContent = "Tentativa cancelada — nenhum resultado foi calculado.";
   resultsBody.innerHTML = "";
   extrasEl.textContent = "";
-  setCue("Pressione ESPAÇO", "para iniciar uma nova demonstração", "ESPAÇO");
+  setCue("Pressione ESPAÇO", "para iniciar uma nova tentativa", "ESPAÇO");
 }
 
 async function cancelPendingFlow() {
@@ -1602,6 +1569,9 @@ async function cancelPendingFlow() {
 async function finishAnalysisAutomatically() {
   if (stoppingAutomatically || appState !== "LISTENING") return;
   stoppingAutomatically = true;
+  demoRunId++;
+  clearDemoTimers();
+  try { guideInstrument?.stop(); } catch {}
   setAppState("EVALUATING");
   setCue("Analisando…", "Organizando as notas e calculando os desvios em cents.", "···");
   statusEl.textContent = "Fim da voz detectado. Avaliando automaticamente…";
@@ -1850,8 +1820,12 @@ function drawPitchGraph(nowMs = 0) {
   const xFor = (t) => ((t - leftT) / (rightT - leftT)) * cssWidth;
   const yFor = (midi) => cssHeight - ((midi - minMidi) / (maxMidi - minMidi)) * cssHeight;
 
-  // Guias horizontais das notas do exercício.
-  const uniqueMidis = [...new Set(expectedMidis)];
+  // As notas deliberadamente mudas continuam sendo avaliadas, mas não ganham
+  // linha nem rótulo: o gráfico não pode entregar a referência do desafio.
+  const referenceMidis = expectedNotes
+    .filter((_, index) => guidePattern[index])
+    .map((note) => note.midi);
+  const uniqueMidis = [...new Set(referenceMidis)];
   ctx.font = "12px system-ui";
   uniqueMidis.forEach((midi) => {
     const y = yFor(midi);
@@ -1950,28 +1924,35 @@ async function applyIntegrationConfig(config) {
   exerciseInput.value = vocalNotes.join(" ");
   bpmInput.value = String(clampNumber(config.bpm, 40, 180, 80));
   subdivisionSelect.value = String(clampNumber(config.subdivision, 1, 4, 1));
+  instrumentSelect.value = config.instrument || "acoustic_guitar_nylon";
   noteDurationInput.value = String(currentNoteDurationMs());
   guidePattern = parseGuidePattern(guideNotes);
 
   trainerTitleEl.textContent = `${config.exerciseName} · ${config.trainingTitle}`;
   trainerContextEl.textContent = config.objective || "Treino guiado a partir do trecho selecionado na aula.";
   vocalSequenceEl.textContent = config.mode === "breathing" ? "Sem alvo de afinação" : (vocalNotes.join(" ") || "—");
+  const guided = config.guided !== false;
   guideSequenceEl.textContent = config.mode === "breathing"
-    ? `Metrônomo a ${bpmInput.value} bpm`
-    : (guideNotes.map(note => note || "—").join(" ") || "Sem instrumento");
+    ? (guided ? `Metrônomo contínuo a ${bpmInput.value} bpm` : "Somente quatro batidas de entrada")
+    : `${guided ? "Simultâneo" : "Só nota inicial"}: ${guideNotes.map(note => note || "—").join(" ") || "sem referência"}`;
   const shift = Number(config.transpose) || 0;
   transposeDisplayEl.textContent = `${shift > 0 ? "+" : ""}${shift} ${Math.abs(shift) === 1 ? "semitom" : "semitons"}`;
+  tempoDisplayEl.textContent = `${bpmInput.value} bpm · ${subdivisionSelect.value} nota(s)/pulso`;
 
   const breathing = config.mode === "breathing";
   document.body.classList.toggle("breathing-mode", breathing);
   breathingSection.hidden = !breathing;
   breathingTimerEl.textContent = formatClock(config.breathingDurationSec || 30);
-  startButton.textContent = breathing ? "Iniciar treino cronometrado" : "Iniciar demonstração e avaliação";
+  startButton.textContent = breathing ? "Iniciar treino cronometrado" : "Iniciar avaliação";
 
   initializeUi();
   renderDemoNotes(-1);
-  statusEl.textContent = "Configuração recebida. Clique em Iniciar treino.";
-  setCue("Pronto para começar", breathing ? "Quatro pulsos antecedem o treino." : "O guia e o metrônomo antecedem a captação.", "INÍCIO");
+  statusEl.textContent = "Configuração recebida. Início automático em instantes.";
+  setCue("Preparando", "O treino começa sozinho com quatro batidas rápidas.", "4");
+  const receivedConfig = integrationConfig;
+  setTimeout(() => {
+    if (integrationConfig === receivedConfig && appState === "WAITING") startDemoFlow();
+  }, 40);
 }
 
 function initializeUi() {
@@ -1987,10 +1968,10 @@ function initializeUi() {
   currentCentsEl.textContent = "—";
   currentClarityEl.textContent = "—";
   trackerStateEl.textContent = "—";
-  statusEl.textContent = integrationConfig ? "Aguardando início." : "Aguardando configuração da aula.";
+  statusEl.textContent = integrationConfig ? "Preparando início automático." : "Aguardando configuração da aula.";
   setControlsLocked(false);
   setAppState("WAITING");
-  setCue("Pronto para começar", "Use o botão Iniciar treino ou a tecla Espaço.", "INÍCIO");
+  setCue("Preparando", "O treino inicia automaticamente ao abrir.", "4");
   drawPitchGraph(0);
 }
 
@@ -2006,10 +1987,6 @@ window.addEventListener("keydown", (event) => {
 
   if (["WAITING", "DONE"].includes(appState)) {
     startDemoFlow();
-  } else if (appState === "DEMO") {
-    // Durante a demonstração, o segundo ESPAÇO continua significando
-    // “já entendi, pode começar a escutar”.
-    skipDemonstration();
   } else if (appState === "LISTENING") {
     // Durante o canto, ESPAÇO é um cancelamento explícito: para o microfone e
     // NÃO chama a rotina de avaliação.
@@ -2035,7 +2012,6 @@ retryBtn.addEventListener("click", async () => {
   if (!integrationConfig) return;
   const config = integrationConfig;
   await applyIntegrationConfig(config);
-  startDemoFlow();
 });
 
 completeBtn.addEventListener("click", () => {
@@ -2068,6 +2044,7 @@ window.addEventListener("message", async event => {
     await applyIntegrationConfig(message.config);
   } else if (message.type === "vocal-trainer-stop") {
     await stopCurrentActivity();
+    integrationConfig = null;
     setAppState("WAITING");
   }
 });

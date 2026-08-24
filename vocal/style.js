@@ -482,8 +482,13 @@ const tabImage = document.getElementById('tabImage');
 const audio = document.getElementById('exerciseAudio');
 const frame = document.getElementById('lessonFrame');
 const baseStartBtn = document.getElementById('baseStartBtn');
+const baseListenBtn = document.getElementById('baseListenBtn');
 const baseTranspose = document.getElementById('baseTranspose');
 const baseDirection = document.getElementById('baseDirection');
+const baseGuided = document.getElementById('baseGuided');
+const baseBpm = document.getElementById('baseBpm');
+const baseSubdivision = document.getElementById('baseSubdivision');
+const guideInstrumentSelect = document.getElementById('guideInstrumentSelect');
 const trainerOverlay = document.getElementById('trainerOverlay');
 const trainerFrame = document.getElementById('trainerFrame');
 const trainerCloseBtn = document.getElementById('trainerCloseBtn');
@@ -491,6 +496,8 @@ const trainerCloseBtn = document.getElementById('trainerCloseBtn');
 const STORAGE_KEY = 'vocal-friendly-environment-v2';
 const TRANSPOSE_MIN = -8;
 const TRANSPOSE_MAX = 8;
+const BPM_MIN = 40;
+const BPM_MAX = 180;
 
 function readEnvironment() {
   try {
@@ -505,6 +512,7 @@ const environment = readEnvironment();
 environment.training = environment.training && typeof environment.training === 'object'
   ? environment.training
   : {};
+environment.instrument = environment.instrument || 'acoustic_guitar_nylon';
 
 let currentDay = SESSIONS[environment.day] ? environment.day : 'A';
 let sessionIndex = Number.isInteger(environment.sessionIndex) ? environment.sessionIndex : 0;
@@ -514,6 +522,11 @@ let currentExerciseId = byId[environment.exerciseId]
 let activeTrainingKey = null;
 let pendingTrainerConfig = null;
 let trainerReady = false;
+let previewAudioContext = null;
+let previewInstrument = null;
+let previewInstrumentName = null;
+let previewRunId = 0;
+let previewTimers = [];
 
 function saveEnvironment() {
   environment.day = currentDay;
@@ -527,18 +540,35 @@ function clampTranspose(value) {
   return Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Number.isFinite(parsed) ? parsed : 0));
 }
 
-function getTrainingState(key) {
+function clampBpm(value, fallback = 80) {
+  const parsed = Number.parseInt(value, 10);
+  return Math.min(BPM_MAX, Math.max(BPM_MIN, Number.isFinite(parsed) ? parsed : fallback));
+}
+
+function clampSubdivision(value, fallback = 1) {
+  const parsed = Number.parseInt(value, 10);
+  return Math.min(4, Math.max(1, Number.isFinite(parsed) ? parsed : fallback));
+}
+
+function getTrainingState(key, defaults = {}) {
   const raw = environment.training[key] || {};
   return {
     shift: clampTranspose(raw.shift),
     up: raw.up !== false,
+    guided: raw.guided !== false,
+    bpm: clampBpm(raw.bpm, defaults.bpm || 80),
+    subdivision: clampSubdivision(raw.subdivision, defaults.subdivision || 1),
   };
 }
 
 function setTrainingState(key, next) {
+  const current = getTrainingState(key, next);
   environment.training[key] = {
-    shift: clampTranspose(next.shift),
-    up: next.up !== false,
+    shift: clampTranspose(next.shift ?? current.shift),
+    up: next.up == null ? current.up : next.up !== false,
+    guided: next.guided == null ? current.guided : next.guided !== false,
+    bpm: clampBpm(next.bpm, current.bpm),
+    subdivision: clampSubdivision(next.subdivision, current.subdivision),
   };
   saveEnvironment();
   return environment.training[key];
@@ -596,12 +626,19 @@ function bpmFromText(text, fallback) {
   return fallback;
 }
 
-function defaultBpm(exercise) {
-  if (exercise.type === 'Respiração') return 60;
-  if (exercise.type === 'Agilidade') return 104;
-  if (exercise.type === 'Articulação') return 88;
-  if (exercise.type === 'Escalas') return 84;
-  return 80;
+// Ritmos-base revistos por finalidade: lentos para sustentação/alcance,
+// moderados para escalas e articulação, e mais rápidos para agilidade.
+const EXERCISE_TEMPO_DEFAULTS = {
+  1:[60,1], 2:[88,1], 3:[60,1], 4:[80,1], 5:[76,1], 6:[84,1], 7:[72,1], 8:[80,1],
+  9:[84,1], 10:[84,1], 11:[80,1], 12:[88,1], 13:[76,1], 14:[72,1], 15:[88,1], 16:[92,1],
+  17:[92,1], 18:[80,1], 19:[104,2], 20:[88,1], 21:[72,1], 22:[72,1], 23:[80,1], 24:[72,1],
+  25:[66,1], 26:[76,1], 27:[96,2], 28:[104,2], 29:[96,2], 30:[96,3], 31:[96,3], 32:[80,1],
+  33:[76,1], 34:[80,1], 35:[76,1], 36:[72,1], 37:[72,1], 38:[72,1], 39:[72,1],
+};
+
+function defaultTempo(exercise) {
+  const [bpm, subdivision] = EXERCISE_TEMPO_DEFAULTS[exercise.id] || [80, 1];
+  return { bpm, subdivision };
 }
 
 function subdivisionFromText(exercise, title, text) {
@@ -609,7 +646,7 @@ function subdivisionFromText(exercise, title, text) {
   if (/tercina|triplet/i.test(sample)) return 3;
   if (/semicolcheia|quatro notas por pulso/i.test(sample)) return 4;
   if (/colcheia|duas notas por pulso/i.test(sample)) return 2;
-  return exercise.type === 'Agilidade' ? 2 : 1;
+  return defaultTempo(exercise).subdivision;
 }
 
 function breathingDurationFromText(title, text, bpm) {
@@ -632,24 +669,64 @@ function isUnpitchedSection(exercise, title, text) {
 function guideForSection(vocalNotes, title, text) {
   const sample = `${title}\n${text}`;
   let guide = [...vocalNotes];
+  const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
   if (/fantasm/i.test(sample)) {
     const targets = noteTokens(title);
-    const targetSet = new Set(targets.length ? targets : noteTokens(text).slice(0, 1));
-    guide = vocalNotes.map(note => targetSet.has(note) ? null : note);
+    const targetSet = new Set(targets);
+    if (targetSet.size) guide = vocalNotes.map(note => targetSet.has(note) ? null : note);
   }
 
-  const guitarSentence = String(text || '').split(/\r?\n/).find(line => /viol[aã]o\s+(?:toca|marca)|toque\s+(?:apenas|somente)|toque.+cante/i.test(line));
+  // Quando o texto escreve uma pausa na linha do violão, preservamos a mesma
+  // posição na sequência vocal. Funciona tanto com A2/B2 quanto com A/B.
+  const silentLine = lines.find(line => /sil[eê]ncio/i.test(line) && /viol[aã]o|\b[A-G](?:[#♯b♭])?\b/i.test(line));
+  if (silentLine) {
+    const beforeSilence = silentLine.split(/\[?\s*sil[eê]ncio/i)[0];
+    let notesBefore = noteTokens(beforeSilence).length;
+    if (!notesBefore) {
+      const musicalPart = beforeSilence.includes(':') ? beforeSilence.split(':').slice(1).join(':') : beforeSilence;
+      notesBefore = (musicalPart.match(/\b[A-G](?:[#♯b♭])?\b/g) || []).length;
+    }
+    if (notesBefore > 0 && notesBefore < guide.length) guide[notesBefore] = null;
+  }
+
+  const guitarSentence = lines.find(line => /viol[aã]o\s+(?:toca|marca)|toque\s+(?:apenas|somente)|toque.+cante/i.test(line));
   if (guitarSentence && /apenas|somente|marca|[aâ]ncora/i.test(guitarSentence)) {
     const anchors = new Set(noteTokens(guitarSentence));
     if (anchors.size) guide = vocalNotes.map(note => anchors.has(note) ? note : null);
   }
 
-  if (/sem viol[aã]o|retire (?:completamente )?o viol[aã]o|voz sozinha/i.test(sample)) {
+  if (/primeira e (?:a )?[uú]ltima nota de cada (?:triplet|tercina)/i.test(sample)) {
+    guide = vocalNotes.map((note, index) => index % 3 === 0 || index % 3 === 2 ? note : null);
+  } else if (/pontos? (?:de partida|de in[ií]cio) (?:dos|das) (?:sete )?(?:triplets?|tercinas?|c[eé]lulas?)/i.test(sample)) {
+    const groupSize = /triplet|tercina/i.test(sample) ? 3 : 3;
+    guide = vocalNotes.map((note, index) => index % groupSize === 0 ? note : null);
+  } else if (/notas? superiores? de cada zigue-zague/i.test(sample)) {
+    guide = vocalNotes.map((note, index) => {
+      const midi = noteToMidi(note);
+      const previous = noteToMidi(vocalNotes[index - 1]);
+      const next = noteToMidi(vocalNotes[index + 1]);
+      return midi != null && (previous == null || midi >= previous) && (next == null || midi >= next) ? note : null;
+    });
+  }
+
+  const removedTargets = lines
+    .filter(line => /retire.+viol[aã]o|retire do viol[aã]o/i.test(line))
+    .flatMap(noteTokens);
+  if (removedTargets.length) {
+    const removed = new Set(removedTargets);
+    guide = guide.map(note => removed.has(note) ? null : note);
+  } else if (/retire do viol[aã]o a nota superior/i.test(sample)) {
+    const midis = vocalNotes.map(noteToMidi).filter(Number.isFinite);
+    const highest = midis.length ? Math.max(...midis) : null;
+    if (highest != null) guide = guide.map(note => noteToMidi(note) === highest ? null : note);
+  }
+
+  if (/sem viol[aã]o|retire (?:completamente )?o viol[aã]o|voz sozinha|fa[cç]a.+sozinh[oa]|cante.+sozinh[oa]/i.test(sample)) {
     guide = vocalNotes.map(() => null);
   }
 
-  if (/apenas a t[oô]nica|somente a t[oô]nica/i.test(sample)) {
+  if (/apenas a t[oô]nica|somente a t[oô]nica|confirma[cç][aã]o tardia/i.test(sample)) {
     guide = vocalNotes.map((note, index) => index === 0 ? note : null);
   }
 
@@ -658,16 +735,20 @@ function guideForSection(vocalNotes, title, text) {
 
 function buildTrainingConfig(exercise, section = {}) {
   const key = section.trainingKey || `${exercise.id}:base`;
-  const state = getTrainingState(key);
   const title = section.title || 'Exercício principal';
   const text = section.text || '';
+  const tempoDefault = defaultTempo(exercise);
+  const suggestedBpm = bpmFromText(`${title}\n${text}`, tempoDefault.bpm);
+  const suggestedSubdivision = subdivisionFromText(exercise, title, text);
+  const state = getTrainingState(key, { bpm: suggestedBpm, subdivision: suggestedSubdivision });
+  setTrainingState(key, state);
   const baseNotes = exercise.notes === 'qualquer' ? [] : exercise.notes.split(/\s+/).filter(Boolean);
   const explicit = bestExplicitSequence(title, text);
-  const guideVariation = /fantasm|notas?-[aâ]ncora|notas? [aâ]ncora|viol[aã]o toca apenas|cante toda|cante tudo|escala sozinho|apenas a t[oô]nica/i.test(`${title}\n${text}`);
+  const guideVariation = /fantasm|notas?-[aâ]ncora|notas? [aâ]ncora|viol[aã]o (?:toca|marca) apenas|toque (?:apenas|somente)|retire.+viol[aã]o|sem viol[aã]o|cante toda|cante tudo|escala sozinh|apenas a t[oô]nica|confirma[cç][aã]o tardia|\[?\s*sil[eê]ncio/i.test(`${title}\n${text}`);
   const sourceNotes = guideVariation && baseNotes.length ? baseNotes : (explicit.length ? explicit : baseNotes);
   const mode = isUnpitchedSection(exercise, title, text) || !sourceNotes.length ? 'breathing' : 'pitch';
-  const bpm = bpmFromText(`${title}\n${text}`, defaultBpm(exercise));
-  const subdivision = subdivisionFromText(exercise, title, text);
+  const bpm = state.bpm;
+  const subdivision = state.subdivision;
   const shiftedNotes = transposeNotes(sourceNotes, state.shift);
   const baseGuide = guideForSection(sourceNotes, title, text);
   const shiftedGuide = baseGuide.map(note => note == null ? null : transposeNotes([note], state.shift)[0]);
@@ -682,6 +763,8 @@ function buildTrainingConfig(exercise, section = {}) {
     mode,
     transpose: state.shift,
     directionUp: state.up,
+    guided: state.guided,
+    instrument: environment.instrument,
     vocalNotes: shiftedNotes,
     guideNotes: shiftedGuide,
     bpm,
@@ -700,13 +783,111 @@ function postLessonContext() {
     exercise: { id: exercise.id, name: exercise.name, type: exercise.type, notes: exercise.notes },
     states: environment.training,
     limits: { min: TRANSPOSE_MIN, max: TRANSPOSE_MAX },
+    tempoDefaults: defaultTempo(exercise),
   }, '*');
 }
 
 function syncBaseControls() {
-  const state = getTrainingState(`${currentExerciseId}:base`);
+  const exercise = byId[currentExerciseId];
+  const state = getTrainingState(`${currentExerciseId}:base`, defaultTempo(exercise));
   baseTranspose.value = state.shift;
   baseDirection.checked = state.up;
+  baseDirection.nextElementSibling.textContent = state.up ? '↑' : '↓';
+  baseGuided.checked = state.guided;
+  baseBpm.value = state.bpm;
+  baseSubdivision.value = String(state.subdivision);
+  guideInstrumentSelect.value = environment.instrument;
+}
+
+function clearPreview() {
+  previewRunId += 1;
+  previewTimers.forEach(clearTimeout);
+  previewTimers = [];
+  try { previewInstrument?.stop(); } catch (_) {}
+  document.querySelectorAll('.training-listen[data-playing="true"]').forEach(button => {
+    button.dataset.playing = 'false';
+    button.textContent = 'Ouvir';
+  });
+}
+
+async function ensurePreviewInstrument() {
+  if (!previewAudioContext || previewAudioContext.state === 'closed') {
+    previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
+  }
+  await previewAudioContext.resume();
+  const name = environment.instrument;
+  if (previewInstrument && previewInstrumentName === name) return previewInstrument;
+  try { previewInstrument?.dispose(); } catch (_) {}
+  const { Soundfont } = await import('https://unpkg.com/smplr/dist/index.mjs');
+  previewInstrumentName = name;
+  previewInstrument = Soundfont(previewAudioContext, {
+    instrument: name,
+    kit: 'MusyngKite',
+    volume: 105,
+  });
+  await previewInstrument.ready;
+  return previewInstrument;
+}
+
+function playPreviewClick(accent = false) {
+  if (!previewAudioContext || previewAudioContext.state === 'closed') return;
+  const now = previewAudioContext.currentTime;
+  const oscillator = previewAudioContext.createOscillator();
+  const gain = previewAudioContext.createGain();
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(accent ? 1320 : 880, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(accent ? 0.12 : 0.07, now + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+  oscillator.connect(gain).connect(previewAudioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.065);
+}
+
+async function previewTraining(config, button) {
+  clearPreview();
+  const runId = previewRunId;
+  button.dataset.playing = 'true';
+  button.textContent = 'Parar';
+
+  try {
+    if (config.mode === 'breathing') {
+      if (!previewAudioContext || previewAudioContext.state === 'closed') previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
+      await previewAudioContext.resume();
+      [0, 1, 2, 3].forEach(index => previewTimers.push(setTimeout(() => playPreviewClick(index === 0), index * 300)));
+      previewTimers.push(setTimeout(clearPreview, 1350));
+      return;
+    }
+
+    const guide = Array.isArray(config.guideNotes) ? config.guideNotes : [];
+    if (!guide.some(Boolean)) {
+      if (!previewAudioContext || previewAudioContext.state === 'closed') previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
+      await previewAudioContext.resume();
+      const beatMs = Math.round(60000 / config.bpm);
+      [0, 1, 2, 3].forEach(index => previewTimers.push(setTimeout(() => playPreviewClick(index === 0), index * beatMs)));
+      previewTimers.push(setTimeout(clearPreview, 4 * beatMs + 80));
+      return;
+    }
+
+    const instrument = await ensurePreviewInstrument();
+    if (runId !== previewRunId) return;
+    const noteMs = Math.round(60000 / (config.bpm * config.subdivision));
+    const noteSec = noteMs / 1000;
+    guide.forEach((note, index) => {
+      previewTimers.push(setTimeout(() => {
+        if (runId !== previewRunId || !note) return;
+        const midi = noteToMidi(note);
+        if (midi == null) return;
+        instrument.start({ note: midi, duration: Math.max(.12, noteSec * .82), velocity: 84 });
+      }, index * noteMs));
+    });
+    previewTimers.push(setTimeout(clearPreview, Math.max(600, guide.length * noteMs + 100)));
+  } catch (error) {
+    clearPreview();
+    button.textContent = 'Falhou';
+    button.title = `Não foi possível ouvir o guia: ${error.message}`;
+    previewTimers.push(setTimeout(() => { button.textContent = 'Ouvir'; }, 1500));
+  }
 }
 
 function postTrainerConfig() {
@@ -715,6 +896,7 @@ function postTrainerConfig() {
 }
 
 function openTrainer(config) {
+  clearPreview();
   activeTrainingKey = config.trainingKey;
   pendingTrainerConfig = config;
   trainerOverlay.hidden = false;
@@ -838,7 +1020,7 @@ function saveBaseTranspose(event) {
   if (event?.type === 'input' && (baseTranspose.value === '' || baseTranspose.value === '-')) return;
   const key = `${currentExerciseId}:base`;
   const current = getTrainingState(key);
-  const next = setTrainingState(key, { shift: baseTranspose.value, up: current.up });
+  const next = setTrainingState(key, { ...current, shift: baseTranspose.value });
   baseTranspose.value = next.shift;
 }
 baseTranspose.addEventListener('input', saveBaseTranspose);
@@ -847,12 +1029,47 @@ baseTranspose.addEventListener('change', saveBaseTranspose);
 baseDirection.addEventListener('change', () => {
   const key = `${currentExerciseId}:base`;
   const current = getTrainingState(key);
-  setTrainingState(key, { shift: current.shift, up: baseDirection.checked });
+  setTrainingState(key, { ...current, up: baseDirection.checked });
+  baseDirection.nextElementSibling.textContent = baseDirection.checked ? '↑' : '↓';
+});
+
+baseGuided.addEventListener('change', () => {
+  const key = `${currentExerciseId}:base`;
+  setTrainingState(key, { ...getTrainingState(key), guided: baseGuided.checked });
+});
+
+function saveBaseTempo() {
+  const key = `${currentExerciseId}:base`;
+  const current = getTrainingState(key, defaultTempo(byId[currentExerciseId]));
+  const next = setTrainingState(key, {
+    ...current,
+    bpm: baseBpm.value,
+    subdivision: baseSubdivision.value,
+  });
+  baseBpm.value = next.bpm;
+  baseSubdivision.value = String(next.subdivision);
+}
+baseBpm.addEventListener('change', saveBaseTempo);
+baseSubdivision.addEventListener('change', saveBaseTempo);
+
+guideInstrumentSelect.addEventListener('change', () => {
+  clearPreview();
+  environment.instrument = guideInstrumentSelect.value;
+  saveEnvironment();
 });
 
 baseStartBtn.addEventListener('click', () => {
   const exercise = byId[currentExerciseId];
   openTrainer(buildTrainingConfig(exercise, { trainingKey: `${exercise.id}:base`, title: 'Exercício principal' }));
+});
+
+baseListenBtn.addEventListener('click', () => {
+  if (baseListenBtn.dataset.playing === 'true') {
+    clearPreview();
+    return;
+  }
+  const exercise = byId[currentExerciseId];
+  previewTraining(buildTrainingConfig(exercise, { trainingKey: `${exercise.id}:base`, title: 'Exercício principal' }), baseListenBtn);
 });
 
 trainerCloseBtn.addEventListener('click', closeTrainer);
@@ -886,6 +1103,12 @@ window.addEventListener('message', event => {
       const exercise = byId[currentExerciseId];
       if (!exercise) return;
       openTrainer(buildTrainingConfig(exercise, message.section || {}));
+    } else if (message.type === 'vocal-preview-training') {
+      const exercise = byId[currentExerciseId];
+      if (!exercise) return;
+      const config = buildTrainingConfig(exercise, message.section || {});
+      previewTraining(config, document.createElement('button'));
+      frame.contentWindow?.postMessage({ type: 'vocal-preview-state', key: config.trainingKey, playing: true }, '*');
     }
   }
 });

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Treino assistido</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <main class="app">
@@ -21,6 +21,7 @@
         <div><span>Sequência vocal</span><strong id="vocalSequence">—</strong></div>
         <div><span>Guia</span><strong id="guideSequence">—</strong></div>
         <div><span>Transposição</span><strong id="transposeDisplay">0 semitons</strong></div>
+        <div><span>Ritmo</span><strong id="tempoDisplay">—</strong></div>
       </div>
 
       <input id="exercise" type="hidden" value="D3 E3 F#3 G3 A3 G3 F#3 E3 D3">
@@ -28,7 +29,7 @@
       <input id="clarityThreshold" type="hidden" value="0.86">
       <input id="rmsThreshold" type="hidden" value="0.008">
 
-      <div class="settings-grid primary-settings">
+      <div class="settings-grid primary-settings" hidden>
         <label>
           Andamento
           <div class="input-with-suffix">
@@ -55,17 +56,17 @@
         </label>
       </div>
 
-      <button id="startButton" class="start-button" type="button">Iniciar treino</button>
+      <button id="startButton" class="start-button" type="button" hidden>Iniciar treino</button>
 
       <div id="transportCue" class="transport-cue" data-state="waiting" aria-live="polite">
         <div id="cuePulse" class="cue-pulse">INÍCIO</div>
         <div class="cue-copy">
-          <strong id="cueTitle">Pronto para começar</strong>
-          <span id="cueText">O guia será tocado antes da captação.</span>
+          <strong id="cueTitle">Preparando</strong>
+          <span id="cueText">O treino começará automaticamente.</span>
         </div>
       </div>
 
-      <div id="demoNotes" class="demo-notes" aria-label="Notas da demonstração"></div>
+      <div id="demoNotes" class="demo-notes" aria-label="Referências auditivas do treino"></div>
       <p id="status" class="status">Aguardando.</p>
     </section>
 
@@ -108,6 +109,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
