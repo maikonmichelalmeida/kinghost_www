@@ -1,5 +1,6 @@
 (async () => {
 const { PitchDetector } = await import("https://esm.sh/pitchy@4");
+const { Soundfont } = await import("https://unpkg.com/smplr/dist/index.mjs");
 
 // ------------------------------------------------------------
 // CONFIGURAÇÃO
@@ -179,6 +180,7 @@ let lastVoicedT = null;
 let stoppingAutomatically = false;
 let integrationConfig = null;
 let guidePattern = [];
+let adaptiveGuide = null;
 let breathingTimerId = null;
 let metronomeTimerId = null;
 let breathingEndAt = 0;
@@ -901,6 +903,12 @@ function clearDemoTimers() {
   demoTimers = [];
 }
 
+function clearAdaptiveGuide() {
+  adaptiveGuide = null;
+  try { guideInstrument?.stop(); } catch {}
+  renderDemoNotes(-1);
+}
+
 function renderDemoNotes(activeIndex = -1) {
   demoNotesEl.innerHTML = "";
   const visualPattern = guidePattern.length ? guidePattern : expectedNotes;
@@ -1003,59 +1011,13 @@ async function prepareGuideInstrument() {
   }
 
   guideInstrumentName = name;
-  guideInstrument = createNativeGuideInstrument(guideAudioContext, name);
+  guideInstrument = Soundfont(guideAudioContext, {
+    instrument: name,
+    kit: "MusyngKite",
+    volume: 105,
+  });
+  await guideInstrument.ready;
   return guideInstrument;
-}
-
-function createNativeGuideInstrument(context, timbre = "acoustic_guitar_nylon") {
-  const active = new Set();
-  const tone = timbre === "acoustic_grand_piano"
-    ? { type: "triangle", harmonic: "sine", harmonicGain: .18, release: .12 }
-    : timbre === "acoustic_guitar_steel"
-      ? { type: "triangle", harmonic: "square", harmonicGain: .08, release: .09 }
-      : { type: "sine", harmonic: "triangle", harmonicGain: .16, release: .14 };
-
-  function start({ note, duration = .5, velocity = 82, when = context.currentTime }) {
-    const midi = Number(note);
-    if (!Number.isFinite(midi)) return;
-    const frequency = 440 * (2 ** ((midi - 69) / 12));
-    const startAt = Math.max(context.currentTime, Number(when) || context.currentTime);
-    const stopAt = startAt + Math.max(.08, Number(duration) || .5);
-    const master = context.createGain();
-    const fundamental = context.createOscillator();
-    const harmonic = context.createOscillator();
-    const harmonicGain = context.createGain();
-    const strength = Math.min(.18, Math.max(.035, (Number(velocity) || 82) / 650));
-
-    fundamental.type = tone.type;
-    fundamental.frequency.setValueAtTime(frequency, startAt);
-    harmonic.type = tone.harmonic;
-    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
-    harmonicGain.gain.setValueAtTime(tone.harmonicGain, startAt);
-    master.gain.setValueAtTime(.0001, startAt);
-    master.gain.exponentialRampToValueAtTime(strength, startAt + .012);
-    master.gain.setValueAtTime(strength * .86, Math.max(startAt + .02, stopAt - tone.release));
-    master.gain.exponentialRampToValueAtTime(.0001, stopAt);
-    fundamental.connect(master);
-    harmonic.connect(harmonicGain).connect(master);
-    master.connect(context.destination);
-    [fundamental, harmonic].forEach(oscillator => {
-      oscillator.__vocalStartAt = startAt;
-      active.add(oscillator);
-      oscillator.start(startAt);
-      oscillator.stop(stopAt + .02);
-      oscillator.addEventListener("ended", () => active.delete(oscillator), { once: true });
-    });
-  }
-
-  function stop() {
-    active.forEach(oscillator => {
-      try { oscillator.stop(Math.max(context.currentTime, oscillator.__vocalStartAt || context.currentTime)); } catch {}
-    });
-    active.clear();
-  }
-
-  return { start, stop, dispose: stop, ready: Promise.resolve() };
 }
 
 function resetSessionVisuals() {
@@ -1073,6 +1035,7 @@ function resetSessionVisuals() {
   voiceStarted = false;
   lastVoicedT = null;
   stoppingAutomatically = false;
+  adaptiveGuide = null;
   currentNoteEl.textContent = "—";
   currentHzEl.textContent = "—";
   currentCentsEl.textContent = "—";
@@ -1227,39 +1190,143 @@ async function startDemoFlow() {
     ? "Microfone ativo e guia simultâneo. As notas de desafio permanecem mudas."
     : "Microfone ativo. Somente a nota inicial foi usada como referência.";
   await startAnalysisFromPreparedMic();
-  if (guided && appState === "LISTENING") scheduleSimultaneousGuide();
+  if (appState === "LISTENING") startAdaptiveGuide();
 }
 
-function scheduleSimultaneousGuide() {
-  const runId = ++demoRunId;
-  clearDemoTimers();
+function adaptiveSlotTiming(index, voicedMs, elapsedMs, firstVoiceOffsetMs) {
   const noteMs = currentNoteDurationMs();
-  const noteSec = noteMs / 1000;
-  const audioStartAt = guideAudioContext.currentTime + .03;
+  const silenceRatio = voicedMs / Math.max(1, elapsedMs);
+  const lateFirstAttack = index === 0 &&
+    (firstVoiceOffsetMs == null || firstVoiceOffsetMs >= noteMs * 0.45);
+  const mostlySilent = silenceRatio < 0.22 || lateFirstAttack;
+  const extraMs = mostlySilent
+    ? (index === 0 ? Math.max(1300, noteMs * 1.25) : Math.max(800, noteMs * 0.85))
+    : Math.max(500, noteMs * 0.55);
+  return { noteMs, extraMs, mostlySilent };
+}
 
-  guidePattern.forEach((note, index) => {
-    if (note) {
-      try {
-        guideInstrument.start({
-          note: note.midi,
-          duration: Math.max(.12, noteSec * .82),
-          velocity: 80,
-          when: audioStartAt + index * noteSec,
-        });
-      } catch {}
-    }
-    demoTimers.push(setTimeout(() => {
-      if (runId !== demoRunId || appState !== "LISTENING") return;
-      renderDemoNotes(index);
-      statusEl.textContent = note
-        ? `Cantando com guia: ${note.label} · ${bpmInput.value} bpm.`
-        : `Nota ${index + 1}: ataque sem referência. Continue no mesmo pulso.`;
-    }, 30 + index * noteMs));
-  });
+function playAdaptiveTarget(index) {
+  if (!adaptiveGuide || integrationConfig?.guided === false) return;
+  const reference = guidePattern[index];
+  if (!reference || !guideInstrument) return;
+  try {
+    guideInstrument.start({
+      note: reference.midi,
+      duration: Math.max(.14, adaptiveGuide.noteMs / 1000 * .88),
+      velocity: 84,
+    });
+  } catch {}
+}
 
-  demoTimers.push(setTimeout(() => {
-    if (runId === demoRunId) renderDemoNotes(-1);
-  }, guidePattern.length * noteMs + 40));
+function beginAdaptiveSlot(index, now) {
+  if (!adaptiveGuide || index >= expectedNotes.length) return;
+  try { guideInstrument?.stop(); } catch {}
+  adaptiveGuide.index = index;
+  adaptiveGuide.slotStartT = now;
+  adaptiveGuide.lastUpdateT = now;
+  adaptiveGuide.voicedMs = 0;
+  adaptiveGuide.matchedMs = 0;
+  adaptiveGuide.closeMs = 0;
+  adaptiveGuide.firstVoiceOffsetMs = null;
+  adaptiveGuide.replayAtT = now + adaptiveGuide.noteMs;
+  renderDemoNotes(index);
+
+  const target = expectedNotes[index];
+  const reference = guidePattern[index];
+  const guided = integrationConfig?.guided !== false;
+  if (guided && reference) {
+    setCue("CANTE", `Ajuste sua voz ao instrumento em ${target.label}.`, target.label);
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. O guia real toca enquanto o sistema acompanha você.`;
+    playAdaptiveTarget(index);
+  } else if (guided) {
+    setCue("DESAFIO", `Cante ${target.label} sem referência auditiva.`, target.label);
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Ataque mudo de progressão; o sistema continua ouvindo e avaliando.`;
+  } else {
+    setCue("CANTE", `Siga o pulso memorizado em ${target.label}.`, target.label);
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Guia contínuo desativado.`;
+  }
+}
+
+function startAdaptiveGuide() {
+  adaptiveGuide = {
+    index: 0,
+    noteMs: currentNoteDurationMs(),
+    slotStartT: 0,
+    lastUpdateT: 0,
+    voicedMs: 0,
+    matchedMs: 0,
+    closeMs: 0,
+    firstVoiceOffsetMs: null,
+    replayAtT: 0,
+    missedIndexes: new Set(),
+    finished: false,
+    finishedAtT: null,
+  };
+  beginAdaptiveSlot(0, 0);
+}
+
+function advanceAdaptiveSlot(now, missed = false) {
+  if (!adaptiveGuide || adaptiveGuide.finished) return;
+  if (missed) adaptiveGuide.missedIndexes.add(adaptiveGuide.index);
+  const nextIndex = adaptiveGuide.index + 1;
+  if (nextIndex < expectedNotes.length) {
+    beginAdaptiveSlot(nextIndex, now);
+    return;
+  }
+
+  try { guideInstrument?.stop(); } catch {}
+  adaptiveGuide.finished = true;
+  adaptiveGuide.finishedAtT = now;
+  renderDemoNotes(-1);
+  setCue("ROTEIRO CONCLUÍDO", "Finalize a última emissão; a avaliação abrirá automaticamente.", "✓");
+  statusEl.textContent = "Todas as posições do roteiro foram percorridas. Aguardando o fim da voz.";
+}
+
+function updateAdaptiveGuide(now, midi = null, isVoiced = false) {
+  if (!adaptiveGuide || adaptiveGuide.finished || !expectedNotes.length) return;
+
+  const state = adaptiveGuide;
+  const elapsedMs = Math.max(0, now - state.slotStartT);
+  const dt = Math.min(CONFIG.analysisEveryMs * 3, Math.max(0, now - state.lastUpdateT));
+  state.lastUpdateT = now;
+
+  if (isVoiced && Number.isFinite(midi)) {
+    if (state.firstVoiceOffsetMs == null) state.firstVoiceOffsetMs = elapsedMs;
+    state.voicedMs += dt;
+    const errorCents = Math.abs((midi - expectedNotes[state.index].midi) * 100);
+    if (errorCents <= 70) state.matchedMs += dt;
+    if (errorCents <= CONFIG.routeMatchCents) state.closeMs += dt;
+  }
+
+  const requiredMs = Math.min(850, Math.max(220, state.noteMs * 0.78));
+  const exactEnough = state.matchedMs >= requiredMs;
+  const rhythmicallyClose =
+    state.closeMs >= requiredMs &&
+    state.voicedMs >= requiredMs &&
+    state.matchedMs >= requiredMs * 0.30;
+  const nominalElapsed = elapsedMs >= state.noteMs;
+
+  if (nominalElapsed && (exactEnough || rhythmicallyClose)) {
+    advanceAdaptiveSlot(now, false);
+    return;
+  }
+
+  const timing = adaptiveSlotTiming(state.index, state.voicedMs, elapsedMs, state.firstVoiceOffsetMs);
+  if (nominalElapsed && elapsedMs >= timing.noteMs + timing.extraMs) {
+    advanceAdaptiveSlot(now, true);
+    return;
+  }
+
+  const reference = guidePattern[state.index];
+  if (integrationConfig?.guided !== false && reference && now >= state.replayAtT) {
+    playAdaptiveTarget(state.index);
+    state.replayAtT = now + state.noteMs;
+  }
+
+  if (nominalElapsed && timing.mostlySilent) {
+    const remaining = Math.max(0, timing.noteMs + timing.extraMs - elapsedMs);
+    setCue("RESPIRE", `Ainda aguardando ${expectedNotes[state.index].label}; avanço em até ${(remaining / 1000).toFixed(1)} s.`, "…");
+  }
 }
 
 async function startAnalysisFromPreparedMic() {
@@ -1318,6 +1385,7 @@ function analyzeFrame() {
 
   if (level < CONFIG.minRms) {
     tracker.noPitch(now);
+    updateAdaptiveGuide(now, null, false);
     updateNoPitchUi();
     drawPitchGraph(now);
     checkAutomaticFinish(now);
@@ -1333,6 +1401,7 @@ function analyzeFrame() {
     clarity < CONFIG.minClarity
   ) {
     tracker.noPitch(now);
+    updateAdaptiveGuide(now, null, false);
     updateNoPitchUi(clarity);
     drawPitchGraph(now);
     checkAutomaticFinish(now);
@@ -1351,6 +1420,7 @@ function analyzeFrame() {
   };
 
   tracker.ingest(frame);
+  updateAdaptiveGuide(now, midi, true);
   graphFrames.push(frame);
   voiceStarted = true;
   lastVoicedT = now;
@@ -1372,6 +1442,7 @@ function analyzeFrame() {
   trackerStateEl.textContent = tracker.state;
 
   drawPitchGraph(now);
+  checkAutomaticFinish(now);
 }
 
 function updateNoPitchUi(clarity = NaN) {
@@ -1526,10 +1597,30 @@ function boundedSilence(noteMs, factor, minMs, maxMs) {
 }
 
 function checkAutomaticFinish(now) {
-  if (!voiceStarted || lastVoicedT == null || stoppingAutomatically) return;
+  if (stoppingAutomatically) return;
+  const noteMs = currentNoteDurationMs();
+
+  if (!voiceStarted || lastVoicedT == null) {
+    const abandonMs = Math.min(10000, Math.max(6500, noteMs * 6));
+    const finishedWithoutVoice = adaptiveGuide?.finished &&
+      now - adaptiveGuide.finishedAtT >= Math.min(1200, Math.max(750, noteMs * 0.8));
+    if (finishedWithoutVoice || now >= abandonMs) {
+      statusEl.textContent = "Nenhuma nota identificável foi recebida. Encerrando e registrando as posições como não detectadas.";
+      finishAnalysisAutomatically();
+    }
+    return;
+  }
 
   const silenceMs = now - lastVoicedT;
-  const noteMs = currentNoteDurationMs();
+  if (adaptiveGuide?.finished) {
+    const completedSilenceMs = boundedSilence(noteMs, 0.85, 750, 1500);
+    if (silenceMs >= 500 && silenceMs < completedSilenceMs) {
+      setCue("FINALIZE", "O roteiro terminou; aguardando o fim da última emissão.", "…");
+    }
+    if (silenceMs >= completedSilenceMs) finishAnalysisAutomatically();
+    return;
+  }
+
   const route = assessLiveRoute();
 
   const finalSilenceMs = boundedSilence(
@@ -1610,7 +1701,7 @@ async function cancelListeningSession() {
   demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  try { guideInstrument?.stop(); } catch {}
+  clearAdaptiveGuide();
   stoppingAutomatically = true;
   setAppState("CANCELLING");
   setCue("Tentativa cancelada", "Nenhuma avaliação será gerada.", "ESPAÇO");
@@ -1641,7 +1732,7 @@ async function cancelPendingFlow() {
   demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  try { guideInstrument?.stop(); } catch {}
+  clearAdaptiveGuide();
   setAppState("CANCELLING");
   await teardownAnalysisAudio();
   setControlsLocked(false);
@@ -1654,10 +1745,10 @@ async function finishAnalysisAutomatically() {
   stoppingAutomatically = true;
   demoRunId++;
   clearDemoTimers();
-  try { guideInstrument?.stop(); } catch {}
+  clearAdaptiveGuide();
   setAppState("EVALUATING");
   setCue("Analisando…", "Organizando as notas e calculando os desvios em cents.", "···");
-  statusEl.textContent = "Fim da voz detectado. Avaliando automaticamente…";
+  statusEl.textContent = "Roteiro encerrado. Avaliando automaticamente, inclusive as notas não identificadas…";
 
   if (analysisTimer) {
     clearInterval(analysisTimer);
@@ -1715,12 +1806,27 @@ function globalGrade(score) {
 }
 
 function renderGlobalScore(rows = []) {
+  const total = expectedNotes.length;
   const reliable = rows.filter(result => result && result.confidence.rank > 0);
-  const coverage = expectedNotes.length ? reliable.length / expectedNotes.length : 0;
+  const coverage = total ? reliable.length / total : 0;
   const meanBias = reliable.length ? mean(reliable.map(result => Math.abs(result.bias))) : 100;
   const meanStability = reliable.length ? mean(reliable.map(result => result.sigma)) : 60;
-  const intonationPoints = Math.max(0, 100 - meanBias * 1.25);
-  const stabilityPoints = Math.max(0, 100 - meanStability * 1.8);
+  const intonationPoints = total
+    ? Array.from({ length: total }, (_, index) => {
+        const result = rows[index];
+        return result && result.confidence.rank > 0
+          ? Math.max(0, 100 - Math.abs(result.bias) * 1.25)
+          : 0;
+      }).reduce((sum, value) => sum + value, 0) / total
+    : 0;
+  const stabilityPoints = total
+    ? Array.from({ length: total }, (_, index) => {
+        const result = rows[index];
+        return result && result.confidence.rank > 0
+          ? Math.max(0, 100 - result.sigma * 1.8)
+          : 0;
+      }).reduce((sum, value) => sum + value, 0) / total
+    : 0;
   const score = Math.round(intonationPoints * 0.70 + stabilityPoints * 0.15 + coverage * 100 * 0.15);
   const label = globalGrade(score);
 
@@ -1729,7 +1835,7 @@ function renderGlobalScore(rows = []) {
     <div class="score-number">${score}<small>/100</small></div>
     <div>
       <div class="score-label">Avaliação global: ${label}</div>
-      <div class="score-detail">Afinação 70% · estabilidade 15% · conclusão 15%. ${reliable.length}/${expectedNotes.length} notas com confiança suficiente.</div>
+      <div class="score-detail">Afinação 70% · estabilidade 15% · conclusão 15%. ${reliable.length}/${total} notas com confiança suficiente; cada nota não detectada recebe zero.</div>
     </div>`;
   return { score, label, coverage, meanBias, meanStability };
 }
@@ -1992,7 +2098,7 @@ async function stopCurrentActivity() {
   demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  try { guideInstrument?.stop(); } catch {}
+  clearAdaptiveGuide();
   await teardownAnalysisAudio();
   stoppingAutomatically = false;
 }

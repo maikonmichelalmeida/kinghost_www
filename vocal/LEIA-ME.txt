@@ -34,6 +34,9 @@ TREINO ASSISTIDO
   intermediário e sem demonstração prévia da escala.
 - Com "Guia" marcado, as referências permitidas tocam ao mesmo tempo que a voz.
   Desmarcado, somente a nota inicial é dada depois das quatro batidas.
+- O guia acompanha uma nota por vez: avança quando há acerto sustentado, quando
+  a aproximação é ritmicamente coerente ou quando termina uma tolerância flexível.
+  A primeira nota admite uma espera maior para a respiração inicial.
 - "Ouvir" é uma prévia opcional e separada. Ao clicar em "Início", qualquer
   prévia é interrompida e o guia só entra junto com o microfone e o gráfico.
 - Os botões − e + alteram o andamento em passos de 4 bpm; o valor também pode
@@ -45,6 +48,8 @@ TREINO ASSISTIDO
   tudo o que deve ser cantado.
 - Treinos respiratórios usam metrônomo e cronômetro, sem avaliação de afinação.
 - Treinos com pitch mostram avaliação por nota e nota global de 0 a 100.
+- Notas não identificadas recebem zero na parcela correspondente da nota global;
+  silêncio não é tratado como resultado neutro.
 - O andamento e a quantidade de notas por pulso são ajustados antes de abrir a janela.
 - Notas deliberadamente mudas não tocam e não recebem linha ou rótulo no gráfico,
   mas continuam sendo avaliadas quando o usuário as canta.
@@ -54,7 +59,9 @@ EXECUÇÃO
 O projeto continua podendo ser aberto por index.htm. Também pode ser servido por HTTP.
 Em file:// o treino abre em uma janela própria para que o microfone fique no contexto
 principal do navegador. Em HTTP ele continua abrindo sobre o tutorial.
-O afinador depende de internet apenas para carregar o detector de pitch; o metrônomo,
-o botão Ouvir e o guia simultâneo usam áudio nativo do navegador.
+O afinador depende de internet para carregar o detector de pitch e as amostras dos
+instrumentos. O botão Ouvir e o guia simultâneo usam Soundfont real (violão nylon,
+violão aço ou piano), carregadas pela internet. O metrônomo usa somente um clique
+curto de áudio nativo. Notas mudas de progressão permanecem sem guia sonoro.
 O navegador precisa ter permissão para usar o microfone; em HTTP comum fora de localhost,
 essa permissão depende da configuração de segurança adotada no próprio navegador.

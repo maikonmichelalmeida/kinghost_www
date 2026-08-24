@@ -7,6 +7,8 @@
   let initialized = false;
   let localTrainerPopup = null;
   let previewContext = null;
+  let previewInstrument = null;
+  let previewInstrumentName = null;
   let previewRunId = 0;
   let previewTimers = [];
   const previewOscillators = new Set();
@@ -73,6 +75,7 @@
     previewRunId += 1;
     previewTimers.forEach(clearTimeout);
     previewTimers = [];
+    try { previewInstrument?.stop(); } catch (_) {}
     previewOscillators.forEach(oscillator => { try { oscillator.stop(); } catch (_) {} });
     previewOscillators.clear();
     document.querySelectorAll('.training-listen[data-playing="true"]').forEach(button => {
@@ -95,23 +98,19 @@
     return previewContext;
   }
 
-  function playPreviewTone(midi, durationSec, timbre) {
-    if (!previewContext || !Number.isFinite(midi)) return;
-    const now = previewContext.currentTime;
-    const frequency = 440 * (2 ** ((midi - 69) / 12));
-    const gain = previewContext.createGain();
-    const oscillator = previewContext.createOscillator();
-    oscillator.type = timbre === 'acoustic_guitar_steel' ? 'triangle' : timbre === 'acoustic_grand_piano' ? 'triangle' : 'sine';
-    oscillator.frequency.setValueAtTime(frequency, now);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.13, now + .012);
-    gain.gain.setValueAtTime(.105, Math.max(now + .03, now + durationSec - .1));
-    gain.gain.exponentialRampToValueAtTime(.0001, now + durationSec);
-    oscillator.connect(gain).connect(previewContext.destination);
-    previewOscillators.add(oscillator);
-    oscillator.start(now);
-    oscillator.stop(now + durationSec + .02);
-    oscillator.addEventListener('ended', () => previewOscillators.delete(oscillator), { once: true });
+  async function ensurePreviewInstrument(name) {
+    await ensurePreviewContext();
+    if (previewInstrument && previewInstrumentName === name) return previewInstrument;
+    try { previewInstrument?.dispose(); } catch (_) {}
+    const { Soundfont } = await import('https://unpkg.com/smplr/dist/index.mjs');
+    previewInstrumentName = name;
+    previewInstrument = Soundfont(previewContext, {
+      instrument: name,
+      kit: 'MusyngKite',
+      volume: 105,
+    });
+    await previewInstrument.ready;
+    return previewInstrument;
   }
 
   function playPreviewClick(accent = false) {
@@ -146,19 +145,25 @@
     button.dataset.playing = 'true';
     button.textContent = 'Parar';
     try {
-      await ensurePreviewContext();
       const notes = config.mode === 'breathing' ? [] : (config.guideNotes || []);
       if (!notes.some(Boolean)) {
+        await ensurePreviewContext();
         const beatMs = config.mode === 'breathing' ? 300 : Math.round(60000 / config.bpm);
         [0,1,2,3].forEach(index => previewTimers.push(setTimeout(() => playPreviewClick(index === 0), index * beatMs)));
         previewTimers.push(setTimeout(clearPreview, beatMs * 4 + 80));
         return;
       }
+      const instrument = await ensurePreviewInstrument(config.instrument || 'acoustic_guitar_nylon');
+      if (runId !== previewRunId) return;
       const noteMs = Math.round(60000 / (config.bpm * config.subdivision));
       notes.forEach((note, index) => previewTimers.push(setTimeout(() => {
         if (runId !== previewRunId || !note) return;
         const midi = noteToMidi(note);
-        if (midi != null) playPreviewTone(midi, Math.max(.12, noteMs / 1000 * .82), config.instrument);
+        if (midi != null) instrument.start({
+          note: midi,
+          duration: Math.max(.12, noteMs / 1000 * .82),
+          velocity: 84,
+        });
       }, index * noteMs)));
       previewTimers.push(setTimeout(clearPreview, notes.length * noteMs + 100));
     } catch (error) {

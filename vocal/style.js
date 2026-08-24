@@ -840,61 +840,15 @@ async function ensurePreviewInstrument() {
   const name = environment.instrument;
   if (previewInstrument && previewInstrumentName === name) return previewInstrument;
   try { previewInstrument?.dispose(); } catch (_) {}
+  const { Soundfont } = await import('https://unpkg.com/smplr/dist/index.mjs');
   previewInstrumentName = name;
-  previewInstrument = createNativeGuideInstrument(previewAudioContext, name);
+  previewInstrument = Soundfont(previewAudioContext, {
+    instrument: name,
+    kit: 'MusyngKite',
+    volume: 105,
+  });
+  await previewInstrument.ready;
   return previewInstrument;
-}
-
-function createNativeGuideInstrument(context, timbre = 'acoustic_guitar_nylon') {
-  const active = new Set();
-  const tone = timbre === 'acoustic_grand_piano'
-    ? { type: 'triangle', harmonic: 'sine', harmonicGain: .18, release: .12 }
-    : timbre === 'acoustic_guitar_steel'
-      ? { type: 'triangle', harmonic: 'square', harmonicGain: .08, release: .09 }
-      : { type: 'sine', harmonic: 'triangle', harmonicGain: .16, release: .14 };
-
-  function start({ note, duration = .5, velocity = 82, when = context.currentTime }) {
-    const midi = Number(note);
-    if (!Number.isFinite(midi)) return;
-    const frequency = 440 * (2 ** ((midi - 69) / 12));
-    const startAt = Math.max(context.currentTime, Number(when) || context.currentTime);
-    const stopAt = startAt + Math.max(.08, Number(duration) || .5);
-    const master = context.createGain();
-    const fundamental = context.createOscillator();
-    const harmonic = context.createOscillator();
-    const strength = Math.min(.18, Math.max(.035, (Number(velocity) || 82) / 650));
-
-    fundamental.type = tone.type;
-    fundamental.frequency.setValueAtTime(frequency, startAt);
-    harmonic.type = tone.harmonic;
-    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
-    const harmonicGain = context.createGain();
-    harmonicGain.gain.setValueAtTime(tone.harmonicGain, startAt);
-    master.gain.setValueAtTime(.0001, startAt);
-    master.gain.exponentialRampToValueAtTime(strength, startAt + .012);
-    master.gain.setValueAtTime(strength * .86, Math.max(startAt + .02, stopAt - tone.release));
-    master.gain.exponentialRampToValueAtTime(.0001, stopAt);
-    fundamental.connect(master);
-    harmonic.connect(harmonicGain).connect(master);
-    master.connect(context.destination);
-    const voices = [fundamental, harmonic];
-    voices.forEach(oscillator => {
-      oscillator.__vocalStartAt = startAt;
-      active.add(oscillator);
-      oscillator.start(startAt);
-      oscillator.stop(stopAt + .02);
-      oscillator.addEventListener('ended', () => active.delete(oscillator), { once: true });
-    });
-  }
-
-  function stop() {
-    active.forEach(oscillator => {
-      try { oscillator.stop(Math.max(context.currentTime, oscillator.__vocalStartAt || context.currentTime)); } catch (_) {}
-    });
-    active.clear();
-  }
-
-  return { start, stop, dispose: stop, ready: Promise.resolve() };
 }
 
 function playPreviewClick(accent = false) {
