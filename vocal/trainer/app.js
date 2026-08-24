@@ -149,6 +149,8 @@ const resultsBody = $("resultsBody");
 const extrasEl = $("extras");
 const canvas = $("pitchCanvas");
 const ctx = canvas.getContext("2d");
+const graphNowEl = $("graphNow");
+const graphNextEl = $("graphNext");
 
 // ------------------------------------------------------------
 // ESTADO DE ÁUDIO
@@ -181,6 +183,9 @@ let stoppingAutomatically = false;
 let integrationConfig = null;
 let guidePattern = [];
 let adaptiveGuide = null;
+let guideTimeline = [];
+let graphCountdownLabel = null;
+let graphCountdownCaption = "";
 let breathingTimerId = null;
 let metronomeTimerId = null;
 let breathingEndAt = 0;
@@ -905,6 +910,8 @@ function clearDemoTimers() {
 
 function clearAdaptiveGuide() {
   adaptiveGuide = null;
+  graphCountdownLabel = null;
+  graphCountdownCaption = "";
   try { guideInstrument?.stop(); } catch {}
   renderDemoNotes(-1);
 }
@@ -1029,6 +1036,9 @@ function resetSessionVisuals() {
   globalScoreEl.innerHTML = "";
   resultActions.hidden = true;
   graphFrames = [];
+  guideTimeline = [];
+  graphCountdownLabel = null;
+  graphCountdownCaption = "";
   tracker = null;
   reviewMode = false;
   evaluationOverlay = null;
@@ -1093,10 +1103,18 @@ async function runQuickCountIn() {
   setAppState("COUNTDOWN");
   for (let count = 4; count >= 1; count--) {
     if (appState !== "COUNTDOWN") return;
+    graphCountdownLabel = String(count);
+    graphCountdownCaption = "batidas para entrar";
+    drawPitchGraph(0);
     setCue("Prepare-se", "Quatro batidas rápidas e entrada imediata.", String(count));
     playMetronomeClick(count === 4);
     await new Promise(resolve => setTimeout(resolve, CONFIG.quickCountInMs));
   }
+  if (appState !== "COUNTDOWN") return;
+  graphCountdownLabel = "0";
+  graphCountdownCaption = "entre agora";
+  drawPitchGraph(0);
+  setCue("ENTRE AGORA", "A primeira posição começa neste instante.", "0");
 }
 
 async function finishBreathingAutomatically(durationSec) {
@@ -1158,13 +1176,38 @@ async function startDemoFlow() {
 
   needsActivationRetry = false;
   if (appState !== "PREPARING") return;
+  const guided = integrationConfig?.guided !== false;
+  const firstReference = guidePattern[0];
+  pitchSection.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // No modo guiado a primeira referência é apresentada uma vez antes da
+  // contagem. No zero ela será tocada novamente, já junto com o microfone.
+  if (guided && firstReference && guideInstrument) {
+    graphCountdownLabel = "♪";
+    graphCountdownCaption = `referência inicial: ${firstReference.label}`;
+    drawPitchGraph(0);
+    setCue("REFERÊNCIA INICIAL", `Ouça ${firstReference.label}; a contagem vem em seguida.`, firstReference.label);
+    statusEl.textContent = `Referência inicial em ${firstReference.label}. Depois entram quatro batidas rápidas.`;
+    try {
+      guideInstrument.start({
+        note: firstReference.midi,
+        duration: Math.max(.42, CONFIG.preSingGuideDurationMs / 1000),
+        velocity: 84,
+      });
+    } catch {}
+    await new Promise(resolve => setTimeout(resolve, CONFIG.preSingGuideDurationMs + 110));
+    try { guideInstrument.stop(); } catch {}
+    if (appState !== "PREPARING") return;
+  }
+
   await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
 
-  const guided = integrationConfig?.guided !== false;
   if (!guided) {
-    const firstReference = guidePattern[0];
     if (firstReference && guideInstrument) {
+      graphCountdownLabel = "♪";
+      graphCountdownCaption = `nota inicial: ${firstReference.label}`;
+      drawPitchGraph(0);
       setCue("Nota inicial", `Use ${firstReference.label} como referência e entre em seguida.`, firstReference.label);
       statusEl.textContent = `Referência inicial: ${firstReference.label}. Depois, você canta sem guia.`;
       renderDemoNotes(0);
@@ -1205,30 +1248,67 @@ function adaptiveSlotTiming(index, voicedMs, elapsedMs, firstVoiceOffsetMs) {
   return { noteMs, extraMs, mostlySilent };
 }
 
+function adaptiveGuideLeadMs() {
+  const noteMs = adaptiveGuide?.noteMs ?? currentNoteDurationMs();
+  return Math.min(220, Math.max(100, noteMs * 0.18));
+}
+
 function playAdaptiveTarget(index) {
-  if (!adaptiveGuide || integrationConfig?.guided === false) return;
+  if (!adaptiveGuide || integrationConfig?.guided === false) return false;
   const reference = guidePattern[index];
-  if (!reference || !guideInstrument) return;
+  if (!reference || !guideInstrument) return false;
   try {
     guideInstrument.start({
       note: reference.midi,
-      duration: Math.max(.14, adaptiveGuide.noteMs / 1000 * .88),
+      // Uma única emissão longa por posição. Ela é interrompida somente na
+      // antecipação/entrada da próxima nota, nunca repetida enquanto aguardamos.
+      duration: Math.max(2.2, adaptiveGuide.noteMs / 1000 * 3.2),
       velocity: 84,
     });
-  } catch {}
+    adaptiveGuide.soundingIndex = index;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function cueNextAdaptiveTarget(now) {
+  const state = adaptiveGuide;
+  if (!state || state.finished || integrationConfig?.guided === false) return;
+  const nextIndex = state.index + 1;
+  if (nextIndex >= expectedNotes.length || state.preCuedIndex === nextIndex) return;
+
+  state.preCuedIndex = nextIndex;
+  state.preCuedAtT = now;
+  try { guideInstrument?.stop(); } catch {}
+  state.soundingIndex = null;
+  // Referência nula significa desafio: a antecipação é deliberadamente muda.
+  playAdaptiveTarget(nextIndex);
 }
 
 function beginAdaptiveSlot(index, now) {
   if (!adaptiveGuide || index >= expectedNotes.length) return;
-  try { guideInstrument?.stop(); } catch {}
-  adaptiveGuide.index = index;
-  adaptiveGuide.slotStartT = now;
-  adaptiveGuide.lastUpdateT = now;
-  adaptiveGuide.voicedMs = 0;
-  adaptiveGuide.matchedMs = 0;
-  adaptiveGuide.closeMs = 0;
-  adaptiveGuide.firstVoiceOffsetMs = null;
-  adaptiveGuide.replayAtT = now + adaptiveGuide.noteMs;
+  const state = adaptiveGuide;
+  const alreadyCued = state.preCuedIndex === index;
+  const anticipatedAtT = alreadyCued ? state.preCuedAtT : null;
+
+  state.index = index;
+  state.slotStartT = now;
+  state.slotGuideStartT = anticipatedAtT ?? now;
+  state.lastUpdateT = now;
+  state.voicedMs = 0;
+  state.matchedMs = 0;
+  state.closeMs = 0;
+  state.firstVoiceOffsetMs = null;
+  state.projectedAdvanceT = now + state.noteMs;
+  state.preCuedIndex = null;
+  state.preCuedAtT = null;
+
+  if (!alreadyCued) {
+    try { guideInstrument?.stop(); } catch {}
+    state.soundingIndex = null;
+    playAdaptiveTarget(index);
+  }
   renderDemoNotes(index);
 
   const target = expectedNotes[index];
@@ -1236,8 +1316,7 @@ function beginAdaptiveSlot(index, now) {
   const guided = integrationConfig?.guided !== false;
   if (guided && reference) {
     setCue("CANTE", `Ajuste sua voz ao instrumento em ${target.label}.`, target.label);
-    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. O guia real toca enquanto o sistema acompanha você.`;
-    playAdaptiveTarget(index);
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Referência contínua, sem novos ataques enquanto o sistema aguarda.`;
   } else if (guided) {
     setCue("DESAFIO", `Cante ${target.label} sem referência auditiva.`, target.label);
     statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Ataque mudo de progressão; o sistema continua ouvindo e avaliando.`;
@@ -1257,26 +1336,46 @@ function startAdaptiveGuide() {
     matchedMs: 0,
     closeMs: 0,
     firstVoiceOffsetMs: null,
-    replayAtT: 0,
+    projectedAdvanceT: 0,
+    slotGuideStartT: 0,
+    soundingIndex: null,
+    preCuedIndex: null,
+    preCuedAtT: null,
     missedIndexes: new Set(),
     finished: false,
     finishedAtT: null,
   };
   beginAdaptiveSlot(0, 0);
+  demoTimers.push(setTimeout(() => {
+    if (appState !== "LISTENING") return;
+    graphCountdownLabel = null;
+    graphCountdownCaption = "";
+    drawPitchGraph(Math.max(0, performance.now() - sessionStartMs));
+  }, CONFIG.quickCountInMs));
 }
 
 function advanceAdaptiveSlot(now, missed = false) {
   if (!adaptiveGuide || adaptiveGuide.finished) return;
-  if (missed) adaptiveGuide.missedIndexes.add(adaptiveGuide.index);
-  const nextIndex = adaptiveGuide.index + 1;
+  const state = adaptiveGuide;
+  if (missed) state.missedIndexes.add(state.index);
+  guideTimeline.push({
+    index: state.index,
+    startT: state.slotStartT,
+    endT: now,
+    guideStartT: state.slotGuideStartT,
+    guideEndT: state.preCuedAtT ?? now,
+    missed,
+  });
+  const nextIndex = state.index + 1;
   if (nextIndex < expectedNotes.length) {
     beginAdaptiveSlot(nextIndex, now);
     return;
   }
 
   try { guideInstrument?.stop(); } catch {}
-  adaptiveGuide.finished = true;
-  adaptiveGuide.finishedAtT = now;
+  state.soundingIndex = null;
+  state.finished = true;
+  state.finishedAtT = now;
   renderDemoNotes(-1);
   setCue("ROTEIRO CONCLUÍDO", "Finalize a última emissão; a avaliação abrirá automaticamente.", "✓");
   statusEl.textContent = "Todas as posições do roteiro foram percorridas. Aguardando o fim da voz.";
@@ -1306,21 +1405,43 @@ function updateAdaptiveGuide(now, midi = null, isVoiced = false) {
     state.matchedMs >= requiredMs * 0.30;
   const nominalElapsed = elapsedMs >= state.noteMs;
 
+  const timing = adaptiveSlotTiming(state.index, state.voicedMs, elapsedMs, state.firstVoiceOffsetMs);
+  const nominalEndT = state.slotStartT + state.noteMs;
+  const deadlineT = nominalEndT + timing.extraMs;
+  const currentErrorCents = isVoiced && Number.isFinite(midi)
+    ? Math.abs((midi - expectedNotes[state.index].midi) * 100)
+    : Infinity;
+  let projectedAdvanceT = deadlineT;
+
+  if (exactEnough || rhythmicallyClose) {
+    projectedAdvanceT = Math.max(now, nominalEndT);
+  } else if (currentErrorCents <= 70) {
+    projectedAdvanceT = Math.max(nominalEndT, now + Math.max(0, requiredMs - state.matchedMs));
+  } else if (
+    currentErrorCents <= CONFIG.routeMatchCents &&
+    state.matchedMs >= requiredMs * 0.30
+  ) {
+    const remainingCloseMs = Math.max(
+      0,
+      requiredMs - state.closeMs,
+      requiredMs - state.voicedMs,
+    );
+    projectedAdvanceT = Math.max(nominalEndT, now + remainingCloseMs);
+  }
+
+  state.projectedAdvanceT = Math.max(now, projectedAdvanceT);
+  if (state.index + 1 < expectedNotes.length && now >= state.projectedAdvanceT - adaptiveGuideLeadMs()) {
+    cueNextAdaptiveTarget(now);
+  }
+
   if (nominalElapsed && (exactEnough || rhythmicallyClose)) {
     advanceAdaptiveSlot(now, false);
     return;
   }
 
-  const timing = adaptiveSlotTiming(state.index, state.voicedMs, elapsedMs, state.firstVoiceOffsetMs);
   if (nominalElapsed && elapsedMs >= timing.noteMs + timing.extraMs) {
     advanceAdaptiveSlot(now, true);
     return;
-  }
-
-  const reference = guidePattern[state.index];
-  if (integrationConfig?.guided !== false && reference && now >= state.replayAtT) {
-    playAdaptiveTarget(state.index);
-    state.replayAtT = now + state.noteMs;
   }
 
   if (nominalElapsed && timing.mostlySilent) {
@@ -1974,6 +2095,80 @@ function renderEvaluation(segments) {
 // ------------------------------------------------------------
 // GRÁFICO
 // ------------------------------------------------------------
+function graphGuideSegments(nowMs) {
+  const segments = guideTimeline.map(item => ({
+    ...item,
+    startT: Math.min(item.startT, item.guideStartT ?? item.startT),
+  }));
+  const state = adaptiveGuide;
+
+  if (state && !state.finished && expectedNotes.length) {
+    const currentEndT = Math.max(nowMs + 40, state.projectedAdvanceT || state.slotStartT + state.noteMs);
+    segments.push({
+      index: state.index,
+      startT: Math.min(state.slotStartT, state.slotGuideStartT ?? state.slotStartT),
+      endT: currentEndT,
+      live: true,
+    });
+
+    let cursorT = currentEndT;
+    for (let index = state.index + 1; index < expectedNotes.length; index++) {
+      const anticipated = state.preCuedIndex === index && state.preCuedAtT != null;
+      const startT = anticipated ? Math.min(cursorT, state.preCuedAtT) : cursorT;
+      const endT = startT + state.noteMs;
+      segments.push({ index, startT, endT, future: true, anticipated });
+      cursorT = endT;
+    }
+  } else if (appState === "COUNTDOWN" && expectedNotes.length && !segments.length) {
+    let cursorT = 0;
+    const noteMs = currentNoteDurationMs();
+    expectedNotes.forEach((_, index) => {
+      segments.push({ index, startT: cursorT, endT: cursorT + noteMs, future: true });
+      cursorT += noteMs;
+    });
+  }
+
+  return segments.filter(segment => guidePattern[segment.index]);
+}
+
+function updateGraphGuideReadout(nowMs) {
+  if (!graphNowEl || !graphNextEl) return;
+  if (graphCountdownLabel != null) {
+    graphNowEl.textContent = `Contagem: ${graphCountdownLabel}`;
+    graphNextEl.textContent = graphCountdownCaption || "Prepare a entrada";
+    return;
+  }
+
+  const state = adaptiveGuide;
+  if (state?.finished) {
+    graphNowEl.textContent = "Roteiro concluído";
+    graphNextEl.textContent = "Finalize a emissão; a avaliação abrirá automaticamente.";
+    return;
+  }
+
+  if (state && expectedNotes[state.index]) {
+    const currentVisible = Boolean(guidePattern[state.index]);
+    graphNowEl.textContent = currentVisible
+      ? `Agora: ${expectedNotes[state.index].label}`
+      : "Agora: desafio mudo";
+    const remainingMs = Math.max(0, (state.projectedAdvanceT || nowMs) - nowMs);
+    const nextIndex = state.index + 1;
+    if (nextIndex >= expectedNotes.length) {
+      graphNextEl.textContent = `Fim previsto em ${(remainingMs / 1000).toFixed(1)} s`;
+    } else {
+      const nextLabel = guidePattern[nextIndex]?.label || "desafio mudo";
+      const anticipated = state.preCuedIndex === nextIndex;
+      graphNextEl.textContent = anticipated
+        ? `Referência antecipada: ${nextLabel} · troca em ${(remainingMs / 1000).toFixed(1)} s`
+        : `Próxima: ${nextLabel} · troca prevista em ${(remainingMs / 1000).toFixed(1)} s`;
+    }
+    return;
+  }
+
+  graphNowEl.textContent = "Agora: aguardando";
+  graphNextEl.textContent = "O contador e o próximo alvo aparecerão aqui.";
+}
+
 function drawPitchGraph(nowMs = 0) {
   const dpr = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth;
@@ -1990,6 +2185,7 @@ function drawPitchGraph(nowMs = 0) {
   ctx.fillStyle = "#0c1115";
   ctx.fillRect(0, 0, cssWidth, cssHeight);
 
+  updateGraphGuideReadout(nowMs);
   if (!expectedNotes.length) return;
 
   const expectedMidis = expectedNotes.map((n) => n.midi);
@@ -1998,12 +2194,17 @@ function drawPitchGraph(nowMs = 0) {
 
   let leftT;
   let rightT;
-  if (reviewMode && graphFrames.length) {
-    leftT = Math.max(0, graphFrames[0].t - 80);
-    rightT = Math.max(leftT + 1000, graphFrames.at(-1).t + 80);
+  if (reviewMode) {
+    const historyStart = guideTimeline[0]?.startT ?? 0;
+    const historyEnd = guideTimeline.at(-1)?.endT ?? 0;
+    const contentStart = graphFrames[0]?.t ?? historyStart;
+    const contentEnd = graphFrames.at(-1)?.t ?? historyEnd;
+    leftT = Math.min(contentStart, historyStart) - 80;
+    rightT = Math.max(leftT + 1000, contentEnd, historyEnd) + 80;
   } else {
-    leftT = Math.max(0, nowMs - CONFIG.graphWindowSeconds * 1000);
-    rightT = Math.max(leftT + 1000, nowMs);
+    const windowMs = CONFIG.graphWindowSeconds * 1000;
+    leftT = nowMs - windowMs * 0.62;
+    rightT = nowMs + windowMs * 0.38;
   }
 
   const xFor = (t) => ((t - leftT) / (rightT - leftT)) * cssWidth;
@@ -2029,29 +2230,102 @@ function drawPitchGraph(nowMs = 0) {
     ctx.fillText(midiFloatToNearestNote(midi).name, 8, Math.max(13, y - 4));
   });
 
+  // Roteiro esperado. Trechos futuros ficam um pouco mais discretos e a nota
+  // cujo instrumento está soando ganha maior espessura.
+  ctx.lineCap = "round";
+  graphGuideSegments(nowMs).forEach(segment => {
+    const x0 = xFor(segment.startT);
+    const x1 = xFor(segment.endT);
+    if (x1 < 0 || x0 > cssWidth) return;
+    const sounding = adaptiveGuide?.soundingIndex === segment.index;
+    ctx.strokeStyle = sounding
+      ? "#ff4f5f"
+      : (segment.future ? "rgba(255, 48, 64, 0.58)" : "rgba(255, 48, 64, 0.88)");
+    ctx.lineWidth = sounding ? 7 : 4;
+    ctx.beginPath();
+    ctx.moveTo(Math.max(0, x0), yFor(expectedNotes[segment.index].midi));
+    ctx.lineTo(Math.min(cssWidth, x1), yFor(expectedNotes[segment.index].midi));
+    ctx.stroke();
+  });
+  ctx.lineCap = "butt";
+
   const visible = graphFrames.filter((f) => f.t >= leftT && f.t <= rightT);
-  if (visible.length < 2) return;
+  if (visible.length >= 2) {
+    // Traço geral: neutro/azul. Não pinta toda a execução de vermelho.
+    ctx.strokeStyle = "#76c7ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
 
-  // Traço geral: neutro/azul. Não pinta toda a execução de vermelho.
-  ctx.strokeStyle = "#76c7ff";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
+    let started = false;
+    let prevT = null;
+    for (const frame of visible) {
+      const x = xFor(frame.t);
+      const y = yFor(frame.midi);
 
-  let started = false;
-  let prevT = null;
-  for (const frame of visible) {
-    const x = xFor(frame.t);
-    const y = yFor(frame.midi);
-
-    if (!started || (prevT != null && frame.t - prevT > 120)) {
-      ctx.moveTo(x, y);
-      started = true;
-    } else {
-      ctx.lineTo(x, y);
+      if (!started || (prevT != null && frame.t - prevT > 120)) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+      prevT = frame.t;
     }
-    prevT = frame.t;
+    ctx.stroke();
   }
-  ctx.stroke();
+
+  if (!reviewMode && appState === "LISTENING" && adaptiveGuide && !adaptiveGuide.finished) {
+    const xNow = xFor(nowMs);
+    const currentIndex = adaptiveGuide.index;
+    const visibleTarget = guidePattern[currentIndex];
+    ctx.strokeStyle = "#22c76a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(xNow, 0);
+    ctx.lineTo(xNow, cssHeight);
+    ctx.stroke();
+
+    if (visibleTarget) {
+      const yNow = yFor(expectedNotes[currentIndex].midi);
+      ctx.fillStyle = "#22c76a";
+      ctx.beginPath();
+      ctx.arc(xNow, yNow, 13, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const remainingMs = Math.max(0, adaptiveGuide.projectedAdvanceT - nowMs);
+    const currentLabel = visibleTarget ? expectedNotes[currentIndex].label : "DESAFIO MUDO";
+    const badgeX = Math.min(cssWidth - 168, xNow + 12);
+    ctx.fillStyle = "rgba(9, 25, 18, 0.92)";
+    ctx.fillRect(badgeX, 10, 156, 47);
+    ctx.fillStyle = "#80efae";
+    ctx.font = "700 13px system-ui";
+    ctx.fillText(`AGORA · ${currentLabel}`, badgeX + 9, 29);
+    ctx.fillStyle = "#c4d2ca";
+    ctx.font = "12px system-ui";
+    ctx.fillText(`troca em ${(remainingMs / 1000).toFixed(1)} s`, badgeX + 9, 47);
+  }
+
+  if (!reviewMode && graphCountdownLabel != null) {
+    const centerX = cssWidth * 0.62;
+    const centerY = cssHeight * 0.50;
+    ctx.fillStyle = "rgba(8, 18, 14, 0.86)";
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 52, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#22c76a";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.fillStyle = "#b9f7d1";
+    ctx.font = "700 42px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(graphCountdownLabel), centerX, centerY - 4);
+    ctx.font = "12px system-ui";
+    ctx.fillStyle = "#d0ded6";
+    ctx.fillText(graphCountdownCaption, centerX, centerY + 35);
+    ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
+  }
 
   // Depois da avaliação, destaca SOMENTE o principal erro sustentado.
   const worst = evaluationOverlay?.worstIndex >= 0
@@ -2067,10 +2341,10 @@ function drawPitchGraph(nowMs = 0) {
       const x0 = xFor(startT);
       const x1 = xFor(endT);
 
-      ctx.fillStyle = "rgba(255, 92, 92, 0.08)";
+      ctx.fillStyle = "rgba(255, 179, 71, 0.10)";
       ctx.fillRect(x0, 0, Math.max(2, x1 - x0), cssHeight);
 
-      ctx.strokeStyle = "#ff6b6b";
+      ctx.strokeStyle = "#ffb347";
       ctx.lineWidth = 4;
       ctx.beginPath();
       badFrames.forEach((frame, index) => {
@@ -2085,7 +2359,7 @@ function drawPitchGraph(nowMs = 0) {
       const labelX = Math.min(Math.max(x0 + 8, 8), cssWidth - 165);
       const labelY = 22;
       ctx.font = "bold 12px system-ui";
-      ctx.fillStyle = "#ffb0b0";
+      ctx.fillStyle = "#ffd59a";
       ctx.fillText(label, labelX, labelY);
     }
   }

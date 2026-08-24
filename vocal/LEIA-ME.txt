@@ -30,13 +30,16 @@ TREINO ASSISTIDO
 - Cada trecho possui Início, Ouvir, guia simultâneo, andamento, divisão rítmica,
   transposição inteira entre -8 e +8 e uma caixa de direção:
   marcada sobe 1 semitom ao concluir; desmarcada desce 1 semitom.
-- A janela começa sozinha: quatro batidas rápidas e entrada imediata, sem botão
-  intermediário e sem demonstração prévia da escala.
+- No modo guiado, a janela toca uma única referência inicial, mostra quatro
+  batidas rápidas no contador do gráfico e toca novamente a primeira nota no zero.
 - Com "Guia" marcado, as referências permitidas tocam ao mesmo tempo que a voz.
   Desmarcado, somente a nota inicial é dada depois das quatro batidas.
 - O guia acompanha uma nota por vez: avança quando há acerto sustentado, quando
   a aproximação é ritmicamente coerente ou quando termina uma tolerância flexível.
   A primeira nota admite uma espera maior para a respiração inicial.
+- Cada posição dispara o instrumento somente uma vez. A próxima referência é
+  antecipada poucos milissegundos antes da troca e não é atacada novamente quando
+  a nova posição começa.
 - "Ouvir" é uma prévia opcional e separada. Ao clicar em "Início", qualquer
   prévia é interrompida e o guia só entra junto com o microfone e o gráfico.
 - Os botões − e + alteram o andamento em passos de 4 bpm; o valor também pode
@@ -53,6 +56,8 @@ TREINO ASSISTIDO
 - O andamento e a quantidade de notas por pulso são ajustados antes de abrir a janela.
 - Notas deliberadamente mudas não tocam e não recebem linha ou rótulo no gráfico,
   mas continuam sendo avaliadas quando o usuário as canta.
+- O gráfico combina o roteiro vermelho, a voz azul e um cursor verde de posição.
+  A duração visual da nota atual se estende junto com as tolerâncias do usuário.
 
 EXECUÇÃO
 

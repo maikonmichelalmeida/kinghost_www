@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Treino assistido</title>
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
   <main class="app">
@@ -86,8 +86,12 @@
 
     <section id="pitchSection" class="panel scroll-target">
       <h2>Pitch em tempo real</h2>
-      <canvas id="pitchCanvas" width="1100" height="300"></canvas>
-      <div class="legend">Traço azul = pitch detectado. O principal erro sustentado é destacado em vermelho.</div>
+      <canvas id="pitchCanvas" width="1100" height="340"></canvas>
+      <div class="graph-guide-readout" aria-live="polite">
+        <strong id="graphNow">Agora: aguardando</strong>
+        <span id="graphNext">O contador e o próximo alvo aparecerão aqui.</span>
+      </div>
+      <div class="legend">Azul = sua voz · vermelho = roteiro esperado · verde = posição atual. O roteiro se ajusta aos seus atrasos.</div>
     </section>
 
     <section id="evaluationSection" class="panel scroll-target">
@@ -109,6 +113,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
