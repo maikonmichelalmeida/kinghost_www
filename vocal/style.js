@@ -441,7 +441,7 @@ const EXERCISES = [
     "variation": "A2 +1 -1 +1.5 -1.5 +2.5 -2.5 +3.5 -3.5 +4 -4 +5 -5 +6",
     "image": "tablaturas/Minor Scale Asc. Intervals.png",
     "audio": "sample_vocal/Minor Scale Asc. Intervals.mp3",
-    "lesson": "htm/Minor Scale Asc. Intervals.htm"
+    "lesson": "htm/Minor Scale As. Intervals.htm"
   },
   {
     "id": 38,
@@ -481,11 +481,270 @@ const tabStage = document.getElementById('tabStage');
 const tabImage = document.getElementById('tabImage');
 const audio = document.getElementById('exerciseAudio');
 const frame = document.getElementById('lessonFrame');
-let currentDay = 'A';
-let sessionIndex = 0;
-let currentExerciseId = SESSIONS[currentDay][0];
+const baseStartBtn = document.getElementById('baseStartBtn');
+const baseTranspose = document.getElementById('baseTranspose');
+const baseDirection = document.getElementById('baseDirection');
+const trainerOverlay = document.getElementById('trainerOverlay');
+const trainerFrame = document.getElementById('trainerFrame');
+const trainerCloseBtn = document.getElementById('trainerCloseBtn');
+
+const STORAGE_KEY = 'vocal-friendly-environment-v2';
+const TRANSPOSE_MIN = -8;
+const TRANSPOSE_MAX = 8;
+
+function readEnvironment() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+const environment = readEnvironment();
+environment.training = environment.training && typeof environment.training === 'object'
+  ? environment.training
+  : {};
+
+let currentDay = SESSIONS[environment.day] ? environment.day : 'A';
+let sessionIndex = Number.isInteger(environment.sessionIndex) ? environment.sessionIndex : 0;
+let currentExerciseId = byId[environment.exerciseId]
+  ? environment.exerciseId
+  : SESSIONS[currentDay][Math.min(sessionIndex, SESSIONS[currentDay].length - 1)];
+let activeTrainingKey = null;
+let pendingTrainerConfig = null;
+let trainerReady = false;
+
+function saveEnvironment() {
+  environment.day = currentDay;
+  environment.sessionIndex = sessionIndex;
+  environment.exerciseId = currentExerciseId;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(environment)); } catch (_) {}
+}
+
+function clampTranspose(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Number.isFinite(parsed) ? parsed : 0));
+}
+
+function getTrainingState(key) {
+  const raw = environment.training[key] || {};
+  return {
+    shift: clampTranspose(raw.shift),
+    up: raw.up !== false,
+  };
+}
+
+function setTrainingState(key, next) {
+  environment.training[key] = {
+    shift: clampTranspose(next.shift),
+    up: next.up !== false,
+  };
+  saveEnvironment();
+  return environment.training[key];
+}
 
 function pathFor(p) { return p ? encodeURI(p) : ''; }
+
+const NOTE_TO_MIDI_CLASS = { C:0, 'C#':1, Db:1, D:2, 'D#':3, Eb:3, E:4, F:5, 'F#':6, Gb:6, G:7, 'G#':8, Ab:8, A:9, 'A#':10, Bb:10, B:11 };
+const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function noteToMidi(note) {
+  const match = String(note).trim().replaceAll('♯','#').replaceAll('♭','b').match(/^([A-Ga-g])([#b]?)(-?\d+)$/);
+  if (!match) return null;
+  const name = match[1].toUpperCase() + match[2];
+  const pitchClass = NOTE_TO_MIDI_CLASS[name];
+  if (!Number.isInteger(pitchClass)) return null;
+  return 12 * (Number(match[3]) + 1) + pitchClass;
+}
+
+function midiToNote(midi) {
+  const pitchClass = ((midi % 12) + 12) % 12;
+  return `${SHARP_NAMES[pitchClass]}${Math.floor(midi / 12) - 1}`;
+}
+
+function transposeNotes(notes, shift) {
+  return notes.map(note => {
+    const midi = noteToMidi(note);
+    return midi == null ? note : midiToNote(midi + shift);
+  });
+}
+
+function noteTokens(text) {
+  return [...String(text || '').matchAll(/\b([A-Ga-g](?:[#♯b♭])?-?\d+)\b/g)]
+    .map(match => match[1][0].toUpperCase() + match[1].slice(1).replaceAll('♯','#').replaceAll('♭','b'));
+}
+
+function bestExplicitSequence(title, text) {
+  const titleNotes = noteTokens(title);
+  if (titleNotes.length) return titleNotes;
+
+  const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const candidates = lines
+    .map((line, index) => ({ notes: noteTokens(line), index, line }))
+    .filter(candidate => candidate.notes.length >= 2 && candidate.notes.length <= 64)
+    .sort((a, b) => b.notes.length - a.notes.length || a.index - b.index);
+
+  return candidates[0]?.notes || [];
+}
+
+function bpmFromText(text, fallback) {
+  const range = String(text || '').match(/(\d{2,3})\s*[–—-]\s*(\d{2,3})\s*bpm/i);
+  if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
+  const single = String(text || '').match(/(\d{2,3})\s*bpm/i);
+  if (single) return Number(single[1]);
+  return fallback;
+}
+
+function defaultBpm(exercise) {
+  if (exercise.type === 'Respiração') return 60;
+  if (exercise.type === 'Agilidade') return 104;
+  if (exercise.type === 'Articulação') return 88;
+  if (exercise.type === 'Escalas') return 84;
+  return 80;
+}
+
+function subdivisionFromText(exercise, title, text) {
+  const sample = `${title}\n${text}`;
+  if (/tercina|triplet/i.test(sample)) return 3;
+  if (/semicolcheia|quatro notas por pulso/i.test(sample)) return 4;
+  if (/colcheia|duas notas por pulso/i.test(sample)) return 2;
+  return exercise.type === 'Agilidade' ? 2 : 1;
+}
+
+function breathingDurationFromText(title, text, bpm) {
+  const sample = `${title}\n${text}`;
+  const pulses = sample.match(/(\d{1,3})\s*pulsos?/i);
+  if (pulses) return Math.min(180, Math.max(8, Math.round(Number(pulses[1]) * 60 / bpm)));
+  const seconds = sample.match(/(?:por|durante|até)?\s*(\d{1,3})\s*(?:s|segundos?)(?:\b|\s)/i);
+  if (seconds) return Math.min(180, Math.max(8, Number(seconds[1])));
+  const minutes = sample.match(/(?:por|durante|~)?\s*(\d{1,2})\s*(?:min|minutos?)(?:\b|\s)/i);
+  if (minutes) return Math.min(180, Math.max(15, Number(minutes[1]) * 60));
+  return 30;
+}
+
+function isUnpitchedSection(exercise, title, text) {
+  if (exercise.type === 'Respiração') return true;
+  const sample = `${title} ${text}`.toLowerCase();
+  return /sem pitch|sem voz|articula[cç][aã]o sem pitch|fala ritmada|fale |diga |somente consoante|consoantes esqueleto|hiss|sopro|respira|staccato puffs/.test(sample);
+}
+
+function guideForSection(vocalNotes, title, text) {
+  const sample = `${title}\n${text}`;
+  let guide = [...vocalNotes];
+
+  if (/fantasm/i.test(sample)) {
+    const targets = noteTokens(title);
+    const targetSet = new Set(targets.length ? targets : noteTokens(text).slice(0, 1));
+    guide = vocalNotes.map(note => targetSet.has(note) ? null : note);
+  }
+
+  const guitarSentence = String(text || '').split(/\r?\n/).find(line => /viol[aã]o\s+(?:toca|marca)|toque\s+(?:apenas|somente)|toque.+cante/i.test(line));
+  if (guitarSentence && /apenas|somente|marca|[aâ]ncora/i.test(guitarSentence)) {
+    const anchors = new Set(noteTokens(guitarSentence));
+    if (anchors.size) guide = vocalNotes.map(note => anchors.has(note) ? note : null);
+  }
+
+  if (/sem viol[aã]o|retire (?:completamente )?o viol[aã]o|voz sozinha/i.test(sample)) {
+    guide = vocalNotes.map(() => null);
+  }
+
+  if (/apenas a t[oô]nica|somente a t[oô]nica/i.test(sample)) {
+    guide = vocalNotes.map((note, index) => index === 0 ? note : null);
+  }
+
+  return guide;
+}
+
+function buildTrainingConfig(exercise, section = {}) {
+  const key = section.trainingKey || `${exercise.id}:base`;
+  const state = getTrainingState(key);
+  const title = section.title || 'Exercício principal';
+  const text = section.text || '';
+  const baseNotes = exercise.notes === 'qualquer' ? [] : exercise.notes.split(/\s+/).filter(Boolean);
+  const explicit = bestExplicitSequence(title, text);
+  const guideVariation = /fantasm|notas?-[aâ]ncora|notas? [aâ]ncora|viol[aã]o toca apenas|cante toda|cante tudo|escala sozinho|apenas a t[oô]nica/i.test(`${title}\n${text}`);
+  const sourceNotes = guideVariation && baseNotes.length ? baseNotes : (explicit.length ? explicit : baseNotes);
+  const mode = isUnpitchedSection(exercise, title, text) || !sourceNotes.length ? 'breathing' : 'pitch';
+  const bpm = bpmFromText(`${title}\n${text}`, defaultBpm(exercise));
+  const subdivision = subdivisionFromText(exercise, title, text);
+  const shiftedNotes = transposeNotes(sourceNotes, state.shift);
+  const baseGuide = guideForSection(sourceNotes, title, text);
+  const shiftedGuide = baseGuide.map(note => note == null ? null : transposeNotes([note], state.shift)[0]);
+
+  return {
+    version: 2,
+    trainingKey: key,
+    exerciseId: exercise.id,
+    exerciseName: exercise.name,
+    trainingTitle: title,
+    objective: exercise.objective,
+    mode,
+    transpose: state.shift,
+    directionUp: state.up,
+    vocalNotes: shiftedNotes,
+    guideNotes: shiftedGuide,
+    bpm,
+    subdivision,
+    noteDurationMs: Math.round(60000 / (bpm * subdivision)),
+    breathingDurationSec: breathingDurationFromText(title, text, bpm),
+    sourceText: text.slice(0, 1800),
+  };
+}
+
+function postLessonContext() {
+  const exercise = byId[currentExerciseId];
+  if (!exercise || !frame.contentWindow) return;
+  frame.contentWindow.postMessage({
+    type: 'vocal-lesson-context',
+    exercise: { id: exercise.id, name: exercise.name, type: exercise.type, notes: exercise.notes },
+    states: environment.training,
+    limits: { min: TRANSPOSE_MIN, max: TRANSPOSE_MAX },
+  }, '*');
+}
+
+function syncBaseControls() {
+  const state = getTrainingState(`${currentExerciseId}:base`);
+  baseTranspose.value = state.shift;
+  baseDirection.checked = state.up;
+}
+
+function postTrainerConfig() {
+  if (!trainerReady || !pendingTrainerConfig || !trainerFrame.contentWindow) return;
+  trainerFrame.contentWindow.postMessage({ type: 'vocal-trainer-config', config: pendingTrainerConfig }, '*');
+}
+
+function openTrainer(config) {
+  activeTrainingKey = config.trainingKey;
+  pendingTrainerConfig = config;
+  trainerOverlay.hidden = false;
+  document.body.classList.add('trainer-open');
+  if (!trainerFrame.getAttribute('src')) {
+    trainerReady = false;
+    trainerFrame.src = pathFor('trainer/index.html');
+  } else {
+    postTrainerConfig();
+  }
+}
+
+function closeTrainer() {
+  trainerFrame.contentWindow?.postMessage({ type: 'vocal-trainer-stop' }, '*');
+  trainerOverlay.hidden = true;
+  document.body.classList.remove('trainer-open');
+  activeTrainingKey = null;
+  pendingTrainerConfig = null;
+}
+
+function advanceTrainingState(key) {
+  const current = getTrainingState(key);
+  const next = setTrainingState(key, {
+    shift: current.shift + (current.up ? 1 : -1),
+    up: current.up,
+  });
+
+  if (key === `${currentExerciseId}:base`) syncBaseControls();
+  frame.contentWindow?.postMessage({ type: 'vocal-training-state', key, state: next }, '*');
+}
 
 function populate() {
   Object.keys(SESSIONS).forEach(day => {
@@ -532,12 +791,15 @@ function render(id, source='session') {
 
   const pos = SESSIONS[currentDay].indexOf(ex.id);
   if (source === 'session' && pos >= 0) sessionIndex = pos;
+  syncBaseControls();
+  saveEnvironment();
 }
 
 function chooseDay(day) {
   currentDay = day;
   sessionIndex = 0;
   render(SESSIONS[currentDay][sessionIndex], 'session');
+  saveEnvironment();
 }
 function move(delta) {
   const list = SESSIONS[currentDay];
@@ -560,8 +822,72 @@ document.addEventListener('fullscreenchange', () => {
 });
 document.addEventListener('keydown', e => {
   if (['SELECT','INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (!trainerOverlay.hidden && e.key === 'Escape') {
+    e.preventDefault();
+    closeTrainer();
+    return;
+  }
+  if (!trainerOverlay.hidden) return;
   if (e.key === 'ArrowLeft') move(-1);
   if (e.key === 'ArrowRight') move(1);
+});
+
+frame.addEventListener('load', postLessonContext);
+
+function saveBaseTranspose(event) {
+  if (event?.type === 'input' && (baseTranspose.value === '' || baseTranspose.value === '-')) return;
+  const key = `${currentExerciseId}:base`;
+  const current = getTrainingState(key);
+  const next = setTrainingState(key, { shift: baseTranspose.value, up: current.up });
+  baseTranspose.value = next.shift;
+}
+baseTranspose.addEventListener('input', saveBaseTranspose);
+baseTranspose.addEventListener('change', saveBaseTranspose);
+
+baseDirection.addEventListener('change', () => {
+  const key = `${currentExerciseId}:base`;
+  const current = getTrainingState(key);
+  setTrainingState(key, { shift: current.shift, up: baseDirection.checked });
+});
+
+baseStartBtn.addEventListener('click', () => {
+  const exercise = byId[currentExerciseId];
+  openTrainer(buildTrainingConfig(exercise, { trainingKey: `${exercise.id}:base`, title: 'Exercício principal' }));
+});
+
+trainerCloseBtn.addEventListener('click', closeTrainer);
+trainerOverlay.addEventListener('click', event => {
+  if (event.target === trainerOverlay) closeTrainer();
+});
+
+window.addEventListener('message', event => {
+  const message = event.data || {};
+
+  if (event.source === trainerFrame.contentWindow) {
+    if (message.type === 'vocal-trainer-ready') {
+      trainerReady = true;
+      postTrainerConfig();
+    } else if (message.type === 'vocal-trainer-close') {
+      closeTrainer();
+    } else if (message.type === 'vocal-trainer-complete') {
+      const key = message.trainingKey || activeTrainingKey;
+      if (key) advanceTrainingState(key);
+      closeTrainer();
+    }
+    return;
+  }
+
+  if (event.source === frame.contentWindow) {
+    if (message.type === 'vocal-lesson-ready') {
+      postLessonContext();
+    } else if (message.type === 'vocal-training-state-change') {
+      setTrainingState(message.key, message.state || {});
+    } else if (message.type === 'vocal-open-training') {
+      const exercise = byId[currentExerciseId];
+      if (!exercise) return;
+      openTrainer(buildTrainingConfig(exercise, message.section || {}));
+    }
+  }
 });
 
 populate();

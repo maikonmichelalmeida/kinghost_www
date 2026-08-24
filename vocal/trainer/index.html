@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Treino assistido</title>
+  <link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+  <main class="app">
+    <header class="trainer-heading">
+      <div>
+        <p class="eyebrow">Treino assistido</p>
+        <h1 id="trainerTitle">Preparando exercício…</h1>
+        <p id="trainerContext" class="lead"></p>
+      </div>
+    </header>
+
+    <section class="panel controls">
+      <div class="exercise-overview">
+        <div><span>Sequência vocal</span><strong id="vocalSequence">—</strong></div>
+        <div><span>Guia</span><strong id="guideSequence">—</strong></div>
+        <div><span>Transposição</span><strong id="transposeDisplay">0 semitons</strong></div>
+      </div>
+
+      <input id="exercise" type="hidden" value="D3 E3 F#3 G3 A3 G3 F#3 E3 D3">
+      <input id="noteDuration" type="hidden" value="750">
+      <input id="clarityThreshold" type="hidden" value="0.86">
+      <input id="rmsThreshold" type="hidden" value="0.008">
+
+      <div class="settings-grid primary-settings">
+        <label>
+          Andamento
+          <div class="input-with-suffix">
+            <input id="bpm" type="number" min="40" max="180" step="1" value="80">
+            <span>bpm</span>
+          </div>
+        </label>
+        <label>
+          Instrumento guia
+          <select id="instrument">
+            <option value="acoustic_guitar_nylon" selected>Violão nylon</option>
+            <option value="acoustic_guitar_steel">Violão aço</option>
+            <option value="acoustic_grand_piano">Piano acústico</option>
+          </select>
+        </label>
+        <label>
+          Notas por pulso
+          <select id="subdivision">
+            <option value="1" selected>1 — regular</option>
+            <option value="2">2 — colcheias</option>
+            <option value="3">3 — tercinas</option>
+            <option value="4">4 — rápidas</option>
+          </select>
+        </label>
+      </div>
+
+      <button id="startButton" class="start-button" type="button">Iniciar treino</button>
+
+      <div id="transportCue" class="transport-cue" data-state="waiting" aria-live="polite">
+        <div id="cuePulse" class="cue-pulse">INÍCIO</div>
+        <div class="cue-copy">
+          <strong id="cueTitle">Pronto para começar</strong>
+          <span id="cueText">O guia será tocado antes da captação.</span>
+        </div>
+      </div>
+
+      <div id="demoNotes" class="demo-notes" aria-label="Notas da demonstração"></div>
+      <p id="status" class="status">Aguardando.</p>
+    </section>
+
+    <section id="breathingSection" class="panel breathing-panel" hidden>
+      <h2>Treino de respiração e coordenação</h2>
+      <div id="breathingTimer" class="breathing-timer">00:30</div>
+      <p>O metrônomo fornece a pulsação. Este treino registra conclusão e duração, sem avaliar afinação.</p>
+    </section>
+
+    <section id="pitchLive" class="live-grid">
+      <div class="metric"><span>Nota atual</span><strong id="currentNote">—</strong></div>
+      <div class="metric"><span>Frequência</span><strong id="currentHz">—</strong></div>
+      <div class="metric"><span>Cents</span><strong id="currentCents">—</strong></div>
+      <div class="metric"><span>Clareza</span><strong id="currentClarity">—</strong></div>
+      <div class="metric"><span>Estado</span><strong id="trackerState">—</strong></div>
+    </section>
+
+    <section id="pitchSection" class="panel scroll-target">
+      <h2>Pitch em tempo real</h2>
+      <canvas id="pitchCanvas" width="1100" height="300"></canvas>
+      <div class="legend">Traço azul = pitch detectado. O principal erro sustentado é destacado em vermelho.</div>
+    </section>
+
+    <section id="evaluationSection" class="panel scroll-target">
+      <h2>Avaliação</h2>
+      <div id="globalScore" class="global-score" hidden></div>
+      <div id="summary" class="summary muted">Nenhuma análise concluída.</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Esperado</th><th>Detectado</th><th>Tempo</th><th>Viés</th><th>Erro médio</th><th>P90</th><th>Estabilidade</th><th>Transição</th><th>Confiança</th><th>Afinação</th></tr></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div id="extras" class="extras"></div>
+      <div id="resultActions" class="result-actions" hidden>
+        <button id="retryBtn" type="button">Tentar novamente</button>
+        <button id="completeBtn" class="complete-button" type="button">Concluir</button>
+        <button id="resultCloseBtn" type="button">Fechar</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js?v=6"></script>
+</body>
+</html>

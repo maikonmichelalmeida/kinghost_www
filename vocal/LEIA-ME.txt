@@ -19,3 +19,25 @@ Interface:
 - tablatura ocupa a área principal;
 - descrição didática individual fica abaixo da tablatura;
 - setas esquerda/direita do teclado navegam pelo treino selecionado.
+
+TREINO ASSISTIDO
+
+- O botão "Início" do topo abre o exercício principal.
+- Os trechos praticáveis das aulas recebem seu próprio botão "Início".
+- Cada botão possui uma transposição inteira entre -8 e +8 e uma caixa de direção:
+  marcada sobe 1 semitom ao concluir; desmarcada desce 1 semitom.
+- "Tentar novamente" e "Fechar" não alteram a transposição.
+- Somente "Concluir", depois do fim automático do treino, avança a transposição.
+- Dia, exercício atual, transposições e direções ficam guardados no localStorage.
+- Notas mudas aparecem como travessões no guia. A sequência vocal continua mostrando
+  tudo o que deve ser cantado.
+- Treinos respiratórios usam metrônomo e cronômetro, sem avaliação de afinação.
+- Treinos com pitch mostram avaliação por nota e nota global de 0 a 100.
+- O andamento e a quantidade de notas por pulso podem ser ajustados no painel.
+
+EXECUÇÃO
+
+O projeto continua podendo ser aberto por index.htm. Também pode ser servido por HTTP.
+O afinador depende de internet para carregar o detector de pitch e os instrumentos.
+O navegador precisa ter permissão para usar o microfone; em HTTP comum fora de localhost,
+essa permissão depende da configuração de segurança adotada no próprio navegador.

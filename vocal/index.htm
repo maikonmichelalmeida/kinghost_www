@@ -25,6 +25,20 @@
       <span>Variação</span>
       <code id="variationText"></code>
     </div>
+    <div class="base-training-launch">
+      <span>Treino principal</span>
+      <div class="training-controls" data-training-key="base">
+        <button id="baseStartBtn" class="training-start" type="button">Início</button>
+        <label class="transpose-field" title="Transposição atual em semitons (de -8 a +8)">
+          <span class="sr-only">Transposição em semitons</span>
+          <input id="baseTranspose" type="number" min="-8" max="8" step="1" value="0" inputmode="numeric">
+        </label>
+        <label class="direction-field" title="Marcado: próximo treino sobe 1 semitom. Desmarcado: desce 1 semitom.">
+          <input id="baseDirection" type="checkbox" checked>
+          <span>↑</span>
+        </label>
+      </div>
+    </div>
   </section>
 
   <section class="tab-stage" id="tabStage" aria-label="Tablatura do exercício">
@@ -36,6 +50,13 @@
     <iframe id="lessonFrame" title="Descrição e foco de estudo do exercício"></iframe>
   </section>
 </main>
+
+<div id="trainerOverlay" class="trainer-overlay" hidden>
+  <div class="trainer-dialog" role="dialog" aria-modal="true" aria-label="Treino assistido de afinação">
+    <button id="trainerCloseBtn" class="trainer-close" type="button" aria-label="Fechar treino">×</button>
+    <iframe id="trainerFrame" title="Afinador e avaliador do exercício" allow="microphone"></iframe>
+  </div>
+</div>
 
 <script src="style.js"></script>
 </body>
