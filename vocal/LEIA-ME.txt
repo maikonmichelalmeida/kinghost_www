@@ -34,7 +34,10 @@ TREINO ASSISTIDO
   intermediário e sem demonstração prévia da escala.
 - Com "Guia" marcado, as referências permitidas tocam ao mesmo tempo que a voz.
   Desmarcado, somente a nota inicial é dada depois das quatro batidas.
-- "Ouvir" permite conferir previamente apenas as referências que o exercício autoriza.
+- "Ouvir" é uma prévia opcional e separada. Ao clicar em "Início", qualquer
+  prévia é interrompida e o guia só entra junto com o microfone e o gráfico.
+- Os botões − e + alteram o andamento em passos de 4 bpm; o valor também pode
+  ser digitado diretamente entre 40 e 180 bpm.
 - "Tentar novamente" e "Fechar" não alteram a transposição.
 - Somente "Concluir", depois do fim automático do treino, avança a transposição.
 - Dia, exercício atual, transposições, direções, guia e ritmos ficam guardados no localStorage.
@@ -49,6 +52,9 @@ TREINO ASSISTIDO
 EXECUÇÃO
 
 O projeto continua podendo ser aberto por index.htm. Também pode ser servido por HTTP.
-O afinador depende de internet para carregar o detector de pitch e os instrumentos.
+Em file:// o treino abre em uma janela própria para que o microfone fique no contexto
+principal do navegador. Em HTTP ele continua abrindo sobre o tutorial.
+O afinador depende de internet apenas para carregar o detector de pitch; o metrônomo,
+o botão Ouvir e o guia simultâneo usam áudio nativo do navegador.
 O navegador precisa ter permissão para usar o microfone; em HTTP comum fora de localhost,
 essa permissão depende da configuração de segurança adotada no próprio navegador.

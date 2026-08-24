@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Treino Vocal Offline</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <header class="control-bar" aria-label="Controles do treino">
@@ -44,8 +44,10 @@
         </label>
         <label class="tempo-field" title="Andamento deste treino em batidas por minuto">
           <span class="sr-only">Batidas por minuto</span>
+          <button id="baseTempoDown" class="tempo-step" type="button" aria-label="Diminuir 4 bpm">−</button>
           <input id="baseBpm" type="number" min="40" max="180" step="1" value="80" inputmode="numeric">
           <span>bpm</span>
+          <button id="baseTempoUp" class="tempo-step" type="button" aria-label="Aumentar 4 bpm">+</button>
         </label>
         <label class="subdivision-field" title="Quantidade de notas por batida">
           <span class="sr-only">Notas por batida</span>
@@ -85,6 +87,6 @@
   </div>
 </div>
 
-<script src="style.js"></script>
+<script src="style.js?v=8"></script>
 </body>
 </html>

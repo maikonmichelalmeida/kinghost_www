@@ -137,6 +137,17 @@ button:hover,select:hover{border-color:var(--accent)}
   text-align:center;
   font:700 .82rem/1 Inter,Segoe UI,Arial,sans-serif;
 }
+.tempo-step{
+  width:26px;
+  height:26px;
+  padding:0;
+  border:1px solid #344355;
+  border-radius:7px;
+  background:#17202a;
+  color:#d8e7f5;
+  font:800 1rem/1 Inter,Segoe UI,Arial,sans-serif;
+}
+.tempo-step:hover{border-color:#6cc9ab;color:#9ff0d3}
 .subdivision-field select,.instrument-field select{
   min-height:30px;
   border:0;

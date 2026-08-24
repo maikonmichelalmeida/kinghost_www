@@ -487,6 +487,8 @@ const baseTranspose = document.getElementById('baseTranspose');
 const baseDirection = document.getElementById('baseDirection');
 const baseGuided = document.getElementById('baseGuided');
 const baseBpm = document.getElementById('baseBpm');
+const baseTempoDown = document.getElementById('baseTempoDown');
+const baseTempoUp = document.getElementById('baseTempoUp');
 const baseSubdivision = document.getElementById('baseSubdivision');
 const guideInstrumentSelect = document.getElementById('guideInstrumentSelect');
 const trainerOverlay = document.getElementById('trainerOverlay');
@@ -527,6 +529,8 @@ let previewInstrument = null;
 let previewInstrumentName = null;
 let previewRunId = 0;
 let previewTimers = [];
+let trainerPopup = null;
+const lessonSections = new Map();
 
 function saveEnvironment() {
   environment.day = currentDay;
@@ -787,6 +791,13 @@ function postLessonContext() {
   }, '*');
 }
 
+function postLessonSectionConfig(section) {
+  const exercise = byId[currentExerciseId];
+  if (!exercise || !section?.trainingKey || !frame.contentWindow) return;
+  const config = buildTrainingConfig(exercise, section);
+  frame.contentWindow.postMessage({ type: 'vocal-section-config', key: section.trainingKey, config }, '*');
+}
+
 function syncBaseControls() {
   const exercise = byId[currentExerciseId];
   const state = getTrainingState(`${currentExerciseId}:base`, defaultTempo(exercise));
@@ -810,23 +821,80 @@ function clearPreview() {
   });
 }
 
-async function ensurePreviewInstrument() {
+async function ensurePreviewAudioContext() {
   if (!previewAudioContext || previewAudioContext.state === 'closed') {
-    previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error('Web Audio não está disponível neste navegador.');
+    previewAudioContext = new AudioContextClass({ latencyHint: 'interactive' });
   }
-  await previewAudioContext.resume();
+  await Promise.race([
+    previewAudioContext.resume(),
+    new Promise(resolve => setTimeout(resolve, 900)),
+  ]);
+  if (previewAudioContext.state !== 'running') throw new Error('O navegador bloqueou a ativação do áudio. Clique novamente em Ouvir.');
+  return previewAudioContext;
+}
+
+async function ensurePreviewInstrument() {
+  await ensurePreviewAudioContext();
   const name = environment.instrument;
   if (previewInstrument && previewInstrumentName === name) return previewInstrument;
   try { previewInstrument?.dispose(); } catch (_) {}
-  const { Soundfont } = await import('https://unpkg.com/smplr/dist/index.mjs');
   previewInstrumentName = name;
-  previewInstrument = Soundfont(previewAudioContext, {
-    instrument: name,
-    kit: 'MusyngKite',
-    volume: 105,
-  });
-  await previewInstrument.ready;
+  previewInstrument = createNativeGuideInstrument(previewAudioContext, name);
   return previewInstrument;
+}
+
+function createNativeGuideInstrument(context, timbre = 'acoustic_guitar_nylon') {
+  const active = new Set();
+  const tone = timbre === 'acoustic_grand_piano'
+    ? { type: 'triangle', harmonic: 'sine', harmonicGain: .18, release: .12 }
+    : timbre === 'acoustic_guitar_steel'
+      ? { type: 'triangle', harmonic: 'square', harmonicGain: .08, release: .09 }
+      : { type: 'sine', harmonic: 'triangle', harmonicGain: .16, release: .14 };
+
+  function start({ note, duration = .5, velocity = 82, when = context.currentTime }) {
+    const midi = Number(note);
+    if (!Number.isFinite(midi)) return;
+    const frequency = 440 * (2 ** ((midi - 69) / 12));
+    const startAt = Math.max(context.currentTime, Number(when) || context.currentTime);
+    const stopAt = startAt + Math.max(.08, Number(duration) || .5);
+    const master = context.createGain();
+    const fundamental = context.createOscillator();
+    const harmonic = context.createOscillator();
+    const strength = Math.min(.18, Math.max(.035, (Number(velocity) || 82) / 650));
+
+    fundamental.type = tone.type;
+    fundamental.frequency.setValueAtTime(frequency, startAt);
+    harmonic.type = tone.harmonic;
+    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
+    const harmonicGain = context.createGain();
+    harmonicGain.gain.setValueAtTime(tone.harmonicGain, startAt);
+    master.gain.setValueAtTime(.0001, startAt);
+    master.gain.exponentialRampToValueAtTime(strength, startAt + .012);
+    master.gain.setValueAtTime(strength * .86, Math.max(startAt + .02, stopAt - tone.release));
+    master.gain.exponentialRampToValueAtTime(.0001, stopAt);
+    fundamental.connect(master);
+    harmonic.connect(harmonicGain).connect(master);
+    master.connect(context.destination);
+    const voices = [fundamental, harmonic];
+    voices.forEach(oscillator => {
+      oscillator.__vocalStartAt = startAt;
+      active.add(oscillator);
+      oscillator.start(startAt);
+      oscillator.stop(stopAt + .02);
+      oscillator.addEventListener('ended', () => active.delete(oscillator), { once: true });
+    });
+  }
+
+  function stop() {
+    active.forEach(oscillator => {
+      try { oscillator.stop(Math.max(context.currentTime, oscillator.__vocalStartAt || context.currentTime)); } catch (_) {}
+    });
+    active.clear();
+  }
+
+  return { start, stop, dispose: stop, ready: Promise.resolve() };
 }
 
 function playPreviewClick(accent = false) {
@@ -852,8 +920,7 @@ async function previewTraining(config, button) {
 
   try {
     if (config.mode === 'breathing') {
-      if (!previewAudioContext || previewAudioContext.state === 'closed') previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
-      await previewAudioContext.resume();
+      await ensurePreviewAudioContext();
       [0, 1, 2, 3].forEach(index => previewTimers.push(setTimeout(() => playPreviewClick(index === 0), index * 300)));
       previewTimers.push(setTimeout(clearPreview, 1350));
       return;
@@ -861,8 +928,7 @@ async function previewTraining(config, button) {
 
     const guide = Array.isArray(config.guideNotes) ? config.guideNotes : [];
     if (!guide.some(Boolean)) {
-      if (!previewAudioContext || previewAudioContext.state === 'closed') previewAudioContext = new AudioContext({ latencyHint: 'interactive' });
-      await previewAudioContext.resume();
+      await ensurePreviewAudioContext();
       const beatMs = Math.round(60000 / config.bpm);
       [0, 1, 2, 3].forEach(index => previewTimers.push(setTimeout(() => playPreviewClick(index === 0), index * beatMs)));
       previewTimers.push(setTimeout(clearPreview, 4 * beatMs + 80));
@@ -895,10 +961,28 @@ function postTrainerConfig() {
   trainerFrame.contentWindow.postMessage({ type: 'vocal-trainer-config', config: pendingTrainerConfig }, '*');
 }
 
+function popupTrainerUrl(config) {
+  const url = new URL(pathFor('trainer/index.html'), window.location.href);
+  url.hash = `config=${encodeURIComponent(JSON.stringify(config))}`;
+  return url.href;
+}
+
+function openTrainerPopup(config) {
+  trainerPopup = window.open(
+    popupTrainerUrl(config),
+    'vocalTrainerWindow',
+    'popup=yes,width=1180,height=820,resizable=yes,scrollbars=yes'
+  );
+  if (!trainerPopup) return false;
+  trainerPopup.focus?.();
+  return true;
+}
+
 function openTrainer(config) {
   clearPreview();
   activeTrainingKey = config.trainingKey;
   pendingTrainerConfig = config;
+  if (window.location.protocol === 'file:' && openTrainerPopup(config)) return;
   trainerOverlay.hidden = false;
   document.body.classList.add('trainer-open');
   if (!trainerFrame.getAttribute('src')) {
@@ -910,6 +994,8 @@ function openTrainer(config) {
 }
 
 function closeTrainer() {
+  if (trainerPopup && !trainerPopup.closed) trainerPopup.close();
+  trainerPopup = null;
   trainerFrame.contentWindow?.postMessage({ type: 'vocal-trainer-stop' }, '*');
   trainerOverlay.hidden = true;
   document.body.classList.remove('trainer-open');
@@ -926,6 +1012,8 @@ function advanceTrainingState(key) {
 
   if (key === `${currentExerciseId}:base`) syncBaseControls();
   frame.contentWindow?.postMessage({ type: 'vocal-training-state', key, state: next }, '*');
+  const section = lessonSections.get(key);
+  if (section) postLessonSectionConfig(section);
 }
 
 function populate() {
@@ -946,6 +1034,7 @@ function populate() {
 function render(id, source='session') {
   const ex = byId[id];
   if (!ex) return;
+  lessonSections.clear();
   currentExerciseId = ex.id;
   exerciseSelect.value = String(ex.id);
   document.getElementById('notesText').textContent = ex.notes;
@@ -1051,6 +1140,14 @@ function saveBaseTempo() {
 }
 baseBpm.addEventListener('change', saveBaseTempo);
 baseSubdivision.addEventListener('change', saveBaseTempo);
+baseTempoDown.addEventListener('click', () => {
+  baseBpm.value = clampBpm(Number(baseBpm.value) - 4, 80);
+  saveBaseTempo();
+});
+baseTempoUp.addEventListener('click', () => {
+  baseBpm.value = clampBpm(Number(baseBpm.value) + 4, 80);
+  saveBaseTempo();
+});
 
 guideInstrumentSelect.addEventListener('change', () => {
   clearPreview();
@@ -1080,6 +1177,17 @@ trainerOverlay.addEventListener('click', event => {
 window.addEventListener('message', event => {
   const message = event.data || {};
 
+  if (trainerPopup && event.source === trainerPopup) {
+    if (message.type === 'vocal-trainer-complete') {
+      const key = message.trainingKey || activeTrainingKey;
+      if (key) advanceTrainingState(key);
+      closeTrainer();
+    } else if (message.type === 'vocal-trainer-close') {
+      closeTrainer();
+    }
+    return;
+  }
+
   if (event.source === trainerFrame.contentWindow) {
     if (message.type === 'vocal-trainer-ready') {
       trainerReady = true;
@@ -1097,11 +1205,22 @@ window.addEventListener('message', event => {
   if (event.source === frame.contentWindow) {
     if (message.type === 'vocal-lesson-ready') {
       postLessonContext();
+    } else if (message.type === 'vocal-register-training') {
+      if (message.section?.trainingKey) {
+        lessonSections.set(message.section.trainingKey, message.section);
+        postLessonSectionConfig(message.section);
+      }
     } else if (message.type === 'vocal-training-state-change') {
       setTrainingState(message.key, message.state || {});
+      if (message.section?.trainingKey) lessonSections.set(message.section.trainingKey, message.section);
+      const section = lessonSections.get(message.key);
+      if (section) postLessonSectionConfig(section);
+    } else if (message.type === 'vocal-training-complete') {
+      if (message.key) advanceTrainingState(message.key);
     } else if (message.type === 'vocal-open-training') {
       const exercise = byId[currentExerciseId];
       if (!exercise) return;
+      if (message.section?.trainingKey) lessonSections.set(message.section.trainingKey, message.section);
       openTrainer(buildTrainingConfig(exercise, message.section || {}));
     } else if (message.type === 'vocal-preview-training') {
       const exercise = byId[currentExerciseId];

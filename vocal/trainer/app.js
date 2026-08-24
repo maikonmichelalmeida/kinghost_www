@@ -1,6 +1,5 @@
 (async () => {
 const { PitchDetector } = await import("https://esm.sh/pitchy@4");
-const { Soundfont } = await import("https://unpkg.com/smplr/dist/index.mjs");
 
 // ------------------------------------------------------------
 // CONFIGURAÇÃO
@@ -31,12 +30,12 @@ const CONFIG = {
   maxUnvoicedGapMs: 180,
 
   // Segmentos muito curtos tendem a ser ruído/transiente.
-  minSegmentMs: 110,
+  minSegmentMs: 75,
 
   // Aquisição inicial (e após pausas longas): o primeiro pitch coerente só vira
   // uma nota depois de algumas leituras concordarem entre si. Isso evita que
   // o ataque inicial/latência do detector seja registrado como uma nota errada.
-  initialAcquireFrames: 4,
+  initialAcquireFrames: 3,
   initialAcquireSpreadCents: 30,
   initialAcquireMaxDeviationCents: 45,
   initialAcquireMembershipCents: 52,
@@ -51,8 +50,8 @@ const CONFIG = {
 
   // Avaliação pedagógica: não “condenar” ataques e bordas da nota.
   // O núcleo estável é analisado depois de retirar um pequeno trecho das bordas.
-  evaluationEdgeTrimMs: 65,
-  minCoreSamples: 5,
+  evaluationEdgeTrimMs: 38,
+  minCoreSamples: 3,
   lowConfidenceMs: 180,
   highConfidenceMs: 320,
 
@@ -183,6 +182,12 @@ let guidePattern = [];
 let breathingTimerId = null;
 let metronomeTimerId = null;
 let breathingEndAt = 0;
+let needsActivationRetry = false;
+
+function postHostMessage(message) {
+  const target = window.opener && !window.opener.closed ? window.opener : window.parent;
+  if (target && target !== window) target.postMessage(message, "*");
+}
 
 // ------------------------------------------------------------
 // FUNÇÕES MUSICAIS
@@ -918,7 +923,7 @@ function currentNoteDurationMs() {
   const subdivision = clampNumber(subdivisionSelect.value, 1, 4, 1);
   const noteMs = Math.round(60000 / (bpm * subdivision));
   noteDurationInput.value = String(noteMs);
-  return clampNumber(noteMs, 250, 4000, 1000);
+  return clampNumber(noteMs, 80, 4000, 1000);
 }
 
 function currentBeatDurationMs() {
@@ -928,9 +933,17 @@ function currentBeatDurationMs() {
 
 async function ensureGuideAudioContext() {
   if (!guideAudioContext || guideAudioContext.state === "closed") {
-    guideAudioContext = new AudioContext({ latencyHint: "interactive" });
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error("Web Audio não está disponível neste navegador.");
+    guideAudioContext = new AudioContextClass({ latencyHint: "interactive" });
   }
-  await guideAudioContext.resume();
+  await Promise.race([
+    guideAudioContext.resume(),
+    new Promise(resolve => setTimeout(resolve, 900)),
+  ]);
+  if (guideAudioContext.state !== "running") {
+    throw new Error("O navegador bloqueou o áudio. Clique uma vez na janela e tente novamente.");
+  }
   return guideAudioContext;
 }
 
@@ -959,9 +972,16 @@ function clearBreathingTimers() {
 async function prepareMicrophone() {
   if (preparedMediaStream?.active) return preparedMediaStream;
 
+  if (!navigator.mediaDevices?.getUserMedia) {
+    const localHint = window.location.protocol === "file:"
+      ? "Abra este treino na janela própria gerada pelo tutorial, não dentro de outro frame."
+      : "O navegador não liberou getUserMedia para esta origem HTTP. Confirme a autorização da origem nas configurações do navegador.";
+    throw new Error(`Microfone indisponível neste contexto. ${localHint}`);
+  }
+
   preparedMediaStream = await navigator.mediaDevices.getUserMedia({
     audio: {
-      echoCancellation: false,
+      echoCancellation: integrationConfig?.guided !== false,
       noiseSuppression: false,
       autoGainControl: false,
       channelCount: 1,
@@ -983,13 +1003,59 @@ async function prepareGuideInstrument() {
   }
 
   guideInstrumentName = name;
-  guideInstrument = Soundfont(guideAudioContext, {
-    instrument: name,
-    kit: "MusyngKite",
-    volume: 105,
-  });
-  await guideInstrument.ready;
+  guideInstrument = createNativeGuideInstrument(guideAudioContext, name);
   return guideInstrument;
+}
+
+function createNativeGuideInstrument(context, timbre = "acoustic_guitar_nylon") {
+  const active = new Set();
+  const tone = timbre === "acoustic_grand_piano"
+    ? { type: "triangle", harmonic: "sine", harmonicGain: .18, release: .12 }
+    : timbre === "acoustic_guitar_steel"
+      ? { type: "triangle", harmonic: "square", harmonicGain: .08, release: .09 }
+      : { type: "sine", harmonic: "triangle", harmonicGain: .16, release: .14 };
+
+  function start({ note, duration = .5, velocity = 82, when = context.currentTime }) {
+    const midi = Number(note);
+    if (!Number.isFinite(midi)) return;
+    const frequency = 440 * (2 ** ((midi - 69) / 12));
+    const startAt = Math.max(context.currentTime, Number(when) || context.currentTime);
+    const stopAt = startAt + Math.max(.08, Number(duration) || .5);
+    const master = context.createGain();
+    const fundamental = context.createOscillator();
+    const harmonic = context.createOscillator();
+    const harmonicGain = context.createGain();
+    const strength = Math.min(.18, Math.max(.035, (Number(velocity) || 82) / 650));
+
+    fundamental.type = tone.type;
+    fundamental.frequency.setValueAtTime(frequency, startAt);
+    harmonic.type = tone.harmonic;
+    harmonic.frequency.setValueAtTime(frequency * 2, startAt);
+    harmonicGain.gain.setValueAtTime(tone.harmonicGain, startAt);
+    master.gain.setValueAtTime(.0001, startAt);
+    master.gain.exponentialRampToValueAtTime(strength, startAt + .012);
+    master.gain.setValueAtTime(strength * .86, Math.max(startAt + .02, stopAt - tone.release));
+    master.gain.exponentialRampToValueAtTime(.0001, stopAt);
+    fundamental.connect(master);
+    harmonic.connect(harmonicGain).connect(master);
+    master.connect(context.destination);
+    [fundamental, harmonic].forEach(oscillator => {
+      oscillator.__vocalStartAt = startAt;
+      active.add(oscillator);
+      oscillator.start(startAt);
+      oscillator.stop(stopAt + .02);
+      oscillator.addEventListener("ended", () => active.delete(oscillator), { once: true });
+    });
+  }
+
+  function stop() {
+    active.forEach(oscillator => {
+      try { oscillator.stop(Math.max(context.currentTime, oscillator.__vocalStartAt || context.currentTime)); } catch {}
+    });
+    active.clear();
+  }
+
+  return { start, stop, dispose: stop, ready: Promise.resolve() };
 }
 
 function resetSessionVisuals() {
@@ -1030,12 +1096,15 @@ async function startBreathingFlow() {
   try {
     await ensureGuideAudioContext();
   } catch (err) {
+    needsActivationRetry = true;
     setControlsLocked(false);
     setAppState("WAITING");
+    setCue("Ative nesta janela", "Clique uma vez aqui ou pressione ESPAÇO para liberar o áudio.", "!");
     statusEl.textContent = `Não foi possível preparar o áudio: ${err.message}`;
     return;
   }
 
+  needsActivationRetry = false;
   if (appState !== "PREPARING") return;
   await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
@@ -1116,13 +1185,15 @@ async function startDemoFlow() {
     await Promise.all([prepareMicrophone(), prepareGuideInstrument()]);
   } catch (err) {
     await teardownAnalysisAudio();
+    needsActivationRetry = true;
     setControlsLocked(false);
     setAppState("WAITING");
-    setCue("Não foi possível iniciar", "Feche e abra novamente para tentar.", "!");
+    setCue("Ative nesta janela", "Clique uma vez aqui ou pressione ESPAÇO para liberar áudio e microfone.", "!");
     statusEl.textContent = `Não foi possível preparar o áudio: ${err.message}`;
     return;
   }
 
+  needsActivationRetry = false;
   if (appState !== "PREPARING") return;
   await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
@@ -1164,20 +1235,26 @@ function scheduleSimultaneousGuide() {
   clearDemoTimers();
   const noteMs = currentNoteDurationMs();
   const noteSec = noteMs / 1000;
+  const audioStartAt = guideAudioContext.currentTime + .03;
 
   guidePattern.forEach((note, index) => {
-    demoTimers.push(setTimeout(() => {
-      if (runId !== demoRunId || appState !== "LISTENING") return;
-      renderDemoNotes(index);
-      if (!note) return;
+    if (note) {
       try {
         guideInstrument.start({
           note: note.midi,
           duration: Math.max(.12, noteSec * .82),
           velocity: 80,
+          when: audioStartAt + index * noteSec,
         });
       } catch {}
-    }, index * noteMs));
+    }
+    demoTimers.push(setTimeout(() => {
+      if (runId !== demoRunId || appState !== "LISTENING") return;
+      renderDemoNotes(index);
+      statusEl.textContent = note
+        ? `Cantando com guia: ${note.label} · ${bpmInput.value} bpm.`
+        : `Nota ${index + 1}: ataque sem referência. Continue no mesmo pulso.`;
+    }, 30 + index * noteMs));
   });
 
   demoTimers.push(setTimeout(() => {
@@ -1192,8 +1269,14 @@ async function startAnalysisFromPreparedMic() {
     mediaStream = preparedMediaStream?.active ? preparedMediaStream : await prepareMicrophone();
     preparedMediaStream = null;
 
-    audioContext = new AudioContext({ latencyHint: "interactive" });
-    await audioContext.resume();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error("Web Audio não está disponível neste navegador.");
+    audioContext = new AudioContextClass({ latencyHint: "interactive" });
+    await Promise.race([
+      audioContext.resume(),
+      new Promise(resolve => setTimeout(resolve, 900)),
+    ]);
+    if (audioContext.state !== "running") throw new Error("O navegador bloqueou o processamento do microfone.");
 
     sourceNode = audioContext.createMediaStreamSource(mediaStream);
     analyserNode = audioContext.createAnalyser();
@@ -1980,6 +2063,13 @@ function isTypingTarget(target) {
   return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
 }
 
+window.addEventListener("pointerdown", () => {
+  if (needsActivationRetry && integrationConfig && appState === "WAITING") {
+    needsActivationRetry = false;
+    setTimeout(() => startDemoFlow(), 0);
+  }
+}, { capture: true });
+
 window.addEventListener("keydown", (event) => {
   if (event.code !== "Space" || event.repeat || isTypingTarget(event.target)) return;
   if (!integrationConfig) return;
@@ -2016,14 +2106,16 @@ retryBtn.addEventListener("click", async () => {
 
 completeBtn.addEventListener("click", () => {
   if (appState !== "DONE" || !integrationConfig) return;
-  window.parent.postMessage({
+  postHostMessage({
     type: "vocal-trainer-complete",
     trainingKey: integrationConfig.trainingKey,
-  }, "*");
+  });
+  if (window.opener) setTimeout(() => window.close(), 80);
 });
 
 function requestClose() {
-  window.parent.postMessage({ type: "vocal-trainer-close" }, "*");
+  postHostMessage({ type: "vocal-trainer-close" });
+  if (window.opener) window.close();
 }
 
 resultCloseBtn.addEventListener("click", requestClose);
@@ -2050,7 +2142,20 @@ window.addEventListener("message", async event => {
 });
 
 initializeUi();
-window.parent.postMessage({ type: "vocal-trainer-ready" }, "*");
+postHostMessage({ type: "vocal-trainer-ready" });
+
+const hashParams = new URLSearchParams(window.location.hash.slice(1));
+const hashConfig = hashParams.get("config");
+if (hashConfig) {
+  try {
+    let parsed;
+    try { parsed = JSON.parse(hashConfig); }
+    catch (_) { parsed = JSON.parse(decodeURIComponent(hashConfig)); }
+    await applyIntegrationConfig(parsed);
+  } catch (error) {
+    statusEl.textContent = `Configuração local inválida: ${error.message}`;
+  }
+}
 })().catch(error => {
   console.error("Falha ao inicializar o treino assistido:", error);
   const status = document.getElementById("status");
