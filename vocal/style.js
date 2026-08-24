@@ -845,7 +845,7 @@ async function ensurePreviewInstrument() {
   previewInstrument = Soundfont(previewAudioContext, {
     instrument: name,
     kit: 'MusyngKite',
-    volume: 105,
+    volume: 127,
   });
   await previewInstrument.ready;
   return previewInstrument;
@@ -898,7 +898,7 @@ async function previewTraining(config, button) {
         if (runId !== previewRunId || !note) return;
         const midi = noteToMidi(note);
         if (midi == null) return;
-        instrument.start({ note: midi, duration: Math.max(.12, noteSec * .82), velocity: 84 });
+        instrument.start({ note: midi, duration: Math.max(.12, noteSec * .82), velocity: 127 });
       }, index * noteMs));
     });
     previewTimers.push(setTimeout(clearPreview, Math.max(600, guide.length * noteMs + 100)));

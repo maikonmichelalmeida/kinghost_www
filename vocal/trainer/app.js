@@ -1021,7 +1021,7 @@ async function prepareGuideInstrument() {
   guideInstrument = Soundfont(guideAudioContext, {
     instrument: name,
     kit: "MusyngKite",
-    volume: 105,
+    volume: 127,
   });
   await guideInstrument.ready;
   return guideInstrument;
@@ -1191,17 +1191,21 @@ async function startDemoFlow() {
     try {
       guideInstrument.start({
         note: firstReference.midi,
-        duration: Math.max(.42, CONFIG.preSingGuideDurationMs / 1000),
-        velocity: 84,
+        duration: (CONFIG.preSingGuideDurationMs + CONFIG.quickCountInMs * 4 + 500) / 1000,
+        velocity: 127,
       });
     } catch {}
-    await new Promise(resolve => setTimeout(resolve, CONFIG.preSingGuideDurationMs + 110));
-    try { guideInstrument.stop(); } catch {}
+    await new Promise(resolve => setTimeout(resolve, CONFIG.preSingGuideDurationMs + 50));
     if (appState !== "PREPARING") return;
   }
 
   await runQuickCountIn();
   if (appState !== "COUNTDOWN") return;
+  if (guided) {
+    // A referência sustentada atravessou toda a contagem; no zero ela cede
+    // lugar ao novo ataque da primeira posição, já com o microfone ativo.
+    try { guideInstrument?.stop(); } catch {}
+  }
 
   if (!guided) {
     if (firstReference && guideInstrument) {
@@ -1215,7 +1219,7 @@ async function startDemoFlow() {
         guideInstrument.start({
           note: firstReference.midi,
           duration: CONFIG.preSingGuideDurationMs / 1000,
-          velocity: 84,
+          velocity: 127,
         });
       } catch {}
       await new Promise(resolve => setTimeout(resolve, CONFIG.preSingGuideDurationMs + 90));
@@ -1242,9 +1246,9 @@ function adaptiveSlotTiming(index, voicedMs, elapsedMs, firstVoiceOffsetMs) {
   const lateFirstAttack = index === 0 &&
     (firstVoiceOffsetMs == null || firstVoiceOffsetMs >= noteMs * 0.45);
   const mostlySilent = silenceRatio < 0.22 || lateFirstAttack;
-  const extraMs = mostlySilent
-    ? (index === 0 ? Math.max(1300, noteMs * 1.25) : Math.max(800, noteMs * 0.85))
-    : Math.max(500, noteMs * 0.55);
+  const extraMs = index === 0
+    ? Math.max(2000, noteMs * 1.8)
+    : (mostlySilent ? Math.max(800, noteMs * 0.85) : Math.max(500, noteMs * 0.55));
   return { noteMs, extraMs, mostlySilent };
 }
 
@@ -1263,7 +1267,7 @@ function playAdaptiveTarget(index) {
       // Uma única emissão longa por posição. Ela é interrompida somente na
       // antecipação/entrada da próxima nota, nunca repetida enquanto aguardamos.
       duration: Math.max(2.2, adaptiveGuide.noteMs / 1000 * 3.2),
-      velocity: 84,
+      velocity: 127,
     });
     adaptiveGuide.soundingIndex = index;
     return true;
@@ -1300,6 +1304,10 @@ function beginAdaptiveSlot(index, now) {
   state.matchedMs = 0;
   state.closeMs = 0;
   state.firstVoiceOffsetMs = null;
+  state.firstStableCaptureMs = 0;
+  state.firstCaptureArmed = index !== 0;
+  state.nextCandidateMs = 0;
+  state.nextCandidateStartedT = null;
   state.projectedAdvanceT = now + state.noteMs;
   state.preCuedIndex = null;
   state.preCuedAtT = null;
@@ -1336,6 +1344,10 @@ function startAdaptiveGuide() {
     matchedMs: 0,
     closeMs: 0,
     firstVoiceOffsetMs: null,
+    firstStableCaptureMs: 0,
+    firstCaptureArmed: false,
+    nextCandidateMs: 0,
+    nextCandidateStartedT: null,
     projectedAdvanceT: 0,
     slotGuideStartT: 0,
     soundingIndex: null,
@@ -1354,21 +1366,35 @@ function startAdaptiveGuide() {
   }, CONFIG.quickCountInMs));
 }
 
-function advanceAdaptiveSlot(now, missed = false) {
+function advanceAdaptiveSlot(now, missed = false, transition = null) {
   if (!adaptiveGuide || adaptiveGuide.finished) return;
   const state = adaptiveGuide;
+  const effectiveT = Math.min(
+    now,
+    Math.max(state.slotStartT + CONFIG.analysisEveryMs, transition?.effectiveT ?? now),
+  );
   if (missed) state.missedIndexes.add(state.index);
   guideTimeline.push({
     index: state.index,
     startT: state.slotStartT,
-    endT: now,
+    endT: effectiveT,
     guideStartT: state.slotGuideStartT,
-    guideEndT: state.preCuedAtT ?? now,
+    guideEndT: state.preCuedAtT ?? effectiveT,
     missed,
   });
   const nextIndex = state.index + 1;
   if (nextIndex < expectedNotes.length) {
     beginAdaptiveSlot(nextIndex, now);
+    if (transition?.carryNextMs > 0) {
+      state.slotStartT = effectiveT;
+      state.lastUpdateT = now;
+      state.voicedMs = transition.carryNextMs;
+      state.matchedMs = transition.carryNextMs;
+      state.closeMs = transition.carryNextMs;
+      state.firstVoiceOffsetMs = 0;
+      state.projectedAdvanceT = Math.max(now, effectiveT + state.noteMs);
+      statusEl.textContent += " A entrada antecipada na próxima nota foi reconhecida.";
+    }
     return;
   }
 
@@ -1381,36 +1407,104 @@ function advanceAdaptiveSlot(now, missed = false) {
   statusEl.textContent = "Todas as posições do roteiro foram percorridas. Aguardando o fim da voz.";
 }
 
-function updateAdaptiveGuide(now, midi = null, isVoiced = false) {
-  if (!adaptiveGuide || adaptiveGuide.finished || !expectedNotes.length) return;
+function updateAdaptiveGuide(now, midi = null, isVoiced = false, rmsLevel = 0) {
+  if (!adaptiveGuide || adaptiveGuide.finished || !expectedNotes.length) {
+    return { ignoreForTracker: false };
+  }
 
   const state = adaptiveGuide;
   const elapsedMs = Math.max(0, now - state.slotStartT);
   const dt = Math.min(CONFIG.analysisEveryMs * 3, Math.max(0, now - state.lastUpdateT));
   state.lastUpdateT = now;
 
+  const currentTarget = expectedNotes[state.index];
+  const nextTarget = expectedNotes[state.index + 1] ?? null;
+  const currentErrorCents = isVoiced && Number.isFinite(midi)
+    ? Math.abs((midi - currentTarget.midi) * 100)
+    : Infinity;
+  const nextErrorCents = isVoiced && Number.isFinite(midi) && nextTarget
+    ? Math.abs((midi - nextTarget.midi) * 100)
+    : Infinity;
+  const requiredMs = state.index === 0
+    ? Math.min(1100, Math.max(320, state.noteMs * 0.90))
+    : Math.min(850, Math.max(220, state.noteMs * 0.78));
+  const exactAnchorRatio = state.index === 0 ? 0.45 : 0.30;
+
   if (isVoiced && Number.isFinite(midi)) {
     if (state.firstVoiceOffsetMs == null) state.firstVoiceOffsetMs = elapsedMs;
     state.voicedMs += dt;
-    const errorCents = Math.abs((midi - expectedNotes[state.index].midi) * 100);
-    if (errorCents <= 70) state.matchedMs += dt;
-    if (errorCents <= CONFIG.routeMatchCents) state.closeMs += dt;
+
+    // A primeira nota só passa ao rastreador depois de uma pequena região
+    // coerente. Scoops, ataques e tentativas iniciais continuam visíveis em azul,
+    // mas não contaminam a avaliação por segmentos.
+    if (state.index === 0 && !state.firstCaptureArmed) {
+      if (currentErrorCents <= CONFIG.routeMatchCents) {
+        state.firstStableCaptureMs += dt;
+      } else {
+        state.firstStableCaptureMs = Math.max(0, state.firstStableCaptureMs - dt * 1.5);
+      }
+      const captureArmMs = Math.min(360, Math.max(200, state.noteMs * 0.28));
+      if (state.firstStableCaptureMs >= captureArmMs) state.firstCaptureArmed = true;
+    }
+
+    const intervalToNextCents = nextTarget
+      ? Math.abs((nextTarget.midi - currentTarget.midi) * 100)
+      : 0;
+    const currentEvidenceMs = Math.min(360, Math.max(170, state.noteMs * 0.25));
+    const earliestTransitionMs = Math.min(550, Math.max(220, state.noteMs * 0.48));
+    const hasCurrentEvidence =
+      state.closeMs >= currentEvidenceMs ||
+      state.matchedMs >= currentEvidenceMs * 0.70;
+    const nextIsUnambiguous =
+      nextTarget &&
+      intervalToNextCents >= 80 &&
+      nextErrorCents <= 60 &&
+      nextErrorCents + 30 <= currentErrorCents;
+    const strongEnoughVoice = rmsLevel >= CONFIG.minRms * 1.35;
+    const candidateForNext =
+      elapsedMs >= earliestTransitionMs &&
+      hasCurrentEvidence &&
+      nextIsUnambiguous &&
+      strongEnoughVoice;
+
+    if (candidateForNext) {
+      if (state.nextCandidateStartedT == null) state.nextCandidateStartedT = Math.max(state.slotStartT, now - dt);
+      state.nextCandidateMs += dt;
+    } else {
+      state.nextCandidateMs = 0;
+      state.nextCandidateStartedT = null;
+    }
+
+    const nextConfirmationMs = Math.min(280, Math.max(160, state.noteMs * 0.24));
+    if (state.nextCandidateMs >= nextConfirmationMs && state.nextCandidateStartedT != null) {
+      const earlyStartT = state.nextCandidateStartedT;
+      const carryNextMs = state.nextCandidateMs;
+      advanceAdaptiveSlot(now, false, { effectiveT: earlyStartT, carryNextMs });
+      return { ignoreForTracker: false, recognizedEarlyTransition: true };
+    }
+
+    // Quadros já reconhecidos como tentativa estável da próxima nota não são
+    // acumulados como erro da posição atual durante a confirmação conservadora.
+    if (!candidateForNext) {
+      if (currentErrorCents <= 70) state.matchedMs += dt;
+      if (currentErrorCents <= CONFIG.routeMatchCents) state.closeMs += dt;
+    }
+  } else {
+    state.nextCandidateMs = Math.max(0, state.nextCandidateMs - dt * 1.5);
+    if (state.nextCandidateMs === 0) state.nextCandidateStartedT = null;
   }
 
-  const requiredMs = Math.min(850, Math.max(220, state.noteMs * 0.78));
   const exactEnough = state.matchedMs >= requiredMs;
   const rhythmicallyClose =
     state.closeMs >= requiredMs &&
     state.voicedMs >= requiredMs &&
-    state.matchedMs >= requiredMs * 0.30;
+    state.matchedMs >= requiredMs * exactAnchorRatio;
   const nominalElapsed = elapsedMs >= state.noteMs;
+  const ignoreForTracker = state.index === 0 && !state.firstCaptureArmed;
 
   const timing = adaptiveSlotTiming(state.index, state.voicedMs, elapsedMs, state.firstVoiceOffsetMs);
   const nominalEndT = state.slotStartT + state.noteMs;
   const deadlineT = nominalEndT + timing.extraMs;
-  const currentErrorCents = isVoiced && Number.isFinite(midi)
-    ? Math.abs((midi - expectedNotes[state.index].midi) * 100)
-    : Infinity;
   let projectedAdvanceT = deadlineT;
 
   if (exactEnough || rhythmicallyClose) {
@@ -1419,7 +1513,7 @@ function updateAdaptiveGuide(now, midi = null, isVoiced = false) {
     projectedAdvanceT = Math.max(nominalEndT, now + Math.max(0, requiredMs - state.matchedMs));
   } else if (
     currentErrorCents <= CONFIG.routeMatchCents &&
-    state.matchedMs >= requiredMs * 0.30
+    state.matchedMs >= requiredMs * exactAnchorRatio
   ) {
     const remainingCloseMs = Math.max(
       0,
@@ -1436,18 +1530,20 @@ function updateAdaptiveGuide(now, midi = null, isVoiced = false) {
 
   if (nominalElapsed && (exactEnough || rhythmicallyClose)) {
     advanceAdaptiveSlot(now, false);
-    return;
+    return { ignoreForTracker };
   }
 
   if (nominalElapsed && elapsedMs >= timing.noteMs + timing.extraMs) {
     advanceAdaptiveSlot(now, true);
-    return;
+    return { ignoreForTracker };
   }
 
   if (nominalElapsed && timing.mostlySilent) {
     const remaining = Math.max(0, timing.noteMs + timing.extraMs - elapsedMs);
     setCue("RESPIRE", `Ainda aguardando ${expectedNotes[state.index].label}; avanço em até ${(remaining / 1000).toFixed(1)} s.`, "…");
   }
+
+  return { ignoreForTracker };
 }
 
 async function startAnalysisFromPreparedMic() {
@@ -1540,8 +1636,9 @@ function analyzeFrame() {
     rms: level,
   };
 
-  tracker.ingest(frame);
-  updateAdaptiveGuide(now, midi, true);
+  const guideDecision = updateAdaptiveGuide(now, midi, true, level);
+  if (guideDecision.ignoreForTracker) tracker.noPitch(now);
+  else tracker.ingest(frame);
   graphFrames.push(frame);
   voiceStarted = true;
   lastVoicedT = now;

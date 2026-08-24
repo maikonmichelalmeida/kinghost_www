@@ -107,7 +107,7 @@
     previewInstrument = Soundfont(previewContext, {
       instrument: name,
       kit: 'MusyngKite',
-      volume: 105,
+      volume: 127,
     });
     await previewInstrument.ready;
     return previewInstrument;
@@ -162,7 +162,7 @@
         if (midi != null) instrument.start({
           note: midi,
           duration: Math.max(.12, noteMs / 1000 * .82),
-          velocity: 84,
+          velocity: 127,
         });
       }, index * noteMs)));
       previewTimers.push(setTimeout(clearPreview, notes.length * noteMs + 100));

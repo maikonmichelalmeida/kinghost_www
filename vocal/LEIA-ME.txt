@@ -30,13 +30,16 @@ TREINO ASSISTIDO
 - Cada trecho possui Início, Ouvir, guia simultâneo, andamento, divisão rítmica,
   transposição inteira entre -8 e +8 e uma caixa de direção:
   marcada sobe 1 semitom ao concluir; desmarcada desce 1 semitom.
-- No modo guiado, a janela toca uma única referência inicial, mostra quatro
-  batidas rápidas no contador do gráfico e toca novamente a primeira nota no zero.
+- No modo guiado, a janela sustenta a referência inicial durante as quatro
+  batidas do contador e toca novamente a primeira nota no zero.
 - Com "Guia" marcado, as referências permitidas tocam ao mesmo tempo que a voz.
   Desmarcado, somente a nota inicial é dada depois das quatro batidas.
 - O guia acompanha uma nota por vez: avança quando há acerto sustentado, quando
   a aproximação é ritmicamente coerente ou quando termina uma tolerância flexível.
-  A primeira nota admite uma espera maior para a respiração inicial.
+  A primeira nota admite uma espera maior e descarta falsos começos até encontrar
+  uma pequena região vocal estável.
+- Depois de reconhecer parte da posição atual, uma emissão estável e inequívoca
+  da próxima nota pode antecipar conservadoramente a troca e já entra na contagem.
 - Cada posição dispara o instrumento somente uma vez. A próxima referência é
   antecipada poucos milissegundos antes da troca e não é atacada novamente quando
   a nova posição começa.
@@ -68,5 +71,6 @@ O afinador depende de internet para carregar o detector de pitch e as amostras d
 instrumentos. O botão Ouvir e o guia simultâneo usam Soundfont real (violão nylon,
 violão aço ou piano), carregadas pela internet. O metrônomo usa somente um clique
 curto de áudio nativo. Notas mudas de progressão permanecem sem guia sonoro.
+O instrumento e a velocidade das notas Soundfont são configurados no volume máximo.
 O navegador precisa ter permissão para usar o microfone; em HTTP comum fora de localhost,
 essa permissão depende da configuração de segurança adotada no próprio navegador.
