@@ -59,47 +59,11 @@ const CONFIG = {
   // Canvas mostra os últimos N segundos durante a captura.
   graphWindowSeconds: 8,
 
-  // Fluxo automático do exercício. O encerramento é mais rápido quando a
-  // última nota provavelmente já foi alcançada; caso contrário, há uma
-  // tolerância maior para pausas respiratórias ocasionais.
-  // Parada automática inteligente. O tempo de silêncio depende não só do
-  // número de notas detectadas, mas também de quão bem a execução está
-  // seguindo o roteiro esperado. Se a pessoa está no caminho certo, uma
-  // respiração recebe bastante tolerância. Se a execução se perdeu claramente
-  // e fica em silêncio, o encerramento é mais rápido. Ao chegar à última nota,
-  // continuamos encerrando rapidamente.
-  autoStopFinalSilenceFactor: 0.85,
-  minFinalSilenceMs: 750,
-  maxFinalSilenceMs: 1500,
+  // O instrumento anuncia cada posição antes do alvo visual e da medição.
+  // A defasagem é sempre proporcional à duração escolhida para a nota.
+  guideLeadRatio: 0.20,
 
-  onRouteEarlySilenceFactor: 8.0,
-  onRouteMidSilenceFactor: 7.0,
-  onRouteLateSilenceFactor: 5.0,
-  minOnRouteEarlySilenceMs: 6500,
-  maxOnRouteEarlySilenceMs: 10000,
-  minOnRouteMidSilenceMs: 5500,
-  maxOnRouteMidSilenceMs: 9000,
-  minOnRouteLateSilenceMs: 4200,
-  maxOnRouteLateSilenceMs: 7000,
-
-  uncertainSilenceFactor: 5.0,
-  minUncertainSilenceMs: 4000,
-  maxUncertainSilenceMs: 7000,
-
-  offRouteSilenceFactor: 3.2,
-  minOffRouteSilenceMs: 2800,
-  maxOffRouteSilenceMs: 5000,
-
-  // O roteiro é considerado coerente mesmo com pequenos erros de afinação.
-  // Um semitom errado ainda pode pertencer à sequência; "fora do roteiro"
-  // exige um afastamento maior e/ou várias regiões sem correspondência.
-  routeMatchCents: 135,
-  routeStrongOffCents: 230,
-  routeLookAhead: 3,
-
-  preSingCountdownStepMs: 360,
   preSingGuideDurationMs: 420,
-  preSingGuideGapMs: 220,
   quickCountInMs: 300,
 };
 
@@ -174,16 +138,12 @@ let guideAudioContext = null;
 let guideInstrument = null;
 let guideInstrumentName = null;
 let demoTimers = [];
-let demoRunId = 0;
 
 let appState = "WAITING"; // WAITING | PREPARING | DEMO | COUNTDOWN | LISTENING | CANCELLING | EVALUATING | DONE
-let voiceStarted = false;
-let lastVoicedT = null;
 let stoppingAutomatically = false;
 let integrationConfig = null;
 let guidePattern = [];
-let adaptiveGuide = null;
-let guideTimeline = [];
+let fixedGuide = null;
 let graphCountdownLabel = null;
 let graphCountdownCaption = "";
 let breathingTimerId = null;
@@ -908,8 +868,8 @@ function clearDemoTimers() {
   demoTimers = [];
 }
 
-function clearAdaptiveGuide() {
-  adaptiveGuide = null;
+function clearFixedGuide() {
+  fixedGuide = null;
   graphCountdownLabel = null;
   graphCountdownCaption = "";
   try { guideInstrument?.stop(); } catch {}
@@ -1036,16 +996,13 @@ function resetSessionVisuals() {
   globalScoreEl.innerHTML = "";
   resultActions.hidden = true;
   graphFrames = [];
-  guideTimeline = [];
   graphCountdownLabel = null;
   graphCountdownCaption = "";
   tracker = null;
   reviewMode = false;
   evaluationOverlay = null;
-  voiceStarted = false;
-  lastVoicedT = null;
   stoppingAutomatically = false;
-  adaptiveGuide = null;
+  fixedGuide = null;
   currentNoteEl.textContent = "—";
   currentHzEl.textContent = "—";
   currentCentsEl.textContent = "—";
@@ -1237,313 +1194,109 @@ async function startDemoFlow() {
     ? "Microfone ativo e guia simultâneo. As notas de desafio permanecem mudas."
     : "Microfone ativo. Somente a nota inicial foi usada como referência.";
   await startAnalysisFromPreparedMic();
-  if (appState === "LISTENING") startAdaptiveGuide();
+  if (appState === "LISTENING") startFixedGuide();
 }
 
-function adaptiveSlotTiming(index, voicedMs, elapsedMs, firstVoiceOffsetMs) {
-  const noteMs = currentNoteDurationMs();
-  const silenceRatio = voicedMs / Math.max(1, elapsedMs);
-  const lateFirstAttack = index === 0 &&
-    (firstVoiceOffsetMs == null || firstVoiceOffsetMs >= noteMs * 0.45);
-  const mostlySilent = silenceRatio < 0.22 || lateFirstAttack;
-  const extraMs = index === 0
-    ? Math.max(2000, noteMs * 1.8)
-    : (mostlySilent ? Math.max(800, noteMs * 0.85) : Math.max(500, noteMs * 0.55));
-  return { noteMs, extraMs, mostlySilent };
+function fixedGuideLeadMs(noteMs = fixedGuide?.noteMs ?? currentNoteDurationMs()) {
+  return noteMs * CONFIG.guideLeadRatio;
 }
 
-function adaptiveGuideLeadMs() {
-  const noteMs = adaptiveGuide?.noteMs ?? currentNoteDurationMs();
-  return Math.min(220, Math.max(100, noteMs * 0.18));
+function fixedTargetIndexAt(now) {
+  if (!fixedGuide || !expectedNotes.length) return -1;
+  const relativeT = now - fixedGuide.leadMs;
+  if (relativeT < 0 || now >= fixedGuide.endT) return -1;
+  return Math.min(expectedNotes.length - 1, Math.floor(relativeT / fixedGuide.noteMs));
 }
 
-function playAdaptiveTarget(index) {
-  if (!adaptiveGuide || integrationConfig?.guided === false) return false;
-  const reference = guidePattern[index];
-  if (!reference || !guideInstrument) return false;
-  try {
-    guideInstrument.start({
-      note: reference.midi,
-      // Uma única emissão longa por posição. Ela é interrompida somente na
-      // antecipação/entrada da próxima nota, nunca repetida enquanto aguardamos.
-      duration: Math.max(2.2, adaptiveGuide.noteMs / 1000 * 3.2),
-      velocity: 127,
-    });
-    adaptiveGuide.soundingIndex = index;
-    return true;
-  } catch {
-    return false;
-  }
+function fixedTargetStartT(index) {
+  if (!fixedGuide) return 0;
+  return fixedGuide.leadMs + index * fixedGuide.noteMs;
 }
 
-function cueNextAdaptiveTarget(now) {
-  const state = adaptiveGuide;
-  if (!state || state.finished || integrationConfig?.guided === false) return;
-  const nextIndex = state.index + 1;
-  if (nextIndex >= expectedNotes.length || state.preCuedIndex === nextIndex) return;
-
-  state.preCuedIndex = nextIndex;
-  state.preCuedAtT = now;
-  try { guideInstrument?.stop(); } catch {}
-  state.soundingIndex = null;
-  // Referência nula significa desafio: a antecipação é deliberadamente muda.
-  playAdaptiveTarget(nextIndex);
-}
-
-function beginAdaptiveSlot(index, now) {
-  if (!adaptiveGuide || index >= expectedNotes.length) return;
-  const state = adaptiveGuide;
-  const alreadyCued = state.preCuedIndex === index;
-  const anticipatedAtT = alreadyCued ? state.preCuedAtT : null;
-
-  state.index = index;
-  state.slotStartT = now;
-  state.slotGuideStartT = anticipatedAtT ?? now;
-  state.lastUpdateT = now;
-  state.voicedMs = 0;
-  state.matchedMs = 0;
-  state.closeMs = 0;
-  state.firstVoiceOffsetMs = null;
-  state.firstStableCaptureMs = 0;
-  state.firstCaptureArmed = index !== 0;
-  state.nextCandidateMs = 0;
-  state.nextCandidateStartedT = null;
-  state.projectedAdvanceT = now + state.noteMs;
-  state.preCuedIndex = null;
-  state.preCuedAtT = null;
-
-  if (!alreadyCued) {
-    try { guideInstrument?.stop(); } catch {}
-    state.soundingIndex = null;
-    playAdaptiveTarget(index);
-  }
+function showFixedTarget(index) {
+  if (!fixedGuide || !expectedNotes[index] || fixedGuide.targetIndex === index) return;
+  fixedGuide.targetIndex = index;
+  graphCountdownLabel = null;
+  graphCountdownCaption = "";
   renderDemoNotes(index);
 
   const target = expectedNotes[index];
-  const reference = guidePattern[index];
   const guided = integrationConfig?.guided !== false;
-  if (guided && reference) {
+  if (guided && guidePattern[index]) {
     setCue("CANTE", `Ajuste sua voz ao instrumento em ${target.label}.`, target.label);
-    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Referência contínua, sem novos ataques enquanto o sistema aguarda.`;
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Tempo fixo pelo metrônomo.`;
   } else if (guided) {
     setCue("DESAFIO", `Cante ${target.label} sem referência auditiva.`, target.label);
-    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Ataque mudo de progressão; o sistema continua ouvindo e avaliando.`;
+    statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Ataque fantasma no tempo fixo.`;
   } else {
     setCue("CANTE", `Siga o pulso memorizado em ${target.label}.`, target.label);
     statusEl.textContent = `Alvo ${index + 1}/${expectedNotes.length}: ${target.label}. Guia contínuo desativado.`;
   }
 }
 
-function startAdaptiveGuide() {
-  adaptiveGuide = {
-    index: 0,
-    noteMs: currentNoteDurationMs(),
-    slotStartT: 0,
-    lastUpdateT: 0,
-    voicedMs: 0,
-    matchedMs: 0,
-    closeMs: 0,
-    firstVoiceOffsetMs: null,
-    firstStableCaptureMs: 0,
-    firstCaptureArmed: false,
-    nextCandidateMs: 0,
-    nextCandidateStartedT: null,
-    projectedAdvanceT: 0,
-    slotGuideStartT: 0,
-    soundingIndex: null,
-    preCuedIndex: null,
-    preCuedAtT: null,
-    missedIndexes: new Set(),
-    finished: false,
-    finishedAtT: null,
-  };
-  beginAdaptiveSlot(0, 0);
-  demoTimers.push(setTimeout(() => {
-    if (appState !== "LISTENING") return;
-    graphCountdownLabel = null;
-    graphCountdownCaption = "";
-    drawPitchGraph(Math.max(0, performance.now() - sessionStartMs));
-  }, CONFIG.quickCountInMs));
-}
-
-function advanceAdaptiveSlot(now, missed = false, transition = null) {
-  if (!adaptiveGuide || adaptiveGuide.finished) return;
-  const state = adaptiveGuide;
-  const effectiveT = Math.min(
-    now,
-    Math.max(state.slotStartT + CONFIG.analysisEveryMs, transition?.effectiveT ?? now),
-  );
-  if (missed) state.missedIndexes.add(state.index);
-  guideTimeline.push({
-    index: state.index,
-    startT: state.slotStartT,
-    endT: effectiveT,
-    guideStartT: state.slotGuideStartT,
-    guideEndT: state.preCuedAtT ?? effectiveT,
-    missed,
-  });
-  const nextIndex = state.index + 1;
-  if (nextIndex < expectedNotes.length) {
-    beginAdaptiveSlot(nextIndex, now);
-    if (transition?.carryNextMs > 0) {
-      state.slotStartT = effectiveT;
-      state.lastUpdateT = now;
-      state.voicedMs = transition.carryNextMs;
-      state.matchedMs = transition.carryNextMs;
-      state.closeMs = transition.carryNextMs;
-      state.firstVoiceOffsetMs = 0;
-      state.projectedAdvanceT = Math.max(now, effectiveT + state.noteMs);
-      statusEl.textContent += " A entrada antecipada na próxima nota foi reconhecida.";
-    }
-    return;
+function syncFixedTimeline(now) {
+  if (!fixedGuide || fixedGuide.finished) return -1;
+  if (now >= fixedGuide.endT) {
+    fixedGuide.finished = true;
+    fixedGuide.targetIndex = -1;
+    try { guideInstrument?.stop(); } catch {}
+    renderDemoNotes(-1);
+    return -1;
   }
 
+  const targetIndex = fixedTargetIndexAt(now);
+  if (targetIndex >= 0) showFixedTarget(targetIndex);
+  return targetIndex;
+}
+
+function playFixedGuideTarget(index) {
+  if (!fixedGuide || fixedGuide.finished || appState !== "LISTENING") return;
   try { guideInstrument?.stop(); } catch {}
-  state.soundingIndex = null;
-  state.finished = true;
-  state.finishedAtT = now;
-  renderDemoNotes(-1);
-  setCue("ROTEIRO CONCLUÍDO", "Finalize a última emissão; a avaliação abrirá automaticamente.", "✓");
-  statusEl.textContent = "Todas as posições do roteiro foram percorridas. Aguardando o fim da voz.";
+
+  if (integrationConfig?.guided === false) return;
+  const reference = guidePattern[index];
+  if (!reference || !guideInstrument) return;
+
+  try {
+    guideInstrument.start({
+      note: reference.midi,
+      duration: fixedGuide.noteMs / 1000 * 1.08,
+      velocity: 127,
+    });
+  } catch {}
 }
 
-function updateAdaptiveGuide(now, midi = null, isVoiced = false, rmsLevel = 0) {
-  if (!adaptiveGuide || adaptiveGuide.finished || !expectedNotes.length) {
-    return { ignoreForTracker: false };
-  }
+function startFixedGuide() {
+  const noteMs = currentNoteDurationMs();
+  const leadMs = fixedGuideLeadMs(noteMs);
+  const delayUntil = (sessionT) => Math.max(0, sessionT - (performance.now() - sessionStartMs));
+  fixedGuide = {
+    noteMs,
+    leadMs,
+    endT: leadMs + expectedNotes.length * noteMs,
+    targetIndex: -1,
+    finished: false,
+  };
 
-  const state = adaptiveGuide;
-  const elapsedMs = Math.max(0, now - state.slotStartT);
-  const dt = Math.min(CONFIG.analysisEveryMs * 3, Math.max(0, now - state.lastUpdateT));
-  state.lastUpdateT = now;
+  graphCountdownLabel = "♪";
+  graphCountdownCaption = `alvo em ${(leadMs / 1000).toFixed(1)} s`;
 
-  const currentTarget = expectedNotes[state.index];
-  const nextTarget = expectedNotes[state.index + 1] ?? null;
-  const currentErrorCents = isVoiced && Number.isFinite(midi)
-    ? Math.abs((midi - currentTarget.midi) * 100)
-    : Infinity;
-  const nextErrorCents = isVoiced && Number.isFinite(midi) && nextTarget
-    ? Math.abs((midi - nextTarget.midi) * 100)
-    : Infinity;
-  const requiredMs = state.index === 0
-    ? Math.min(1100, Math.max(320, state.noteMs * 0.90))
-    : Math.min(850, Math.max(220, state.noteMs * 0.78));
-  const exactAnchorRatio = state.index === 0 ? 0.45 : 0.30;
-
-  if (isVoiced && Number.isFinite(midi)) {
-    if (state.firstVoiceOffsetMs == null) state.firstVoiceOffsetMs = elapsedMs;
-    state.voicedMs += dt;
-
-    // A primeira nota só passa ao rastreador depois de uma pequena região
-    // coerente. Scoops, ataques e tentativas iniciais continuam visíveis em azul,
-    // mas não contaminam a avaliação por segmentos.
-    if (state.index === 0 && !state.firstCaptureArmed) {
-      if (currentErrorCents <= CONFIG.routeMatchCents) {
-        state.firstStableCaptureMs += dt;
-      } else {
-        state.firstStableCaptureMs = Math.max(0, state.firstStableCaptureMs - dt * 1.5);
-      }
-      const captureArmMs = Math.min(360, Math.max(200, state.noteMs * 0.28));
-      if (state.firstStableCaptureMs >= captureArmMs) state.firstCaptureArmed = true;
+  if (integrationConfig?.guided !== false) {
+    playFixedGuideTarget(0);
+    for (let index = 1; index < expectedNotes.length; index++) {
+      demoTimers.push(setTimeout(() => playFixedGuideTarget(index), delayUntil(index * noteMs)));
     }
-
-    const intervalToNextCents = nextTarget
-      ? Math.abs((nextTarget.midi - currentTarget.midi) * 100)
-      : 0;
-    const currentEvidenceMs = Math.min(360, Math.max(170, state.noteMs * 0.25));
-    const earliestTransitionMs = Math.min(550, Math.max(220, state.noteMs * 0.48));
-    const hasCurrentEvidence =
-      state.closeMs >= currentEvidenceMs ||
-      state.matchedMs >= currentEvidenceMs * 0.70;
-    const nextIsUnambiguous =
-      nextTarget &&
-      intervalToNextCents >= 80 &&
-      nextErrorCents <= 60 &&
-      nextErrorCents + 30 <= currentErrorCents;
-    const strongEnoughVoice = rmsLevel >= CONFIG.minRms * 1.35;
-    const candidateForNext =
-      elapsedMs >= earliestTransitionMs &&
-      hasCurrentEvidence &&
-      nextIsUnambiguous &&
-      strongEnoughVoice;
-
-    if (candidateForNext) {
-      if (state.nextCandidateStartedT == null) state.nextCandidateStartedT = Math.max(state.slotStartT, now - dt);
-      state.nextCandidateMs += dt;
-    } else {
-      state.nextCandidateMs = 0;
-      state.nextCandidateStartedT = null;
-    }
-
-    const nextConfirmationMs = Math.min(280, Math.max(160, state.noteMs * 0.24));
-    if (state.nextCandidateMs >= nextConfirmationMs && state.nextCandidateStartedT != null) {
-      const earlyStartT = state.nextCandidateStartedT;
-      const carryNextMs = state.nextCandidateMs;
-      advanceAdaptiveSlot(now, false, { effectiveT: earlyStartT, carryNextMs });
-      return { ignoreForTracker: false, recognizedEarlyTransition: true };
-    }
-
-    // Quadros já reconhecidos como tentativa estável da próxima nota não são
-    // acumulados como erro da posição atual durante a confirmação conservadora.
-    if (!candidateForNext) {
-      if (currentErrorCents <= 70) state.matchedMs += dt;
-      if (currentErrorCents <= CONFIG.routeMatchCents) state.closeMs += dt;
-    }
-  } else {
-    state.nextCandidateMs = Math.max(0, state.nextCandidateMs - dt * 1.5);
-    if (state.nextCandidateMs === 0) state.nextCandidateStartedT = null;
   }
 
-  const exactEnough = state.matchedMs >= requiredMs;
-  const rhythmicallyClose =
-    state.closeMs >= requiredMs &&
-    state.voicedMs >= requiredMs &&
-    state.matchedMs >= requiredMs * exactAnchorRatio;
-  const nominalElapsed = elapsedMs >= state.noteMs;
-  const ignoreForTracker = state.index === 0 && !state.firstCaptureArmed;
+  demoTimers.push(setTimeout(() => {
+    if (appState !== "LISTENING" || !fixedGuide) return;
+    showFixedTarget(0);
+    drawPitchGraph(Math.max(0, performance.now() - sessionStartMs));
+  }, delayUntil(leadMs)));
 
-  const timing = adaptiveSlotTiming(state.index, state.voicedMs, elapsedMs, state.firstVoiceOffsetMs);
-  const nominalEndT = state.slotStartT + state.noteMs;
-  const deadlineT = nominalEndT + timing.extraMs;
-  let projectedAdvanceT = deadlineT;
-
-  if (exactEnough || rhythmicallyClose) {
-    projectedAdvanceT = Math.max(now, nominalEndT);
-  } else if (currentErrorCents <= 70) {
-    projectedAdvanceT = Math.max(nominalEndT, now + Math.max(0, requiredMs - state.matchedMs));
-  } else if (
-    currentErrorCents <= CONFIG.routeMatchCents &&
-    state.matchedMs >= requiredMs * exactAnchorRatio
-  ) {
-    const remainingCloseMs = Math.max(
-      0,
-      requiredMs - state.closeMs,
-      requiredMs - state.voicedMs,
-    );
-    projectedAdvanceT = Math.max(nominalEndT, now + remainingCloseMs);
-  }
-
-  state.projectedAdvanceT = Math.max(now, projectedAdvanceT);
-  if (state.index + 1 < expectedNotes.length && now >= state.projectedAdvanceT - adaptiveGuideLeadMs()) {
-    cueNextAdaptiveTarget(now);
-  }
-
-  if (nominalElapsed && (exactEnough || rhythmicallyClose)) {
-    advanceAdaptiveSlot(now, false);
-    return { ignoreForTracker };
-  }
-
-  if (nominalElapsed && elapsedMs >= timing.noteMs + timing.extraMs) {
-    advanceAdaptiveSlot(now, true);
-    return { ignoreForTracker };
-  }
-
-  if (nominalElapsed && timing.mostlySilent) {
-    const remaining = Math.max(0, timing.noteMs + timing.extraMs - elapsedMs);
-    setCue("RESPIRE", `Ainda aguardando ${expectedNotes[state.index].label}; avanço em até ${(remaining / 1000).toFixed(1)} s.`, "…");
-  }
-
-  return { ignoreForTracker };
+  demoTimers.push(setTimeout(() => {
+    if (appState === "LISTENING") finishAnalysisAutomatically();
+  }, delayUntil(fixedGuide.endT)));
 }
 
 async function startAnalysisFromPreparedMic() {
@@ -1574,8 +1327,6 @@ async function startAnalysisFromPreparedMic() {
     tracker = new SegmentTracker(expectedNotes, currentNoteDurationMs());
     graphFrames = [];
     sessionStartMs = performance.now();
-    voiceStarted = false;
-    lastVoicedT = null;
     stoppingAutomatically = false;
 
     setAppState("LISTENING");
@@ -1599,13 +1350,17 @@ function analyzeFrame() {
 
   const now = performance.now() - sessionStartMs;
   const level = rms(audioBuffer);
+  const targetIndex = syncFixedTimeline(now);
+
+  if (fixedGuide?.finished || (fixedGuide && now >= fixedGuide.endT)) {
+    finishAnalysisAutomatically();
+    return;
+  }
 
   if (level < CONFIG.minRms) {
-    tracker.noPitch(now);
-    updateAdaptiveGuide(now, null, false);
+    if (targetIndex >= 0) tracker.noPitch(now);
     updateNoPitchUi();
     drawPitchGraph(now);
-    checkAutomaticFinish(now);
     return;
   }
 
@@ -1617,11 +1372,9 @@ function analyzeFrame() {
     frequency > CONFIG.maxHz ||
     clarity < CONFIG.minClarity
   ) {
-    tracker.noPitch(now);
-    updateAdaptiveGuide(now, null, false);
+    if (targetIndex >= 0) tracker.noPitch(now);
     updateNoPitchUi(clarity);
     drawPitchGraph(now);
-    checkAutomaticFinish(now);
     return;
   }
 
@@ -1636,25 +1389,10 @@ function analyzeFrame() {
     rms: level,
   };
 
-  const guideIndexBeforeUpdate = adaptiveGuide?.index ?? -1;
-  const guideDecision = updateAdaptiveGuide(now, midi, true, level);
-  if (guideDecision.ignoreForTracker) tracker.noPitch(now);
-  else tracker.ingest(frame);
-  const guideIndexForFrame = guideDecision.recognizedEarlyTransition
-    ? (adaptiveGuide?.index ?? guideIndexBeforeUpdate)
-    : guideIndexBeforeUpdate;
-  frame.hiddenDuringLive =
-    guideIndexForFrame >= 0 &&
-    !guidePattern[guideIndexForFrame];
-  graphFrames.push(frame);
-  voiceStarted = true;
-  lastVoicedT = now;
-
-  // Se estávamos mostrando uma mensagem de pausa, a retomada da voz devolve a
-  // interface imediatamente ao estado normal de escuta.
-  if (cueTitle.textContent === "Respire") {
-    setCue("CANTE", "Acompanhando sua execução; ESPAÇO cancela sem avaliar.", "●");
-    statusEl.textContent = "Ouvindo sua voz…";
+  if (targetIndex >= 0) {
+    tracker.ingest(frame);
+    frame.hiddenDuringLive = !guidePattern[targetIndex];
+    graphFrames.push(frame);
   }
 
   const cutoff = now - 30000;
@@ -1667,7 +1405,6 @@ function analyzeFrame() {
   trackerStateEl.textContent = tracker.state;
 
   drawPitchGraph(now);
-  checkAutomaticFinish(now);
 }
 
 function updateNoPitchUi(clarity = NaN) {
@@ -1678,255 +1415,12 @@ function updateNoPitchUi(clarity = NaN) {
   trackerStateEl.textContent = tracker?.state ?? "—";
 }
 
-function liveDetectedSegments() {
-  if (!tracker) return [];
-
-  const detected = tracker.segments.map((segment) => ({ ...segment }));
-
-  // A região atual ainda não foi finalizada, mas já pode ser usada para saber
-  // onde o cantor está no roteiro. Não alteramos o rastreador para fazer isso.
-  if (tracker.current?.samples?.length >= CONFIG.minCoreSamples) {
-    const startT = tracker.current.startT;
-    const endT = tracker.current.lastT;
-    const durationMs = Math.max(0, endT - startT);
-    if (durationMs >= 100) {
-      const centerMidi = robustCenterMidi(tracker.current.samples);
-      detected.push({
-        ...tracker.current,
-        endT,
-        durationMs,
-        centerMidi,
-        nearest: midiFloatToNearestNote(centerMidi),
-        live: true,
-      });
-    }
-  }
-
-  return detected;
-}
-
-function assessLiveRoute() {
-  const detected = liveDetectedSegments();
-  const n = expectedNotes.length;
-
-  if (!n || !detected.length) {
-    return {
-      detectedCount: detected.length,
-      matchedCount: 0,
-      progressIndex: -1,
-      progress: 0,
-      adherence: 0,
-      medianError: Infinity,
-      recentError: Infinity,
-      onRoute: false,
-      stronglyOffRoute: false,
-      nearFinal: false,
-      finalReached: false,
-    };
-  }
-
-  let cursor = 0;
-  let matchedCount = 0;
-  let offRouteCount = 0;
-  let progressIndex = -1;
-  const errors = [];
-  let recentError = Infinity;
-  let recentMatchedIndex = -1;
-
-  for (const segment of detected) {
-    const center = segment.centerMidi ?? robustCenterMidi(segment.samples ?? []);
-    if (!Number.isFinite(center)) continue;
-
-    // Procuramos a melhor correspondência apenas em uma pequena janela à
-    // frente. Isso preserva a ordem musical e evita que uma nota aleatória seja
-    // "encaixada" muito adiante no exercício.
-    const searchStart = Math.max(0, cursor - 1);
-    const searchEnd = Math.min(n - 1, cursor + CONFIG.routeLookAhead);
-    let bestIndex = -1;
-    let bestError = Infinity;
-
-    for (let i = searchStart; i <= searchEnd; i++) {
-      const error = Math.abs(centsBetweenMidi(center, expectedNotes[i].midi));
-      if (error < bestError) {
-        bestError = error;
-        bestIndex = i;
-      }
-    }
-
-    recentError = bestError;
-    recentMatchedIndex = bestIndex;
-
-    if (bestIndex >= 0 && bestError <= CONFIG.routeMatchCents) {
-      matchedCount++;
-      errors.push(bestError);
-      progressIndex = Math.max(progressIndex, bestIndex);
-
-      // Só avançamos o cursor quando realmente chegamos à posição atual ou a
-      // uma posição futura. Uma sustentação longa da mesma nota não deve pular
-      // o exercício inteiro.
-      if (bestIndex >= cursor) cursor = bestIndex + 1;
-    } else {
-      offRouteCount++;
-    }
-  }
-
-  const adherence = detected.length ? matchedCount / detected.length : 0;
-  const medianError = errors.length ? median(errors) : Infinity;
-  const progress = progressIndex >= 0 ? (progressIndex + 1) / n : 0;
-
-  // Consideramos "no roteiro" quando a maior parte das regiões tem explicação
-  // musical na sequência esperada. Um erro de aproximadamente um semitom ainda
-  // não destrói essa classificação; isso é importante para o app não encerrar
-  // uma tentativa legítima só porque houve uma nota desafinada.
-  const onRoute =
-    matchedCount >= 1 &&
-    adherence >= (detected.length <= 2 ? 0.5 : 0.60) &&
-    medianError <= CONFIG.routeMatchCents;
-
-  // "Muito fora" exige evidência forte: região recente a mais de ~2,3 semitons
-  // de qualquer candidato próximo, ou uma sequência com pouca aderência e erro
-  // recente grande. Isso serve para detectar tentativas abandonadas/reinícios.
-  const stronglyOffRoute =
-    recentError >= CONFIG.routeStrongOffCents ||
-    (detected.length >= 2 && adherence < 0.40 && recentError > 170);
-
-  const lastExpectedIndex = n - 1;
-  const nearFinal = progressIndex >= Math.max(0, lastExpectedIndex - 1);
-  const finalReached =
-    progressIndex >= lastExpectedIndex &&
-    recentMatchedIndex === lastExpectedIndex &&
-    recentError <= Math.max(CONFIG.routeMatchCents, 160);
-
-  return {
-    detectedCount: detected.length,
-    matchedCount,
-    offRouteCount,
-    progressIndex,
-    progress,
-    adherence,
-    medianError,
-    recentError,
-    onRoute,
-    stronglyOffRoute,
-    nearFinal,
-    finalReached,
-  };
-}
-
-function likelyReachedFinalNote() {
-  return assessLiveRoute().finalReached;
-}
-
-function boundedSilence(noteMs, factor, minMs, maxMs) {
-  return Math.min(maxMs, Math.max(minMs, noteMs * factor));
-}
-
-function checkAutomaticFinish(now) {
-  if (stoppingAutomatically) return;
-  const noteMs = currentNoteDurationMs();
-
-  if (!voiceStarted || lastVoicedT == null) {
-    const abandonMs = Math.min(10000, Math.max(6500, noteMs * 6));
-    const finishedWithoutVoice = adaptiveGuide?.finished &&
-      now - adaptiveGuide.finishedAtT >= Math.min(1200, Math.max(750, noteMs * 0.8));
-    if (finishedWithoutVoice || now >= abandonMs) {
-      statusEl.textContent = "Nenhuma nota identificável foi recebida. Encerrando e registrando as posições como não detectadas.";
-      finishAnalysisAutomatically();
-    }
-    return;
-  }
-
-  const silenceMs = now - lastVoicedT;
-  if (adaptiveGuide?.finished) {
-    const completedSilenceMs = boundedSilence(noteMs, 0.85, 750, 1500);
-    if (silenceMs >= 500 && silenceMs < completedSilenceMs) {
-      setCue("FINALIZE", "O roteiro terminou; aguardando o fim da última emissão.", "…");
-    }
-    if (silenceMs >= completedSilenceMs) finishAnalysisAutomatically();
-    return;
-  }
-
-  const route = assessLiveRoute();
-
-  const finalSilenceMs = boundedSilence(
-    noteMs,
-    CONFIG.autoStopFinalSilenceFactor,
-    CONFIG.minFinalSilenceMs,
-    CONFIG.maxFinalSilenceMs,
-  );
-
-  let threshold;
-  let pauseMessage;
-
-  if (route.finalReached) {
-    // Última nota reconhecida: o silêncio provavelmente significa fim real.
-    threshold = finalSilenceMs;
-    pauseMessage = "Última nota reconhecida — concluindo quando o silêncio se confirmar…";
-  } else if (route.onRoute) {
-    // Aqui está a principal mudança da V5: se a pessoa está seguindo o roteiro,
-    // silêncio intermediário é tratado como respiração, não como abandono.
-    if (route.progress < 0.35) {
-      threshold = boundedSilence(
-        noteMs,
-        CONFIG.onRouteEarlySilenceFactor,
-        CONFIG.minOnRouteEarlySilenceMs,
-        CONFIG.maxOnRouteEarlySilenceMs,
-      );
-    } else if (route.progress < 0.75) {
-      threshold = boundedSilence(
-        noteMs,
-        CONFIG.onRouteMidSilenceFactor,
-        CONFIG.minOnRouteMidSilenceMs,
-        CONFIG.maxOnRouteMidSilenceMs,
-      );
-    } else {
-      threshold = boundedSilence(
-        noteMs,
-        CONFIG.onRouteLateSilenceFactor,
-        CONFIG.minOnRouteLateSilenceMs,
-        CONFIG.maxOnRouteLateSilenceMs,
-      );
-    }
-    pauseMessage = `Pausa para respirar — roteiro coerente (${Math.round(route.progress * 100)}%). Continuo aguardando…`;
-  } else if (route.stronglyOffRoute) {
-    // Se a última região ficou claramente fora do exercício e depois veio uma
-    // pausa longa, é mais provável que a tentativa tenha sido abandonada.
-    threshold = boundedSilence(
-      noteMs,
-      CONFIG.offRouteSilenceFactor,
-      CONFIG.minOffRouteSilenceMs,
-      CONFIG.maxOffRouteSilenceMs,
-    );
-    pauseMessage = "Pausa após trecho fora do roteiro — aguardando um pouco antes de encerrar…";
-  } else {
-    // Caso ambíguo: nem presumimos respiração longa, nem encerramos cedo.
-    threshold = boundedSilence(
-      noteMs,
-      CONFIG.uncertainSilenceFactor,
-      CONFIG.minUncertainSilenceMs,
-      CONFIG.maxUncertainSilenceMs,
-    );
-    pauseMessage = "Pausa detectada — mantendo a sessão aberta…";
-  }
-
-  // O feedback aparece só depois de uma pausa perceptível, para não piscar a
-  // interface a cada pequena lacuna entre fonemas.
-  if (silenceMs >= 550 && silenceMs < threshold) {
-    statusEl.textContent = pauseMessage;
-    setCue("Respire", `${Math.max(0, (threshold - silenceMs) / 1000).toFixed(1)} s de tolerância restante`, "…");
-  }
-
-  if (silenceMs >= threshold) finishAnalysisAutomatically();
-}
-
-
 async function cancelListeningSession() {
   if (appState !== "LISTENING") return;
 
-  demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  clearAdaptiveGuide();
+  clearFixedGuide();
   stoppingAutomatically = true;
   setAppState("CANCELLING");
   setCue("Tentativa cancelada", "Nenhuma avaliação será gerada.", "ESPAÇO");
@@ -1954,10 +1448,9 @@ async function cancelListeningSession() {
 
 async function cancelPendingFlow() {
   if (!["PREPARING", "COUNTDOWN"].includes(appState)) return;
-  demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  clearAdaptiveGuide();
+  clearFixedGuide();
   setAppState("CANCELLING");
   await teardownAnalysisAudio();
   setControlsLocked(false);
@@ -1968,9 +1461,14 @@ async function cancelPendingFlow() {
 async function finishAnalysisAutomatically() {
   if (stoppingAutomatically || appState !== "LISTENING") return;
   stoppingAutomatically = true;
-  demoRunId++;
   clearDemoTimers();
-  clearAdaptiveGuide();
+  if (fixedGuide) {
+    fixedGuide.finished = true;
+    fixedGuide.targetIndex = -1;
+  }
+  graphCountdownLabel = null;
+  graphCountdownCaption = "";
+  try { guideInstrument?.stop(); } catch {}
   setAppState("EVALUATING");
   setCue("Analisando…", "Organizando as notas e calculando os desvios em cents.", "···");
   statusEl.textContent = "Roteiro encerrado. Avaliando automaticamente, inclusive as notas não identificadas…";
@@ -2203,39 +1701,16 @@ function renderEvaluation(segments) {
 // GRÁFICO
 // ------------------------------------------------------------
 function graphGuideSegments(nowMs) {
-  const segments = guideTimeline.map(item => ({
-    ...item,
-    startT: Math.min(item.startT, item.guideStartT ?? item.startT),
+  const noteMs = fixedGuide?.noteMs ?? currentNoteDurationMs();
+  const leadMs = fixedGuide?.leadMs ?? fixedGuideLeadMs(noteMs);
+  const currentIndex = fixedTargetIndexAt(nowMs);
+  return expectedNotes.map((_, index) => ({
+    index,
+    startT: leadMs + index * noteMs,
+    endT: leadMs + (index + 1) * noteMs,
+    live: index === currentIndex,
+    future: nowMs < leadMs + index * noteMs,
   }));
-  const state = adaptiveGuide;
-
-  if (state && !state.finished && expectedNotes.length) {
-    const currentEndT = Math.max(nowMs + 40, state.projectedAdvanceT || state.slotStartT + state.noteMs);
-    segments.push({
-      index: state.index,
-      startT: Math.min(state.slotStartT, state.slotGuideStartT ?? state.slotStartT),
-      endT: currentEndT,
-      live: true,
-    });
-
-    let cursorT = currentEndT;
-    for (let index = state.index + 1; index < expectedNotes.length; index++) {
-      const anticipated = state.preCuedIndex === index && state.preCuedAtT != null;
-      const startT = anticipated ? Math.min(cursorT, state.preCuedAtT) : cursorT;
-      const endT = startT + state.noteMs;
-      segments.push({ index, startT, endT, future: true, anticipated });
-      cursorT = endT;
-    }
-  } else if (appState === "COUNTDOWN" && expectedNotes.length && !segments.length) {
-    let cursorT = 0;
-    const noteMs = currentNoteDurationMs();
-    expectedNotes.forEach((_, index) => {
-      segments.push({ index, startT: cursorT, endT: cursorT + noteMs, future: true });
-      cursorT += noteMs;
-    });
-  }
-
-  return segments;
 }
 
 function updateGraphGuideReadout(nowMs) {
@@ -2251,30 +1726,28 @@ function updateGraphGuideReadout(nowMs) {
     return;
   }
 
-  const state = adaptiveGuide;
+  const state = fixedGuide;
   if (state?.finished) {
     graphNowEl.textContent = "Roteiro concluído";
-    graphNextEl.textContent = "Finalize a emissão; a avaliação abrirá automaticamente.";
+    graphNextEl.textContent = "A avaliação será exibida automaticamente.";
     return;
   }
 
-  if (state && expectedNotes[state.index]) {
-    const currentGhost = !guidePattern[state.index];
+  const currentIndex = fixedTargetIndexAt(nowMs);
+  if (state && currentIndex >= 0 && expectedNotes[currentIndex]) {
+    const currentGhost = !guidePattern[currentIndex];
     graphNowEl.textContent = currentGhost
-      ? `Agora: ${expectedNotes[state.index].label} · ataque fantasma`
-      : `Agora: ${expectedNotes[state.index].label}`;
-    const remainingMs = Math.max(0, (state.projectedAdvanceT || nowMs) - nowMs);
-    const nextIndex = state.index + 1;
+      ? `Agora: ${expectedNotes[currentIndex].label} · ataque fantasma`
+      : `Agora: ${expectedNotes[currentIndex].label}`;
+    const remainingMs = Math.max(0, fixedTargetStartT(currentIndex + 1) - nowMs);
+    const nextIndex = currentIndex + 1;
     if (nextIndex >= expectedNotes.length) {
       graphNextEl.textContent = `Fim previsto em ${(remainingMs / 1000).toFixed(1)} s`;
     } else {
       const nextLabel = guidePattern[nextIndex]
         ? expectedNotes[nextIndex].label
         : `${expectedNotes[nextIndex].label} · fantasma`;
-      const anticipated = state.preCuedIndex === nextIndex;
-      graphNextEl.textContent = anticipated
-        ? `Referência antecipada: ${nextLabel} · troca em ${(remainingMs / 1000).toFixed(1)} s`
-        : `Próxima: ${nextLabel} · troca prevista em ${(remainingMs / 1000).toFixed(1)} s`;
+      graphNextEl.textContent = `Próxima: ${nextLabel} · troca em ${(remainingMs / 1000).toFixed(1)} s`;
     }
     return;
   }
@@ -2309,8 +1782,9 @@ function drawPitchGraph(nowMs = 0) {
   let leftT;
   let rightT;
   if (reviewMode) {
-    const historyStart = guideTimeline[0]?.startT ?? 0;
-    const historyEnd = guideTimeline.at(-1)?.endT ?? 0;
+    const guideSegments = graphGuideSegments(nowMs);
+    const historyStart = guideSegments[0]?.startT ?? 0;
+    const historyEnd = guideSegments.at(-1)?.endT ?? 0;
     const contentStart = graphFrames[0]?.t ?? historyStart;
     const contentEnd = graphFrames.at(-1)?.t ?? historyEnd;
     leftT = Math.min(contentStart, historyStart) - 80;
@@ -2341,19 +1815,17 @@ function drawPitchGraph(nowMs = 0) {
     ctx.fillText(midiFloatToNearestNote(midi).name, 8, Math.max(13, y - 4));
   });
 
-  // Roteiro esperado. Trechos futuros ficam um pouco mais discretos e a nota
-  // cujo instrumento está soando ganha maior espessura.
+  // Roteiro esperado, sempre preso à grade do metrônomo.
   ctx.lineCap = "round";
   graphGuideSegments(nowMs).forEach(segment => {
     const x0 = xFor(segment.startT);
     const x1 = xFor(segment.endT);
     if (x1 < 0 || x0 > cssWidth) return;
-    const sounding = adaptiveGuide?.soundingIndex === segment.index;
-    const currentTarget = segment.live && adaptiveGuide?.index === segment.index;
-    ctx.strokeStyle = sounding || currentTarget
+    const currentTarget = segment.live;
+    ctx.strokeStyle = currentTarget
       ? "#ff4f5f"
       : (segment.future ? "rgba(255, 48, 64, 0.58)" : "rgba(255, 48, 64, 0.88)");
-    ctx.lineWidth = sounding ? 7 : (currentTarget ? 6 : 4);
+    ctx.lineWidth = currentTarget ? 6 : 4;
     ctx.beginPath();
     ctx.moveTo(Math.max(0, x0), yFor(expectedNotes[segment.index].midi));
     ctx.lineTo(Math.min(cssWidth, x1), yFor(expectedNotes[segment.index].midi));
@@ -2389,9 +1861,9 @@ function drawPitchGraph(nowMs = 0) {
     ctx.stroke();
   }
 
-  if (!reviewMode && appState === "LISTENING" && adaptiveGuide && !adaptiveGuide.finished) {
+  const currentIndex = fixedTargetIndexAt(nowMs);
+  if (!reviewMode && appState === "LISTENING" && fixedGuide && !fixedGuide.finished && currentIndex >= 0) {
     const xNow = xFor(nowMs);
-    const currentIndex = adaptiveGuide.index;
     const ghostTarget = !guidePattern[currentIndex];
     ctx.strokeStyle = "#22c76a";
     ctx.lineWidth = 4;
@@ -2406,7 +1878,7 @@ function drawPitchGraph(nowMs = 0) {
     ctx.arc(xNow, yNow, 13, 0, Math.PI * 2);
     ctx.fill();
 
-    const remainingMs = Math.max(0, adaptiveGuide.projectedAdvanceT - nowMs);
+    const remainingMs = Math.max(0, fixedTargetStartT(currentIndex + 1) - nowMs);
     const currentLabel = ghostTarget
       ? `${expectedNotes[currentIndex].label} · FANTASMA`
       : expectedNotes[currentIndex].label;
@@ -2485,10 +1957,9 @@ function drawPitchGraph(nowMs = 0) {
 // UI
 // ------------------------------------------------------------
 async function stopCurrentActivity() {
-  demoRunId++;
   clearDemoTimers();
   clearBreathingTimers();
-  clearAdaptiveGuide();
+  clearFixedGuide();
   await teardownAnalysisAudio();
   stoppingAutomatically = false;
 }
