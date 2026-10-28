@@ -664,3 +664,18 @@ button:hover:not(:disabled) {
     overflow-x: hidden;
   }
 }
+
+.developer-credit {
+  margin-top: 24px;
+  padding: 12px 0;
+  color: #68756d;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media print {
+  .developer-credit {
+    display: none;
+  }
+}
