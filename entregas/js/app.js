@@ -5,23 +5,33 @@ const money=c=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).
 const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}):'—';
 const dateTime=t=>new Date(t).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 const apiRoot='/api/entregas';
-let token=localStorage.getItem('unifarma.token')||'',state=null,stops=[],quote=null,tab='today',map=null,marker=null,point=null,editIndex=null,searchResults=[],refreshing=false,toastTimer,orderSignature='',busy=0;
+let token=localStorage.getItem('unifarma.token')||'',state=null,stops=[],quote=null,tab='today',map=null,marker=null,point=null,editIndex=null,searchResults=[],refreshing=false,needsRefresh=false,toastTimer,orderSignature='',busy=0;
 const statusNames={scheduled:'Encomendado',accepted:'Aceito · não visualizado',seen:'Visualizado',running:'Em entrega',done:'Concluído',cancelled:'Cancelado'};
 function toast(message,error=false){$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
 async function api(route,body){
- const response=await fetch(apiRoot+route,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(45000)});
+ const method=body===undefined?'GET':'POST';
+ const url=apiRoot+route+(method==='GET'?(route.includes('?')?'&':'?')+'_sync='+Date.now():'');
+ const response=await fetch(url,{method,cache:'no-store',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(45000)});
  const data=await response.json();
  if(!response.ok){if(response.status===401&&route!='/login')logoutLocal();throw new Error(data.error||'Não foi possível completar a ação.');}return data;
 }
-async function run(button,fn){if(button?.disabled)return;busy++;if(button)button.disabled=true;try{return await fn();}catch(e){toast(e.name==='TimeoutError'?'A conexão demorou. Confira o estado antes de tentar novamente.':e.message,true);}finally{busy--;if(button?.isConnected)button.disabled=false;}}
+async function run(button,fn){if(button?.disabled)return;busy++;if(button)button.disabled=true;try{return await fn();}catch(e){toast(e.name==='TimeoutError'?'A conexão demorou. Confira o estado antes de tentar novamente.':e.message,true);}finally{busy--;if(button?.isConnected)button.disabled=false;if(busy===0&&needsRefresh){needsRefresh=false;void refresh();}}}
 function showTab(name){tab=name;for(const t of ['today','new','history','settings'])$('tab-'+t).hidden=t!==name;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));if(name==='new')renderDraft();}
-function logoutLocal(){token='';localStorage.removeItem('unifarma.token');localStorage.removeItem('unifarma.expiresAt');state=null;stops=[];quote=null;orderSignature='';$('app').hidden=true;$('login-view').hidden=false;document.querySelectorAll('dialog[open]').forEach(d=>d.close());}
-async function refresh(){if(!token||refreshing||busy)return;refreshing=true;try{state=await api('/state');$('connection').hidden=true;renderState();}catch(e){if(token){$('connection').textContent='Sem atualização: '+e.message;$('connection').hidden=false;}}finally{refreshing=false;}}
+function logoutLocal(){token='';localStorage.removeItem('unifarma.token');localStorage.removeItem('unifarma.expiresAt');state=null;stops=[];quote=null;orderSignature='';needsRefresh=false;$('app').hidden=true;$('login-view').hidden=false;document.querySelectorAll('dialog[open]').forEach(d=>d.close());}
+async function refresh(){
+ if(!token||refreshing)return;
+ if(busy){needsRefresh=true;return;}
+ refreshing=true;
+ try{const fresh=await api('/state');if(!token)return;state=fresh;$('connection').hidden=true;renderState();}
+ catch(e){if(token){$('connection').textContent='Sem atualização: '+e.message;$('connection').hidden=false;const sync=$('sync-status');if(sync)sync.textContent='Sem sincronização com o servidor';}}
+ finally{refreshing=false;}
+}
 function renderState(){
  const driver=state.user.role==='driver',av=state.availability;
  $('app').hidden=false;$('login-view').hidden=true;$('user-name').textContent=state.user.username;
  $('greeting').textContent=driver?'Olá, Maikon.':'Vamos entregar cuidado.';
  $('today').textContent=new Date(state.serverTime).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'numeric',month:'long'});
+ const sync=$('sync-status');if(sync)sync.textContent='Servidor atualizado às '+new Date(state.serverTime).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit'});
  $('new-tab').hidden=driver;$('settings-tab').hidden=!driver;
  if((tab==='settings'&&!driver)||(tab==='new'&&driver))showTab('today');
  const running=state.orders.some(o=>o.status==='running');
@@ -130,9 +140,13 @@ $('submit-order').onclick=e=>run(e.currentTarget,async()=>{if(!quote)throw new E
 $('schedule-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('/availability',{action:'schedule',at:$('schedule-at').value+':00-03:00'});$('schedule-dialog').close();state=await api('/state');renderState();toast('Abertura programada.');});};
 $('key-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('/configuration',{key:$('geo-key').value.trim()});$('geo-key').value='';state=await api('/state');renderState();if(map){map.remove();map=null;marker=null;}toast('Chave salva. Agora confirme o ponto da farmácia no mapa.');});};
 $('history-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{const result=await api('/history?day='+encodeURIComponent($('history-day').value));const total=result.orders.filter(o=>o.status!=='cancelled').reduce((n,o)=>n+o.totalCents,0);$('history-orders').innerHTML=result.orders.length?`<div class="total-card"><b>Total arquivado</b><strong>${money(total)}</strong></div>`+result.orders.map(o=>orderCard(o,state.user.role==='driver',true)).join(''):empty('Nenhum registro arquivado.','Confira a data. Os pedidos de hoje estão na aba Hoje.');});};
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
-window.addEventListener('online',refresh);
-setInterval(()=>{if(!document.hidden)refresh();},12000);
+$('refresh-now').onclick=e=>run(e.currentTarget,async()=>{state=await api('/state');$('connection').hidden=true;renderState();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
+window.addEventListener('focus',()=>void refresh());
+window.addEventListener('pageshow',()=>void refresh());
+window.addEventListener('online',()=>void refresh());
+setInterval(()=>{if(!document.hidden)void refresh();},10000);
+setInterval(()=>{if(document.hidden)void refresh();},60000);
 if(token)refresh();
 if(location.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(location.hostname)){
  $('login-error').textContent='Para entrar, use o endereço HTTPS com certificado válido.';
