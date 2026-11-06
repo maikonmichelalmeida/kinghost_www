@@ -171,39 +171,16 @@ main {
   margin: auto;
   padding: 24px 18px calc(28px + env(safe-area-inset-bottom));
 }
-.balance {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  padding: 8px 0 24px;
-  border-bottom: 1px solid var(--line);
-}
+
 #today {
   font-size: 12px;
   color: var(--muted);
 }
-.balance h1 {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 12px 0 3px;
-}
-.balance strong {
-  font-size: 40px;
-  letter-spacing: -1.8px;
-  line-height: 1.2;
-}
-.balance-detail {
-  text-align: right;
-  color: var(--muted);
-}
-.balance-detail > span {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 5px;
-}
-.balance-detail small {
-  font-size: 10px;
-}
+
+
+
+
+
 .availability {
   padding: 16px 0 22px;
   display: flex;
@@ -642,9 +619,7 @@ dialog::backdrop {
   main {
     padding-top: 32px;
   }
-  .balance strong {
-    font-size: 48px;
-  }
+
   .address-row .fields {
     grid-template-columns: 1fr 125px;
   }
@@ -671,9 +646,7 @@ dialog::backdrop {
     grid-template-columns: minmax(0, 1fr) 85px;
     gap: 8px;
   }
-  .balance strong {
-    font-size: 35px;
-  }
+
   .brand {
     font-size: 23px;
   }
@@ -823,15 +796,8 @@ select {
 .brand small {
   font-family: system-ui, sans-serif;
 }
-.balance {
-  background: linear-gradient(110deg, #fff9f3, white);
-  border: 1px solid #f5dfcd;
-  border-radius: 19px;
-  padding: 18px;
-}
-.balance strong {
-  color: #82390d;
-}
+
+
 .address-row:focus-within {
   border-color: #e99a60;
 }
@@ -972,3 +938,12 @@ select {
 .address-row.valid .price-wrap input {margin:0}
 .address-row.valid .row-status {grid-column:1;grid-row:3}
 @media(max-width:650px){#order-form:has(.address-row.valid):not(:focus-within) .submit-area{position:sticky;bottom:0;z-index:2;background:var(--orange-light);padding-bottom:max(6px,env(safe-area-inset-bottom));border-radius:10px}}
+
+.day-summary { margin: 20px 0 12px; padding: 12px 2px; border-block: 1px solid var(--line); color: var(--muted); }
+.day-summary > div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; font-size:14px; }
+.day-summary strong { font-size:17px; font-weight:650; color:var(--ink,#292522); font-variant-numeric:tabular-nums; }
+.day-summary small, .day-summary #today { font-size:11px; }
+
+.brand .sign { width:154px; height:auto; display:block; }
+.login .brand .sign { width:200px; }
+header { border-top:3px solid #ef7929; }

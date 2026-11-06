@@ -288,12 +288,10 @@ function renderState() {
       : '<p class="empty">Nenhum pedido em andamento.</p>';
     orderSignature = sig;
   }
-  if (!driver) {
-    const main = $("request-section").parentNode;
-    if (active.length)
-      main.insertBefore($("active-section"), $("request-section"));
-    else main.insertBefore($("request-section"), $("active-section"));
-  }
+
+  const workArea = $(driver || $("request-section").hidden ? "active-section" : "request-section");
+  const summary = document.querySelector(".day-summary");
+  if (workArea.nextElementSibling !== summary) workArea.after(summary);
   $("active-heading").textContent = driver
     ? "Entregas para realizar"
     : "Em andamento";

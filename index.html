@@ -9,16 +9,14 @@
     <meta name="theme-color" content="#f47b20" />
     <title>Unifarma · Entregas</title>
     <link rel="icon" href="/entregas/img/mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/entregas/css/app.css?v=20261105" />
-    <script defer src="/entregas/js/app.js?v=20261105"></script>
+    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106" />
+    <script defer src="/entregas/js/app.js?v=20261106"></script>
   </head>
   <body>
     <div id="toast" role="status" aria-live="polite" hidden></div>
     <section id="login-view" class="login">
       <a class="brand" href="/"
-        ><img src="/entregas/img/mark.svg" alt="" /><span
-          >Unifarma<small>ENTREGAS COM MAIKON</small></span
-        ></a
+        ><img class="sign" src="/entregas/img/sign.svg" alt="Unifarma" /></a
       >
       <h1>Entrar</h1>
       <form id="login-form">
@@ -42,24 +40,11 @@
     <div id="app" hidden>
       <header>
         <a class="brand" href="/"
-          ><img src="/entregas/img/mark.svg" alt="" /><span
-            >Unifarma<small>ENTREGAS COM MAIKON</small></span
-          ></a
+          ><img class="sign" src="/entregas/img/sign.svg" alt="Unifarma" /></a
         ><button id="logout" class="plain">Sair</button>
       </header>
       <main>
         <div id="connection" class="notice error" role="status" hidden></div>
-        <section class="balance" aria-label="Saldo do dia">
-          <div>
-            <span id="today"></span>
-            <h1>Saldo do dia</h1>
-            <strong id="day-total">R$ 0,00</strong>
-          </div>
-          <div class="balance-detail">
-            <span id="day-count"></span
-            ><small>Pedidos do dia<br />Sem cancelamentos</small>
-          </div>
-        </section>
         <div id="availability-card" class="availability"></div>
         <section id="request-section">
           <div class="section-heading">
@@ -106,6 +91,10 @@
           </div>
           <div id="orders"></div>
         </section>
+        <aside class="day-summary" aria-label="Resumo do dia">
+          <div><span>Saldo do dia</span><strong id="day-total">R$ 0,00</strong></div>
+          <small><span id="today"></span> · <span id="day-count"></span></small>
+        </aside>
         <section class="completed-section">
           <div class="section-heading">
             <h2>Feito hoje</h2>
