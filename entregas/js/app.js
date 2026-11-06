@@ -1,155 +1,881 @@
-'use strict';
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=c=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(c/100);
-const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}):'—';
-const dateTime=t=>new Date(t).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-const apiRoot='/api/entregas';
-let token=localStorage.getItem('unifarma.token')||'',state=null,stops=[],quote=null,tab='today',map=null,marker=null,point=null,editIndex=null,searchResults=[],refreshing=false,needsRefresh=false,toastTimer,orderSignature='',busy=0;
-const statusNames={scheduled:'Encomendado',accepted:'Aceito · não visualizado',seen:'Visualizado',running:'Em entrega',done:'Concluído',cancelled:'Cancelado'};
-function toast(message,error=false){$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
-async function api(route,body){
- const method=body===undefined?'GET':'POST';
- const url=apiRoot+route+(method==='GET'?(route.includes('?')?'&':'?')+'_sync='+Date.now():'');
- const response=await fetch(url,{method,cache:'no-store',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(45000)});
- const data=await response.json();
- if(!response.ok){if(response.status===401&&route!='/login')logoutLocal();throw new Error(data.error||'Não foi possível completar a ação.');}return data;
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) =>
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+const money = (c) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    (c || 0) / 100,
+  );
+const time = (t) =>
+  t
+    ? new Date(t).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+const dateTime = (t) =>
+  new Date(t).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+const names = {
+  scheduled: "Agendado",
+  accepted: "Aguardando visualização",
+  seen: "Visualizado",
+  running: "Em entrega",
+  done: "Concluído",
+  cancelled: "Cancelado",
+};
+let liveController = null,
+  liveEpoch = 0;
+let priorityId = null,
+  priorityTimer,
+  priorityReadyAt = 0;
+let token = localStorage.getItem("unifarma.token") || "",
+  state = null,
+  rows = [],
+  submissionId = crypto.randomUUID(),
+  submitting = false,
+  refreshing = false,
+  refreshAgain = false,
+  sessionEpoch = 0,
+  mutationEpoch = 0,
+  toastTimer,
+  orderSignature = "",
+  completedSignature = "";
+const terminal = (o) => ["done", "cancelled"].includes(o.status);
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => ($("toast").hidden = true), 6000);
 }
-async function run(button,fn){if(button?.disabled)return;busy++;if(button)button.disabled=true;try{return await fn();}catch(e){toast(e.name==='TimeoutError'?'A conexão demorou. Confira o estado antes de tentar novamente.':e.message,true);}finally{busy--;if(button?.isConnected)button.disabled=false;if(busy===0&&needsRefresh){needsRefresh=false;void refresh();}}}
-function showTab(name){tab=name;for(const t of ['today','new','history','settings'])$('tab-'+t).hidden=t!==name;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));if(name==='new')renderDraft();}
-function logoutLocal(){token='';localStorage.removeItem('unifarma.token');localStorage.removeItem('unifarma.expiresAt');state=null;stops=[];quote=null;orderSignature='';needsRefresh=false;$('app').hidden=true;$('login-view').hidden=false;document.querySelectorAll('dialog[open]').forEach(d=>d.close());}
-async function refresh(){
- if(!token||refreshing)return;
- if(busy){needsRefresh=true;return;}
- refreshing=true;
- try{const fresh=await api('/state');if(!token)return;state=fresh;$('connection').hidden=true;renderState();}
- catch(e){if(token){$('connection').textContent='Sem atualização: '+e.message;$('connection').hidden=false;const sync=$('sync-status');if(sync)sync.textContent='Sem sincronização com o servidor';}}
- finally{refreshing=false;}
+async function api(route, body, signal) {
+  const auth = token;
+  const r = await fetch("/api/entregas" + route, {
+    method: body === undefined ? "GET" : "POST",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...(auth ? { Authorization: "Bearer " + auth } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: signal || AbortSignal.timeout(90000),
+  });
+  const data = await r.json();
+  if (!r.ok) {
+    if (r.status === 401 && auth === token && route !== "/login") logoutLocal();
+    throw Object.assign(
+      new Error(data.error || "Não foi possível completar a ação."),
+      { status: r.status },
+    );
+  }
+  return data;
 }
-function renderState(){
- const driver=state.user.role==='driver',av=state.availability;
- $('app').hidden=false;$('login-view').hidden=true;$('user-name').textContent=state.user.username;
- $('greeting').textContent=driver?'Olá, Maikon.':'Vamos entregar cuidado.';
- $('today').textContent=new Date(state.serverTime).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'numeric',month:'long'});
- const sync=$('sync-status');if(sync)sync.textContent='Servidor atualizado às '+new Date(state.serverTime).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit'});
- $('new-tab').hidden=driver;$('settings-tab').hidden=!driver;
- if((tab==='settings'&&!driver)||(tab==='new'&&driver))showTab('today');
- const running=state.orders.some(o=>o.status==='running');
- const heading=av.open?(running?'Em rota · recebendo pedidos':'Disponível para entregas'):(av.scheduledAt?'Retorno programado':'Ocupado no momento');
- const description=av.open?'Atendimento aberto até 20h30. Novos pacotes entram na fila.':av.scheduledAt?`Abertura em ${dateTime(av.scheduledAt)}. Você já pode encomendar.`:'Aguarde uma nova abertura ou previsão de retorno.';
- const actions=driver?`<button class="primary" data-availability="${av.open?'close':'open'}">${av.open?'Pausar atendimento':'Abrir atendimento'}</button><button class="outline" data-schedule>Agendar abertura</button>${av.scheduledAt?'<button class="outline" data-availability="unschedule">Remover agendamento</button>':''}`:`<button class="primary" data-new ${!av.open&&!av.scheduledAt?'disabled':''}>${av.open?'＋ Solicitar entregas':'＋ Encomendar entregas'}</button>`;
- const availabilityHTML=`<div><span class="eyebrow"><span class="status-dot"></span>${av.open?'ATENDIMENTO ABERTO':'ATENDIMENTO PAUSADO'}</span><h2>${heading}</h2><p>${description}</p>${av.open&&av.scheduledAt?`<p>Próxima abertura: ${dateTime(av.scheduledAt)}</p>`:''}</div><div class="actions">${actions}</div>`;
- if($('availability-card').innerHTML!==availabilityHTML)$('availability-card').innerHTML=availabilityHTML;
- $('availability-card').classList.toggle('closed',!av.open);
- $('setup-notice').hidden=state.mapsReady&&!!state.settings.base;
- $('setup-notice').textContent=driver?(!state.mapsReady?'Configuração inicial: em Ajustes, cadastre a chave gratuita do Geoapify.':'Falta confirmar o ponto da farmácia/casa em Ajustes.'):'O atendimento está sendo preparado. Maikon precisa configurar o mapa e confirmar o ponto da farmácia.';
- $('order-count').textContent=state.orders.filter(o=>!['done','cancelled'].includes(o.status)).length;
- const signature=JSON.stringify([state.orders,driver]);
- if(orderSignature!==signature){$('orders').innerHTML=state.orders.length?state.orders.map(o=>orderCard(o,driver)).join(''):empty(driver?'Tudo pronto para o próximo chamado.':'Nenhuma entrega por aqui ainda.',driver?'Seus pacotes aparecerão aqui assim que a farmácia enviar.':'Adicione os endereços e organize a primeira viagem do dia.',!driver);orderSignature=signature;}
- $('day-total').innerHTML=`<div><b>Total do dia</b><p>Pacotes enviados hoje · cancelados não entram</p></div><strong>${money(state.totalCents)}</strong>`;
- $('credits').textContent=`Consumo reservado hoje: ${state.credits??0} créditos. Limite de segurança: 2.500/dia. Inclui buscas, mapas e cálculos.`;
- if(!$('history-day').value)$('history-day').value=state.day;
- $('calculate').disabled=!stops.length||(!av.open&&!av.scheduledAt)||!state.mapsReady||!state.settings.base;
- $('submit-order').disabled=!av.open&&!av.scheduledAt;
+async function run(button, fn) {
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
+  try {
+    return await fn();
+  } catch (e) {
+    toast(
+      e.name === "TimeoutError"
+        ? "A resposta demorou. Atualize os pedidos antes de tentar novamente."
+        : e.message,
+    );
+  } finally {
+    if (button?.isConnected) button.disabled = false;
+  }
 }
-function empty(title,description,action=false){return `<div class="empty-state"><div class="empty-icon">↗</div><h3>${esc(title)}</h3><p>${esc(description)}</p>${action?'<button class="primary" data-new>Adicionar primeira entrega</button>':''}</div>`;}
-function stopLabel(p){return `${p.address} · nº ${p.number}${p.complement?' · '+p.complement:''}`;}
-function coords(p){return `${p.lat},${p.lon}`;}
-function mapsURL(points,origin){const u=new URL('https://www.google.com/maps/dir/');u.searchParams.set('api','1');u.searchParams.set('travelmode','driving');u.searchParams.set('dir_action','navigate');if(origin)u.searchParams.set('origin',coords(origin));u.searchParams.set('destination',coords(points.at(-1)));if(points.length>1)u.searchParams.set('waypoints',points.slice(0,-1).map(coords).join('|'));return u.href;}
-function routeURL(o){const remaining=o.route.order.filter(i=>!o.delivered.some(d=>d.index===i)).map(i=>o.stops[i]);if(!remaining.length)return mapsURL([o.base]);const points=remaining.length<=3?[...remaining,o.base]:remaining.slice(0,4);return mapsURL(points,o.delivered.length?null:o.base);}
-function orderCard(o,driver,history=false){
- const active=!['done','cancelled'].includes(o.status),next=o.route.order.find(i=>!o.delivered.some(d=>d.index===i));
- const btn=(a,label,cls='soft',extra='')=>`<button class="${cls}" data-order="${o.id}" data-action="${a}" ${extra}>${label}</button>`;
- let actions='';
- if(!history&&active){
-  if(driver){
-   if(!o.seenAt)actions+=btn('seen','✓ Visualizei');
-   actions+=btn('delay','Vou em X minutos');
-   if(['accepted','seen'].includes(o.status))actions+=btn('start','Iniciar rota no Google Maps ↗','primary');
-   if(o.status==='running'){
-    actions+=`<a class="navigation primary" href="${esc(routeURL(o))}" target="_blank" rel="noopener">${next===undefined?'Voltar para casa':'Abrir rota no Google Maps'} ↗</a>`;
-    if(next!==undefined){actions+=`<a class="navigation outline" href="${esc(mapsURL([o.stops[next]]))}" target="_blank" rel="noopener">Navegar só até a próxima entrega ↗</a>`;actions+=btn('delivered','✓ Marcar próxima como entregue','soft',`data-index="${next}"`);}else actions+=btn('finish','Concluir pacote','primary');
-   }
-   actions+=btn('cancel','Cancelar pacote','plain');
-  }else if(['accepted','scheduled'].includes(o.status))actions+=btn('cancel','Cancelar pacote','plain');
- }
- return `<article class="order-card"><div class="order-head"><div><h3>Pacote · ${o.stops.length} ${o.stops.length===1?'entrega':'entregas'}</h3><span class="small muted">${dateTime(o.createdAt)} · #${o.id.slice(0,6)}</span></div><span class="badge ${o.status}">${statusNames[o.status]||esc(o.status)}</span></div>${o.scheduledFor&&o.status==='scheduled'?`<div class="notice">Encomendado para ${dateTime(o.scheduledFor)}</div>`:''}${o.delayUntil?`<div class="notice">Maikon informou previsão para ${time(o.delayUntil)}.</div>`:''}${o.route.order.map((index,n)=>{const p=o.stops[index],delivered=o.delivered.find(d=>d.index===index);return `<div class="stop-line"><span class="stop-number">${delivered?'✓':n+1}</span><div class="stop-info"><strong>${esc(stopLabel(p))}</strong><p class="muted">${(p.meters/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})} km da farmácia${o.priority===index?' · Prioritária':''}${delivered?' · Entregue às '+time(delivered.at):''}</p>${p.note?`<p>${esc(p.note)}</p>`:''}${p.suggestedCents!==p.priceCents?`<p class="muted">Sugestão: ${money(p.suggestedCents)} · valor definido pela farmácia</p>`:''}</div><span class="stop-price">${money(p.priceCents)}</span></div>`;}).join('')}<div class="order-summary"><span class="small muted">Total do pacote<br>Trajeto estimado: ${Math.ceil(o.route.seconds/60)} min, com retorno</span><strong>${money(o.totalCents)}</strong></div><p class="order-timing">Aceito: ${time(o.acceptedAt)} · Visualizado: ${time(o.seenAt)}<br>Início: ${time(o.startedAt)} · Fim: ${time(o.finishedAt)}</p>${o.cancelReason?`<p class="small error">Cancelado: ${esc(o.cancelReason)}</p>`:''}${actions?`<div class="actions">${actions}</div>`:''}${driver&&o.status==='running'&&o.stops.length>3?'<p class="small muted">No navegador móvel, o link leva até 4 entregas por vez. Depois, abra a próxima; o retorno já foi considerado no cálculo.</p>':''}</article>`;
+function logoutLocal() {
+  stopLive();
+  token = "";
+  sessionEpoch++;
+  state = null;
+  rows = [];
+  orderSignature = "";
+  completedSignature = "";
+  priorityId = null;
+  $("draft-stops").replaceChildren();
+  $("history-orders").replaceChildren();
+  document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+  localStorage.removeItem("unifarma.token");
+  localStorage.removeItem("unifarma.expiresAt");
+  $("app").hidden = true;
+  $("login-view").hidden = false;
 }
-function invalidateQuote(){quote=null;$('quote').innerHTML='';$('submit-order').hidden=true;$('calculate').hidden=false;}
-function renderDraft(){
- $('draft-stops').innerHTML=stops.map((p,i)=>`<article class="stop-card"><div class="stop-line"><span class="stop-number">${i+1}</span><div class="stop-info"><strong>${esc(stopLabel(p))}</strong><p class="muted">Ponto confirmado ✓</p>${p.note?`<p>${esc(p.note)}</p>`:''}</div></div><div class="actions"><button class="plain" data-edit="${i}">Editar</button><button class="plain error" data-remove="${i}">Remover</button></div></article>`).join('');
- $('add-stop').disabled=stops.length>=5;
- const selected=$('priority').value;
- $('priority').innerHTML='<option value="-1">Sem prioridade · melhor ordem</option>'+stops.map((p,i)=>`<option value="${i}">${i+1}. ${esc(p.address)}</option>`).join('');
- $('priority').value=Number(selected)<stops.length?selected:'-1';
- if(state)$('calculate').disabled=!stops.length||(!state.availability.open&&!state.availability.scheduledAt)||!state.mapsReady||!state.settings.base;
+async function refresh() {
+  if (!token) return;
+  if (refreshing) {
+    refreshAgain = true;
+    return;
+  }
+  refreshing = true;
+  const epoch = sessionEpoch,
+    version = mutationEpoch;
+  try {
+    const fresh = await api("/state");
+    if (epoch !== sessionEpoch || version !== mutationEpoch) {
+      refreshAgain = !!token;
+      return;
+    }
+    state = fresh;
+    startLive();
+    $("connection").hidden = true;
+    renderState();
+  } catch (e) {
+    if (token) {
+      $("connection").textContent = "Sem atualização. " + e.message;
+      $("connection").hidden = false;
+    }
+  } finally {
+    refreshing = false;
+    if (refreshAgain) {
+      refreshAgain = false;
+      void refresh();
+    }
+  }
 }
-function readPrices(){return quote.stops.map((p,i)=>{const v=$('price-'+i).value.trim().replace(',','.');if(!/^\d+(\.\d{1,2})?$/.test(v))throw new Error('Informe cada preço com até duas casas decimais.');const cents=Math.round(Number(v)*100);if(cents<0||cents>100000)throw new Error('Cada preço deve ficar entre R$ 0 e R$ 1.000.');return cents;});}
-function showQuote(){
- $('quote').innerHTML=`<article class="card quote-card"><h2>Confira os valores</h2><p class="muted">Preenchemos a sugestão. A farmácia pode corrigir o preço de cada entrega antes de enviar.</p>${quote.route.order.map((index,n)=>`<label>${n+1}. ${esc(quote.stops[index].address)}<input id="price-${index}" class="price-input" inputmode="decimal" value="${(quote.stops[index].priceCents/100).toFixed(2).replace('.',',')}" aria-label="Preço em reais da entrega ${index+1}"><small class="muted">Preço em R$ · sugestão ${money(quote.stops[index].suggestedCents)} · ${(quote.stops[index].meters/1000).toFixed(1).replace('.',',')} km</small></label>`).join('')}<div class="order-summary"><span>Total a enviar</span><strong id="quote-total">${money(quote.totalCents)}</strong></div><p class="small muted">Ordem otimizada com retorno à casa. Cotação válida por 15 minutos.</p><button class="plain" id="recalculate">Recalcular sugestão</button></article>`;
- $('calculate').hidden=true;$('submit-order').hidden=false;$('quote').scrollIntoView({behavior:'smooth',block:'start'});
+async function mutate(route, body) {
+  mutationEpoch++;
+  const data = await api(route, body);
+  mutationEpoch++;
+  await refresh();
+  return data;
 }
-function setPoint(p,recenter=true){point={lat:p.lat,lon:p.lon};$('point-confirmed').checked=false;if(marker)marker.setLatLng([p.lat,p.lon]);else{marker=L.marker([p.lat,p.lon],{draggable:true,icon:L.divIcon({className:'',html:'<div class="pin"></div>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(map);marker.on('dragend',()=>{const ll=marker.getLatLng();setPoint({lat:ll.lat,lon:ll.lng},false);});}if(recenter)map.setView([p.lat,p.lon],18);$('verify-google').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(coords(point));$('verify-google').hidden=false;}
-function initMap(){
- if(map)return;if(!window.L)throw new Error('Não foi possível carregar o mapa. Atualize a página.');
- map=L.map('map',{scrollWheelZoom:false}).setView([-29.944,-50.991],13);
- const Tiles=L.GridLayer.extend({createTile(c,done){const img=document.createElement('img');img.alt='';fetch(`${apiRoot}/tiles/${c.z}/${c.x}/${c.y}`,{headers:{Authorization:'Bearer '+token}}).then(async r=>{if(!r.ok){const e=await r.json();throw new Error(e.error);}return r.blob();}).then(blob=>{const object=URL.createObjectURL(blob);img.onload=()=>{URL.revokeObjectURL(object);done(null,img);};img.onerror=()=>{URL.revokeObjectURL(object);done(new Error('Mapa indisponível'),img);};img.src=object;}).catch(e=>{$('map-help').textContent=e.message;done(e,img);});return img;}});
- new Tiles({attribution:'<a href="https://www.geoapify.com/">Geoapify</a> | <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a>',maxZoom:20}).addTo(map);
- map.on('click',e=>setPoint({lat:e.latlng.lat,lon:e.latlng.lng},false));
+function orderIndices(o) {
+  return o.route?.order || o.stops.map((_, i) => i);
 }
-function openAddress(index){
- editIndex=index;const base=index==='base',p=base?state.settings.base:stops[index];point=null;searchResults=[];
- $('address-title').textContent=base?'Confirme farmácia e casa':'Confirme o endereço';$('delivery-fields').hidden=base;
- $('search-address').value=base?state.settings.baseAddress:p?stopLabel(p):'';
- $('stop-address').value=p?.address||'';$('stop-number').value=p?.number||'';$('stop-complement').value=p?.complement||'';$('stop-note').value=p?.note||'';
- $('point-confirmed').checked=false;$('address-error').textContent='';$('search-results').innerHTML='';$('verify-google').hidden=true;$('map-help').textContent='Busque o endereço e arraste o marcador até a entrada correta.';
- $('address-dialog').showModal();initMap();if(marker){map.removeLayer(marker);marker=null;}map.invalidateSize();if(p)setPoint(p);else if(state.settings.base)map.setView([state.settings.base.lat,state.settings.base.lon],14);
+function stopLines(o) {
+  return orderIndices(o)
+    .map((i, n) => {
+      const p = o.stops[i],
+        done = o.delivered?.find((d) => d.index === i);
+      return `<div class="stop-line"><span class="stop-number">${done ? "✓" : n + 1}</span><div class="stop-info">${esc(p.address)}${done ? `<small>Entregue às ${time(done.at)}</small>` : ""}</div><span class="stop-price">${money(p.priceCents)}</span></div>`;
+    })
+    .join("");
 }
-document.addEventListener('click',e=>{
- const b=e.target.closest('button,a');if(!b)return;
- if(b.dataset.tab)showTab(b.dataset.tab);
- if(b.hasAttribute('data-new'))showTab('new');
- if(b.hasAttribute('data-schedule')){$('schedule-dialog').showModal();}
- if(b.dataset.availability)run(b,async()=>{await api('/availability',{action:b.dataset.availability});state=await api('/state');renderState();});
- if(b.dataset.edit!==undefined)run(b,()=>openAddress(Number(b.dataset.edit)));
- if(b.dataset.remove!==undefined){stops.splice(Number(b.dataset.remove),1);$('priority').value='-1';invalidateQuote();renderDraft();}
- if(b.dataset.result!==undefined){const p=searchResults[Number(b.dataset.result)];setPoint(p);$('stop-address').value=p.address;$('stop-number').value=p.number||$('stop-number').value;$('map-help').textContent=p.exact?'Confira o número e a entrada no mapa.':'Número não confirmado pelo mapa. Ajuste o marcador na entrada correta.';$('search-results').innerHTML='';}
- if(b.dataset.order){const o=state.orders.find(o=>o.id===b.dataset.order);const action=b.dataset.action;let body={action};let navigationWindow=null;
-  if(action==='cancel'){const reason=prompt('Motivo do cancelamento do pacote inteiro:');if(!reason)return;body.reason=reason;}
-  if(action==='delay'){const minutes=prompt('Em quantos minutos você estará disponível?','10');if(minutes===null)return;body.minutes=Number(minutes);}
-  if(action==='delivered')body.index=Number(b.dataset.index);
-  if(action==='start')navigationWindow=window.open('about:blank','_blank');
-  run(b,async()=>{try{const updated=await api(`/orders/${o.id}/action`,body);if(action==='start'){const url=routeURL(updated);if(navigationWindow)navigationWindow.location.replace(url);else toast('Rota iniciada. Toque em Abrir rota no Google Maps.');}state=await api('/state');renderState();}catch(error){navigationWindow?.close();throw error;}});
- }
- if(b.id==='recalculate'){invalidateQuote();$('calculate').click();}
+const businessDay = (t) =>
+  new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(t);
+function historyEntries(orders, todayOnly = false) {
+  return orders
+    .flatMap((o) =>
+      o.stops.map((p, index) => {
+        const delivered = o.delivered?.find((d) => d.index === index);
+        return {
+          orderId: o.id,
+          index,
+          address: p.address,
+          priceCents: p.priceCents,
+          createdAt: o.createdAt,
+          acceptedAt: o.acceptedAt,
+          seenAt: o.seenAt,
+          finishedAt: delivered?.at || o.finishedAt,
+          status: delivered ? "done" : o.status,
+          cancelReason: o.cancelReason,
+        };
+      }),
+    )
+    .filter(
+      (item) =>
+        !todayOnly ||
+        (["done", "cancelled"].includes(item.status) &&
+          businessDay(item.finishedAt || item.createdAt) === state.day),
+    );
+}
+function historyTable(entries) {
+  entries.sort(
+    (a, b) => (b.finishedAt || b.createdAt) - (a.finishedAt || a.createdAt),
+  );
+  if (!entries.length) return '<p class="empty">Nenhuma entrega concluída.</p>';
+  return `<table class="history-table"><caption class="sr-only">Histórico por endereço de entrega</caption><thead><tr><th>Hora</th><th>Entrega</th><th>Valor</th></tr></thead><tbody>${entries
+    .map((item) => {
+      const key = esc(item.orderId) + "-" + item.index;
+      return `<tr><td>${time(item.finishedAt || item.createdAt)}</td><td><button type="button" class="history-trigger" data-history-key="${key}" aria-expanded="false">${esc(item.address)}<small>${item.status === "done" ? "Entregue" : names[item.status] || esc(item.status)}</small></button></td><td>${money(item.priceCents)}</td></tr><tr class="history-more" data-history-detail="${key}" hidden><td colspan="3"><b>${esc(item.address)}</b><p>Pedido às ${time(item.createdAt)} · Aceite ${time(item.acceptedAt)} · Visualizado ${time(item.seenAt)}${item.finishedAt ? " · Fim " + time(item.finishedAt) : ""}</p>${item.cancelReason ? `<p>${esc(item.cancelReason)}</p>` : ""}</td></tr>`;
+    })
+    .join("")}</tbody></table>`;
+}
+function activeOrder(o, driver) {
+  const button = (action, label, cls = "outline", extra = "") =>
+    `<button class="${cls}" data-order="${esc(o.id)}" data-action="${action}" ${extra}>${label}</button>`;
+  let actions = "";
+  if (driver) {
+    if (!o.seenAt) actions += button("seen", "✓ Visualizei", "primary");
+    if (o.status !== "running")
+      actions += button("delay", "Vou em alguns minutos");
+    if (!o.route?.order) actions += button("route", "Calcular rota", "outline");
+    if (["accepted", "seen"].includes(o.status) && o.route?.order)
+      actions += button("start", "Iniciar no Google Maps ↗", "primary");
+    if (o.status === "running") {
+      const next = orderIndices(o).find(
+        (i) => !o.delivered.some((d) => d.index === i),
+      );
+      const link = o.navigation?.[0]?.url;
+      if (link)
+        actions += `<a class="primary navigation" href="${esc(link)}" target="_blank" rel="noopener">${next === undefined ? "Voltar para casa" : o.navigation[0].segments > 1 ? "Abrir trecho " + o.navigation[0].segment + " de " + o.navigation[0].segments : "Abrir rota no Google Maps"} ↗</a>`;
+      if (next !== undefined)
+        actions += button(
+          "delivered",
+          "✓ Entreguei neste endereço",
+          "primary",
+          `data-index="${next}"`,
+        );
+      else actions += button("finish", "Concluir pedido", "primary");
+    }
+    actions += `<details><summary class="small muted">Mais opções</summary>${button("cancel", "Cancelar pedido", "plain")}</details>`;
+  } else if (["accepted", "scheduled"].includes(o.status))
+    actions += button("cancel", "Cancelar pedido", "plain");
+  const next = orderIndices(o).find(
+    (i) => !o.delivered.some((d) => d.index === i),
+  );
+  return `<article class="order-card"><div class="order-head"><div><span class="eyebrow">PEDIDO ATUAL</span><h3>${o.stops.length} ${o.stops.length === 1 ? "entrega" : "entregas"}</h3><span class="small muted">Pedido às ${time(o.createdAt)}</span></div><span class="badge ${o.status}">${names[o.status] || esc(o.status)}</span></div>${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${o.routeStatus === "calculating" ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
+}
+function renderState() {
+  const driver = state.user.role === "driver",
+    av = state.availability,
+    active = state.orders.filter((o) => !terminal(o)),
+    completed = state.orders.filter(terminal);
+  $("app").hidden = false;
+  $("login-view").hidden = true;
+  $("request-section").hidden = driver || (!av.open && !av.scheduledAt);
+  $("settings").hidden = !driver;
+  $("today").textContent = new Date(state.serverTime).toLocaleDateString(
+    "pt-BR",
+    { timeZone: "America/Sao_Paulo", day: "numeric", month: "long" },
+  );
+  $("day-total").textContent = money(state.totalCents);
+  const dayStops = state.orders
+    .filter((o) => o.day === state.day && o.status !== "cancelled")
+    .reduce((n, o) => n + o.stops.length, 0);
+  $("day-count").textContent =
+    `${dayStops} ${dayStops === 1 ? "entrega" : "entregas"}`;
+  const controls = driver
+    ? `<div class="actions"><button class="outline" data-availability="${av.open ? "close" : "open"}">${av.open ? "Pausar" : "Abrir atendimento"}</button><button class="plain" data-schedule>Agendar</button>${av.scheduledAt ? '<button class="plain" data-availability="unschedule">Remover horário</button>' : ""}</div>`
+    : "";
+  const availability = `<div><span class="status ${av.open ? "" : "closed"}">${av.open ? "Maikon disponível" : av.scheduledAt ? "Abertura programada" : "Maikon ocupado"}</span><p>${av.open ? "Atendimento até 20h30" : av.scheduledAt ? dateTime(av.scheduledAt) : "Sem previsão de abertura"}</p></div>${controls}`;
+  if ($("availability-card").innerHTML !== availability)
+    $("availability-card").innerHTML = availability;
+  const rank = (o) =>
+    o.status === "running"
+      ? 0
+      : o.seenAt
+        ? 1
+        : o.status === "scheduled"
+          ? 3
+          : 2;
+  active.sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt);
+  const sig = JSON.stringify([active, driver]);
+  if (sig !== orderSignature) {
+    $("orders").innerHTML = active.length
+      ? activeOrder(active[0], driver) +
+        active
+          .slice(1)
+          .map(
+            (o) =>
+              `<details class="queue"><summary>Na fila · ${time(o.createdAt)} · ${money(o.totalCents)}</summary>${activeOrder(o, driver).replace("PEDIDO ATUAL", "NA FILA")}</details>`,
+          )
+          .join("")
+      : '<p class="empty">Nenhum pedido em andamento.</p>';
+    orderSignature = sig;
+  }
+  if (!driver) {
+    const main = $("request-section").parentNode;
+    if (active.length)
+      main.insertBefore($("active-section"), $("request-section"));
+    else main.insertBefore($("request-section"), $("active-section"));
+  }
+  $("active-heading").textContent = driver
+    ? "Entregas para realizar"
+    : "Em andamento";
+  const historyOrders = state.orders.filter(
+    (o) => terminal(o) || o.delivered?.length,
+  );
+  const entries = historyEntries(historyOrders, true);
+  const cs = JSON.stringify(entries);
+  if (cs !== completedSignature) {
+    const open = [
+      ...$("completed-orders").querySelectorAll('[aria-expanded="true"]'),
+    ].map((e) => e.dataset.historyKey);
+    $("completed-orders").innerHTML = historyTable(entries);
+    for (const button of $("completed-orders").querySelectorAll(
+      "[data-history-key]",
+    ))
+      if (open.includes(button.dataset.historyKey)) button.click();
+    completedSignature = cs;
+  }
+  $("completed-count").textContent = entries.length + " entregas";
+  $("sync-status").textContent = "Atualizado às " + time(state.serverTime);
+  if (!$("history-day").value) $("history-day").value = state.day;
+  if (driver) {
+    $("base-address").textContent =
+      state.settings.baseAddress || "Base não configurada.";
+    if (!document.activeElement?.closest("#base-form"))
+      $("base-input").value = state.settings.baseAddress || "";
+    renderBudget();
+  }
+  if (!driver && !rows.length) {
+    addRow();
+  }
+  updateDraftTotal();
+}
+function renderBudget() {
+  const b = state.googleBudget;
+  if (!b) {
+    $("budget").textContent = "Monitoramento indisponível.";
+    return;
+  }
+  const labels = {
+    routes: "Rotas",
+    autocomplete: "Sugestões",
+    details: "Endereços selecionados",
+    geocode: "Endereços por texto",
+  };
+  $("budget").innerHTML =
+    `<p>${b.monitor.blocked ? "Consultas pausadas" : "Proteção ativa"}${b.monitor.reason ? " · " + esc(b.monitor.reason) : ""}</p>` +
+    Object.entries(b.usage)
+      .map(
+        ([key, v]) =>
+          `<p><b>${labels[key] || esc(key)}</b><br>Hoje ${v.day}/${v.daily} · Mês ${v.month}/${v.monthly}</p>`,
+      )
+      .join("");
+}
+function rowElement(row) {
+  return document.querySelector(`[data-row="${row.id}"]`);
+}
+function addRow() {
+  const row = {
+    id: crypto.randomUUID(),
+    session: crypto.randomUUID(),
+    text: "",
+    price: "",
+    valid: false,
+    sequence: 0,
+  };
+  rows.push(row);
+  const el = document.createElement("article");
+  el.className = "address-row";
+  el.dataset.row = row.id;
+  el.innerHTML = `<div class="row-heading"><span>Entrega ${rows.length}</span><button type="button" data-remove aria-label="Remover entrega">Remover</button></div><div class="fields"><button type="button" class="confirmed-address" title="Editar endereço" hidden></button><label class="address-label">Endereço<input class="address-input" placeholder="Rua, número e cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions-${row.id}"></label><label>Valor<div class="price-wrap"><span>R$</span><input class="price-input" inputmode="decimal" placeholder="—" aria-label="Valor da entrega em reais"></div></label></div><button type="button" class="confirm">Confirmar endereço</button><p class="row-status" role="status"></p><div class="suggestions" id="suggestions-${row.id}" role="listbox" hidden></div>`;
+  $("draft-stops").append(el);
+  el.querySelector(".confirm").hidden = true;
+  el.querySelector(".confirmed-address").onclick = () => {
+    el.classList.remove("valid");
+    el.querySelector(".confirmed-address").hidden = true;
+    row.valid = false;
+    row.phase = "editing";
+    row.session = crypto.randomUUID();
+    row.autoCount = 0;
+    el.querySelector(".confirm").hidden = false;
+    el.querySelector(".address-input").focus();
+    submissionId = crypto.randomUUID();
+    updateDraftTotal();
+  };
+  el.querySelector(".address-input").addEventListener("input", (e) => {
+    row.text = e.target.value;
+    row.valid = false;
+    el.querySelector(".confirm").hidden = !row.text.trim();
+    row.selectionId = null;
+    row.sequence++;
+    row.controller?.abort();
+    clearTimeout(row.timer);
+    el.classList.remove("valid");
+    el.querySelector(".row-status").textContent = "";
+    closeSuggestions(row);
+    submissionId = crypto.randomUUID();
+    updateDraftTotal();
+    row.phase = "editing";
+    if (
+      row.text.trim().length >= 5 &&
+      !row.autoPaused &&
+      (row.autoCount || 0) < 4 &&
+      row.lastQuery !== row.text.trim()
+    )
+      row.timer = setTimeout(() => suggest(row), 850);
+  });
+  el.querySelector(".address-input").addEventListener("keydown", (e) => {
+    const choices = [...el.querySelectorAll("[data-choice]")];
+    if (e.key === "ArrowDown" && choices.length) {
+      e.preventDefault();
+      choices[0].focus();
+    }
+    if (e.key === "Escape") closeSuggestions(row);
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void run(el.querySelector(".confirm"), () => resolveRow(row));
+    }
+  });
+  el.querySelector(".price-input").addEventListener("input", (e) => {
+    row.price = e.target.value;
+    row.priceEdited = true;
+    submissionId = crypto.randomUUID();
+    updateDraftTotal();
+  });
+  el.querySelector(".confirm").onclick = (e) =>
+    run(e.currentTarget, () => resolveRow(row));
+  el.querySelector("[data-remove]").onclick = () => {
+    clearTimeout(row.timer);
+    row.controller?.abort();
+    rows = rows.filter((r) => r !== row);
+    el.remove();
+    submissionId = crypto.randomUUID();
+    if (!rows.length) addRow();
+    document
+      .querySelectorAll(".row-heading>span")
+      .forEach((span, i) => (span.textContent = "Entrega " + (i + 1)));
+    updateDraftTotal();
+  };
+  updateDraftTotal();
+  return row;
+}
+function closeSuggestions(row) {
+  const el = rowElement(row);
+  if (!el) return;
+  el.querySelector(".suggestions").hidden = true;
+  el.querySelector(".address-input").setAttribute("aria-expanded", "false");
+}
+async function suggest(row) {
+  const el = rowElement(row),
+    seq = row.sequence;
+  if (
+    !el ||
+    row.valid ||
+    document.activeElement !== el.querySelector(".address-input")
+  )
+    return;
+  row.autoCount = (row.autoCount || 0) + 1;
+  row.lastQuery = row.text.trim();
+  row.controller = new AbortController();
+  try {
+    const result = await api(
+      "/autocomplete",
+      {
+        input: row.text,
+        session: row.session,
+        operationId: crypto.randomUUID(),
+      },
+      row.controller.signal,
+    );
+    if (row.sequence !== seq || !el.isConnected) return;
+    const box = el.querySelector(".suggestions");
+    box.innerHTML =
+      result.suggestions
+        .map(
+          (p, i) =>
+            `<button type="button" role="option" data-choice="${i}">${esc(p.label)}</button>`,
+        )
+        .join("") + '<div class="google-attribution">Google Maps</div>';
+    box.hidden = !result.suggestions.length;
+    el.querySelector(".address-input").setAttribute(
+      "aria-expanded",
+      String(!box.hidden),
+    );
+    box.querySelectorAll("button").forEach((button, i) => {
+      button.onclick = () =>
+        run(el.querySelector(".confirm"), () =>
+          resolveRow(row, result.suggestions[i]),
+        );
+      button.onkeydown = (e) => {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          button.nextElementSibling?.matches("button") &&
+            button.nextElementSibling.focus();
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          (
+            button.previousElementSibling || el.querySelector(".address-input")
+          ).focus();
+        }
+        if (e.key === "Escape") {
+          closeSuggestions(row);
+          el.querySelector(".address-input").focus();
+        }
+      };
+    });
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    if (e.status === 429 || e.status === 503) {
+      row.autoPaused = true;
+      el.querySelector(".row-status").textContent =
+        "Digite rua, número e cidade e toque em Confirmar.";
+    }
+  }
+}
+async function resolveRow(row, choice) {
+  const el = rowElement(row);
+  if (row.phase === "resolving" || row.valid) return;
+  if (!row.text.trim()) throw new Error("Informe rua, número e cidade.");
+  const seq = row.sequence;
+  row.phase = "resolving";
+  clearTimeout(row.timer);
+  row.controller?.abort();
+  closeSuggestions(row);
+  el.querySelector(".row-status").textContent = "Confirmando endereço…";
+  try {
+    const p = await api("/resolve", {
+      placeId: choice?.placeId,
+      address: row.text,
+      session: row.session,
+      operationId: crypto.randomUUID(),
+    });
+    if (seq !== row.sequence || !el.isConnected) return;
+    row.selectionId = p.selectionId;
+    row.text = p.address;
+    row.valid = true;
+    row.manual = false;
+    row.session = crypto.randomUUID();
+    el.querySelector(".address-input").value = p.address;
+    el.classList.add("valid");
+    if (!row.priceEdited && Number.isInteger(p.suggestedCents)) {
+      row.price = (p.suggestedCents / 100).toFixed(2).replace(".", ",");
+      el.querySelector(".price-input").value = row.price;
+    }
+    el.querySelector(".row-status").textContent =
+      "✓ Confirmado · Google Maps" +
+      (p.suggestedCents === undefined ? " · Informe o valor." : "");
+    row.phase = "ready";
+    el.querySelector(".confirmed-address").textContent = row.text;
+    el.querySelector(".confirmed-address").hidden = false;
+    el.querySelector(".confirm").hidden = true;
+    if (rows.at(-1) === row) addRow();
+    submissionId = crypto.randomUUID();
+    updateDraftTotal();
+  } catch (e) {
+    if (seq !== row.sequence || !el.isConnected) return;
+    row.phase = "editing";
+    el.querySelector(".row-status").textContent = e.message;
+    if (
+      [429, 503, 502].includes(e.status) &&
+      /\d/.test(row.text) &&
+      row.text.trim().length >= 8
+    ) {
+      row.valid = true;
+      row.phase = "ready";
+      el.classList.add("valid");
+      el.querySelector(".confirmed-address").textContent = row.text;
+      el.querySelector(".confirmed-address").hidden = false;
+      el.querySelector(".confirm").hidden = true;
+      row.manual = true;
+      row.selectionId = null;
+      el.querySelector(".row-status").textContent =
+        "Consulta indisponível. Endereço escrito; informe o valor. A rota será confirmada depois.";
+      if (rows.at(-1) === row) addRow();
+      updateDraftTotal();
+    } else throw e;
+  }
+}
+function cents(row) {
+  const value = row.price.trim().replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) return null;
+  const n = Math.round(Number(value) * 100);
+  return n <= 100000 ? n : null;
+}
+function updateDraftTotal() {
+  const filled = rows.filter((r) => r.text.trim());
+  $("draft-total").textContent = money(
+    filled.reduce((n, r) => n + (cents(r) || 0), 0),
+  );
+  $("draft-count").textContent = filled.length
+    ? filled.length + " endereços"
+    : "";
+  const available =
+    state && (state.availability.open || state.availability.scheduledAt);
+  $("submit-order").disabled =
+    submitting ||
+    !available ||
+    !filled.length ||
+    filled.some((r) => !r.valid || cents(r) === null);
+  const choices = rows.filter((r) => r.valid);
+  if (!choices.some((r) => r.id === priorityId) || choices.length < 2)
+    priorityId = null;
+  const priority = $("priority-open");
+  priority.hidden = choices.length < 2;
+  priority.textContent = priorityId
+    ? "Prioridade: entrega " +
+      (rows.findIndex((r) => r.id === priorityId) + 1) +
+      " · alterar"
+    : "Definir prioridade";
+  $("draft-help").textContent = !available
+    ? "Aguarde a abertura do atendimento."
+    : filled.some((r) => !r.valid)
+      ? "Confirme o endereço com número para continuar."
+      : filled.some((r) => cents(r) === null)
+        ? "Informe o valor de cada entrega."
+        : "";
+}
+$("order-form").onsubmit = (e) => {
+  e.preventDefault();
+  if (submitting || $("submit-order").disabled) return;
+  submitting = true;
+  $("order-form").inert = true;
+  $("order-form").setAttribute("aria-busy", "true");
+  $("submit-order").firstElementChild.textContent = "Enviando…";
+  updateDraftTotal();
+  run(null, async () => {
+    try {
+      const stops = rows
+        .filter((r) => r.text.trim())
+        .map((r) => ({
+          selectionId: r.selectionId || undefined,
+          address: r.text,
+          priceCents: cents(r),
+        }));
+      const priority = rows
+        .filter((r) => r.text.trim())
+        .findIndex((r) => r.id === priorityId);
+      await mutate("/orders", { submissionId, stops, priority });
+      priorityId = null;
+      rows.forEach((r) => {
+        clearTimeout(r.timer);
+        r.controller?.abort();
+      });
+      rows = [];
+      $("draft-stops").innerHTML = "";
+      submissionId = crypto.randomUUID();
+      addRow();
+      toast("Pedido enviado.");
+      $("active-section").scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    } finally {
+      submitting = false;
+      $("order-form").inert = false;
+      $("order-form").removeAttribute("aria-busy");
+      $("submit-order").firstElementChild.textContent = "Chamar o Maikon";
+      updateDraftTotal();
+    }
+  });
+};
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.historyKey) {
+    const detail = b
+      .closest("table")
+      .querySelector(`[data-history-detail="${b.dataset.historyKey}"]`);
+    detail.hidden = !detail.hidden;
+    b.setAttribute("aria-expanded", String(!detail.hidden));
+  }
+  if (b.dataset.availability)
+    void run(b, () =>
+      mutate("/availability", { action: b.dataset.availability }),
+    );
+  if (b.hasAttribute("data-schedule")) $("schedule-dialog").showModal();
+  if (b.dataset.order) {
+    const action = b.dataset.action;
+    const body = { action };
+    if (action === "cancel") {
+      body.reason = prompt("Motivo do cancelamento:");
+      if (!body.reason) return;
+    }
+    if (action === "delay") {
+      const value = prompt("Em quantos minutos você chega?", "10");
+      if (value === null) return;
+      body.minutes = Number(value);
+    }
+    if (action === "delivered") body.index = Number(b.dataset.index);
+    const popup =
+      action === "start" ? window.open("about:blank", "_blank") : null;
+    void run(b, async () => {
+      try {
+        const o = await mutate(
+          `/orders/${b.dataset.order}/${action === "route" ? "route" : "action"}`,
+          body,
+        );
+        if (action === "start" && o.navigation?.[0]?.url) {
+          if (popup) popup.location.replace(o.navigation[0].url);
+          else toast("Rota iniciada. Toque em Abrir rota no Google Maps.");
+        } else popup?.close();
+      } catch (e) {
+        popup?.close();
+        throw e;
+      }
+    });
+  }
 });
-$('login-form').addEventListener('submit',e=>{e.preventDefault();run(e.submitter,async()=>{try{const result=await api('/login',{username:$('username').value,password:$('password').value});token=result.token;localStorage.setItem('unifarma.token',token);localStorage.setItem('unifarma.expiresAt',result.expiresAt);$('password').value='';$('login-error').textContent='';state=await api('/state');renderState();}catch(e){$('login-error').textContent=e.message;throw e;}});});
-$('show-password').onclick=()=>{const show=$('password').type==='password';$('password').type=show?'text':'password';$('show-password').textContent=show?'Ocultar':'Mostrar';};
-$('logout').onclick=e=>run(e.currentTarget,async()=>{await api('/logout',{});logoutLocal();});
-$('add-stop').onclick=e=>run(e.currentTarget,()=>openAddress(stops.length));
-$('edit-base').onclick=e=>run(e.currentTarget,()=>openAddress('base'));
-$('close-address').onclick=()=>$('address-dialog').close();
-$('close-schedule').onclick=()=>$('schedule-dialog').close();
-$('search-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{const result=await api('/search?q='+encodeURIComponent($('search-address').value));searchResults=result.results;$('search-results').innerHTML=searchResults.length?searchResults.map((p,i)=>`<button type="button" class="search-result" data-result="${i}">${esc(p.address)}${!p.exact?'<small>Confira o número e ajuste o ponto no mapa</small>':''}</button>`).join(''):'<p class="notice">Nenhum resultado. Tente o nome da rua sem abreviação. Você também pode marcar o ponto diretamente no mapa.</p>';});};
-$('save-address').onclick=e=>run(e.currentTarget,async()=>{if(!point||!$('point-confirmed').checked)throw new Error('Confira o marcador e marque a confirmação.');if(editIndex==='base'){await api('/base',{...point,confirmed:true});state=await api('/state');renderState();}else{if(!$('stop-address').value.trim()||!$('stop-number').value.trim())throw new Error('Informe endereço e número (ou S/N).');stops[editIndex]={...point,address:$('stop-address').value.trim(),number:$('stop-number').value.trim(),complement:$('stop-complement').value.trim(),note:$('stop-note').value.trim(),confirmed:true};invalidateQuote();renderDraft();}$('address-dialog').close();});
-for(const id of ['stop-address','stop-number'])$(id).addEventListener('input',()=>$('point-confirmed').checked=false);
-$('priority').onchange=()=>{if($('priority').value!=='-1'&&!confirm('Colocar esta entrega em primeiro lugar, mesmo que aumente o percurso?'))$('priority').value='-1';invalidateQuote();};
-$('calculate').onclick=e=>run(e.currentTarget,async()=>{quote=await api('/quote',{stops,priority:Number($('priority').value)});showQuote();});
-$('quote').addEventListener('input',()=>{try{$('quote-total').textContent=money(readPrices().reduce((a,b)=>a+b,0));}catch{$('quote-total').textContent='Confira os valores';}});
-$('submit-order').onclick=e=>run(e.currentTarget,async()=>{if(!quote)throw new Error('Calcule o pacote primeiro.');await api('/orders',{quoteId:quote.id,prices:readPrices()});stops=[];invalidateQuote();renderDraft();showTab('today');state=await api('/state');renderState();toast('Pacote enviado. A confirmação de visualização aparecerá aqui.');});
-$('schedule-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('/availability',{action:'schedule',at:$('schedule-at').value+':00-03:00'});$('schedule-dialog').close();state=await api('/state');renderState();toast('Abertura programada.');});};
-$('key-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('/configuration',{key:$('geo-key').value.trim()});$('geo-key').value='';state=await api('/state');renderState();if(map){map.remove();map=null;marker=null;}toast('Chave salva. Agora confirme o ponto da farmácia no mapa.');});};
-$('history-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{const result=await api('/history?day='+encodeURIComponent($('history-day').value));const total=result.orders.filter(o=>o.status!=='cancelled').reduce((n,o)=>n+o.totalCents,0);$('history-orders').innerHTML=result.orders.length?`<div class="total-card"><b>Total arquivado</b><strong>${money(total)}</strong></div>`+result.orders.map(o=>orderCard(o,state.user.role==='driver',true)).join(''):empty('Nenhum registro arquivado.','Confira a data. Os pedidos de hoje estão na aba Hoje.');});};
-$('refresh-now').onclick=e=>run(e.currentTarget,async()=>{state=await api('/state');$('connection').hidden=true;renderState();});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
-window.addEventListener('focus',()=>void refresh());
-window.addEventListener('pageshow',()=>void refresh());
-window.addEventListener('online',()=>void refresh());
-setInterval(()=>{if(!document.hidden)void refresh();},10000);
-setInterval(()=>{if(document.hidden)void refresh();},60000);
-if(token)refresh();
-if(location.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(location.hostname)){
- $('login-error').textContent='Para entrar, use o endereço HTTPS com certificado válido.';
- const link=document.createElement('a');link.href='https://'+location.host+location.pathname;link.textContent='Abrir acesso seguro ↗';$('login-error').append(document.createElement('br'),link);
- $('login-form button[type="submit"]').disabled=true;
+$("login-form").onsubmit = (e) => {
+  e.preventDefault();
+  void run(e.submitter, async () => {
+    try {
+      const r = await api("/login", {
+        username: $("username").value,
+        password: $("password").value,
+      });
+      token = r.token;
+      sessionEpoch++;
+      localStorage.setItem("unifarma.token", token);
+      localStorage.setItem("unifarma.expiresAt", r.expiresAt);
+      $("password").value = "";
+      $("login-error").textContent = "";
+      await refresh();
+    } catch (e) {
+      $("login-error").textContent = e.message;
+      throw e;
+    }
+  });
+};
+$("logout").onclick = (e) =>
+  run(e.currentTarget, async () => {
+    await api("/logout", {});
+    logoutLocal();
+  });
+$("refresh-now").onclick = (e) => run(e.currentTarget, refresh);
+$("close-schedule").onclick = () => $("schedule-dialog").close();
+$("schedule-form").onsubmit = (e) => {
+  e.preventDefault();
+  void run(e.submitter, async () => {
+    await mutate("/availability", {
+      action: "schedule",
+      at: $("schedule-at").value + ":00-03:00",
+    });
+    $("schedule-dialog").close();
+  });
+};
+$("base-form").onsubmit = (e) => {
+  e.preventDefault();
+  void run(e.submitter, async () => {
+    const p = await api("/resolve", {
+      address: $("base-input").value,
+      session: crypto.randomUUID(),
+      operationId: crypto.randomUUID(),
+      base: true,
+    });
+    await mutate("/google-base", { selectionId: p.selectionId });
+    toast("Base atualizada.");
+  });
+};
+$("history-form").onsubmit = (e) => {
+  e.preventDefault();
+  void run(e.submitter, async () => {
+    const r = await api(
+      "/history?day=" + encodeURIComponent($("history-day").value),
+    );
+    const total = r.orders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((n, o) => n + o.totalCents, 0);
+    $("history-orders").innerHTML = r.orders.length
+      ? `<div class="draft-total"><span>Total do dia consultado</span><strong>${money(total)}</strong></div>` +
+        historyTable(
+          r.items?.length === r.orders.reduce((n, o) => n + o.stops.length, 0)
+            ? r.items
+            : historyEntries(r.orders),
+        )
+      : '<p class="empty">Nenhum registro neste dia.</p>';
+  });
+};
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) void refresh();
+});
+for (const event of ["focus", "pageshow", "online"])
+  window.addEventListener(event, () => void refresh());
+// One request at a time, immediate refresh after mutations and on returning from Maps.
+setInterval(() => {
+  if (!document.hidden) void refresh();
+}, 12000);
+function stopLive() {
+  liveEpoch++;
+  liveController?.abort();
+  liveController = null;
 }
+function startLive() {
+  if (!token || document.hidden || liveController) return;
+  const epoch = liveEpoch,
+    auth = token;
+  const controller = new AbortController();
+  liveController = controller;
+  (async () => {
+    try {
+      const r = await fetch("/api/entregas/updates", {
+        headers: { Authorization: "Bearer " + auth },
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (
+        !r.ok ||
+        !r.headers.get("content-type")?.includes("text/event-stream")
+      )
+        throw new Error("stream unavailable");
+      const reader = r.body.getReader(),
+        decoder = new TextDecoder();
+      let buffer = "";
+      while (auth === token && epoch === liveEpoch) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let boundary;
+        while ((boundary = buffer.indexOf("\n\n")) >= 0) {
+          const message = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          if (message.includes("event: change")) void refresh();
+        }
+      }
+    } catch {
+    } finally {
+      if (epoch === liveEpoch && auth === token) {
+        setTimeout(() => {
+          if (epoch === liveEpoch && liveController === controller) {
+            liveController = null;
+            startLive();
+          }
+        }, 3000);
+      }
+    }
+  })();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopLive();
+  else startLive();
+});
+if (token) void refresh();
+if (
+  location.protocol !== "https:" &&
+  !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
+) {
+  $("login-error").textContent = "Use HTTPS para entrar com segurança.";
+  $("login-form button").disabled = true;
+}
+
+$("priority-open").onclick = () => {
+  const candidates = rows.filter((r) => r.valid);
+  if (candidates.length < 2) return;
+  $("priority-select").innerHTML =
+    '<option value="">Sem prioridade</option>' +
+    candidates
+      .map((r) => `<option value="${r.id}">${esc(r.text)}</option>`)
+      .join("");
+  $("priority-select").value = priorityId || "";
+  priorityReadyAt = Date.now() + 3000;
+  $("priority-save").disabled = true;
+  $("priority-save").textContent = "Disponível em 3 s";
+  $("priority-dialog").showModal();
+  clearInterval(priorityTimer);
+  priorityTimer = setInterval(() => {
+    const left = Math.max(0, Math.ceil((priorityReadyAt - Date.now()) / 1000));
+    $("priority-save").textContent = left
+      ? "Disponível em " + left + " s"
+      : "Aplicar prioridade";
+    $("priority-save").disabled = !!left;
+    if (!left) clearInterval(priorityTimer);
+  }, 200);
+};
+$("priority-close").onclick = () => $("priority-dialog").close();
+$("priority-dialog").onclose = () => clearInterval(priorityTimer);
+$("priority-form").onsubmit = (e) => {
+  e.preventDefault();
+  if (Date.now() < priorityReadyAt) return;
+  priorityId = $("priority-select").value || null;
+  submissionId = crypto.randomUUID();
+  $("priority-dialog").close();
+  updateDraftTotal();
+};

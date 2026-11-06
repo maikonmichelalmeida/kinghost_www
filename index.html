@@ -1,12 +1,197 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#164e42"><meta name="description" content="Entregas Unifarma com Maikon. Solicite e acompanhe suas entregas."><title>Unifarma · Entregas</title><link rel="icon" href="/entregas/img/mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/entregas/vendor/leaflet.css"><link rel="stylesheet" href="/entregas/css/app.css"><script defer src="/entregas/vendor/leaflet.js"></script><script defer src="/entregas/js/app.js?v=20261103-sync-1"></script></head>
-<body><div id="toast" role="status" aria-live="polite" hidden></div>
-<section id="login-view" class="login-shell"><div class="login-story"><a class="brand" href="/"><img src="/entregas/img/mark.svg" alt=""><span>unifarma<span class="brand-small">ENTREGAS COM MAIKON</span></span></a><div class="story-content"><span class="eyebrow">DA FARMÁCIA ATÉ A PORTA</span><h1>Cuidado que<br>chega até você.</h1><p>Um caminho mais simples para organizar as entregas do dia.</p><img class="route-art" src="/entregas/img/route.svg" alt="Trajeto entre a farmácia e as entregas"></div><div class="story-footer">Gravataí, RS · Até 5 entregas por viagem</div></div><div class="login-form-wrap"><div class="login-card"><span class="eyebrow">BEM-VINDO DE VOLTA</span><h2>Vamos começar?</h2><p class="muted">Entre para solicitar ou acompanhar as entregas.</p><form id="login-form"><label>Usuário<input id="username" autocomplete="username" required maxlength="50" autocapitalize="none" spellcheck="false" placeholder="Seu usuário"></label><label>Senha<span class="password-wrap"><input id="password" type="password" autocomplete="current-password" required placeholder="Sua senha"><button type="button" id="show-password" class="plain">Mostrar</button></span></label><p id="login-error" class="error" role="alert"></p><button class="primary full" type="submit">Entrar →</button></form><p class="small muted">Seu acesso permanece conectado por 30 dias neste aparelho.</p></div><p class="login-foot">Uma entrega por vez. Um dia bem organizado.</p></div></section>
-<div id="app" hidden><header class="app-header"><a class="brand" href="/"><img src="/entregas/img/mark.svg" alt=""><span>unifarma<span class="brand-small">ENTREGAS COM MAIKON</span></span></a><div class="user-area"><span id="user-name"></span><button id="logout" class="plain">Sair</button></div></header><main class="app-main"><div id="connection" class="notice error" hidden></div><div class="page-heading"><div><span id="today" class="eyebrow"></span><h1 id="greeting"></h1></div><span class="pill">Gravataí · RS</span></div><section id="availability-card" class="availability-card" aria-live="polite"></section><div id="setup-notice" class="notice" hidden></div>
-<nav class="tabs" aria-label="Seções"><button data-tab="today" class="active">Hoje <span id="order-count">0</span></button><button data-tab="new" id="new-tab">Nova entrega</button><button data-tab="history">Histórico</button><button data-tab="settings" id="settings-tab">Ajustes</button></nav>
-<section id="tab-today"><div class="section-heading"><h2>Pacotes do dia</h2><div class="actions"><span id="sync-status" class="small muted" role="status">Aguardando sincronização…</span><button id="refresh-now" type="button" class="plain">Atualizar agora</button></div></div><div id="orders"></div><div id="day-total" class="total-card"></div></section>
-<section id="tab-new" hidden><div class="section-heading"><div><h2>Uma viagem, até 5 entregas</h2><p class="muted">Confirme cada ponto antes de calcular o pacote.</p></div></div><div id="draft-stops"></div><button id="add-stop" class="outline full">＋ Adicionar endereço</button><details class="advanced"><summary>Opções avançadas</summary><p class="small muted">Use prioridade apenas quando necessário. Ela fixa a primeira entrega e pode aumentar o tempo da viagem.</p><label>Entrega prioritária<select id="priority"><option value="-1">Sem prioridade · melhor ordem</option></select></label></details><div class="price-guide"><strong>Sugestão por entrega</strong><span>Até 4 km <b>R$ 7</b></span><span>Até 7 km <b>R$ 10</b></span><span>Até 10 km <b>R$ 15</b></span><small>Acima de 10 km: R$ 2/km de ida, arredondado para o múltiplo de R$ 5 inferior. Distância sempre a partir da farmácia.</small></div><div id="quote"></div><div class="mobile-action"><button id="calculate" class="primary full">Calcular pacote →</button><button id="submit-order" class="primary full" hidden>Confirmar e enviar pacote →</button></div></section>
-<section id="tab-history" hidden><div class="section-heading"><h2>Histórico de entregas</h2></div><form id="history-form" class="inline-form"><label>Dia<input type="date" id="history-day" required></label><button class="primary" type="submit">Consultar</button></form><p class="small muted">O histórico é arquivado às 23h55 e atualizado na virada do dia. Pacotes em andamento continuam visíveis em Hoje.</p><div id="history-orders"></div></section>
-<section id="tab-settings" hidden><article class="card"><h2>Seu ponto de saída e retorno</h2><p>Rua Walmor M. Sousa, 547, Gravataí, RS</p><p class="muted">Confirme a posição exata uma vez. Ela será usada para preços e para o retorno para casa.</p><button id="edit-base" class="primary">Confirmar ponto no mapa</button></article><article class="card"><h2>Mapas gratuitos</h2><p class="muted">Cadastre a chave do plano Free do Geoapify. Ela fica apenas no servidor.</p><form id="key-form"><label>Chave Geoapify<input id="geo-key" type="password" autocomplete="off" required maxlength="128" placeholder="Cole a chave do projeto"></label><button class="primary" type="submit">Salvar chave</button></form><p id="credits" class="small muted"></p><a href="https://myprojects.geoapify.com/" target="_blank" rel="noopener">Criar conta gratuita no Geoapify ↗</a></article></section><footer class="app-footer">Entregas com Maikon · Horário de Brasília<br><a href="https://www.geoapify.com/" target="_blank" rel="noopener">Powered by Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></footer></main></div>
-<dialog id="address-dialog"><div class="dialog-head"><div><span class="eyebrow">LOCALIZAÇÃO DA ENTREGA</span><h2 id="address-title">Confirme o endereço</h2></div><button class="icon-button" id="close-address" aria-label="Fechar">×</button></div><div class="dialog-body"><form id="search-form"><label>Rua, número e cidade<div class="search-row"><input id="search-address" required minlength="5" placeholder="Rua, número, Gravataí" enterkeyhint="search"><button class="primary" type="submit">Buscar</button></div></label></form><div id="search-results"></div><p id="map-help" class="small muted">Busque o endereço. Depois, arraste o marcador até a entrada correta.</p><div id="map"></div><a id="verify-google" target="_blank" rel="noopener" hidden>Conferir este ponto no Google Maps ↗</a><div id="delivery-fields"><label>Endereço completo<input id="stop-address" maxlength="300" placeholder="Rua e cidade"></label><div class="field-row"><label>Número<input id="stop-number" maxlength="20" placeholder="Ex.: 547"></label><label>Complemento<input id="stop-complement" maxlength="120" placeholder="Casa, bloco, apto"></label></div><label>Observação da entrega<textarea id="stop-note" maxlength="1000" rows="2" placeholder="Ex.: chamar no portão azul"></textarea></label></div><label class="check-label"><input type="checkbox" id="point-confirmed">Conferi o número e o marcador está na entrada correta.</label><p id="address-error" class="error" role="alert"></p></div><div class="dialog-footer"><button id="save-address" class="primary full">Usar este ponto ✓</button></div></dialog>
-<dialog id="schedule-dialog" class="small-dialog"><div class="dialog-head"><h2>Programar abertura</h2><button id="close-schedule" class="icon-button" aria-label="Fechar">×</button></div><form id="schedule-form" class="dialog-body"><label>Data e hora de Brasília<input id="schedule-at" type="datetime-local" required></label><p class="muted small">A abertura acontece automaticamente, mesmo com o site fechado. O atendimento encerra às 20h30.</p><button type="submit" class="primary full">Agendar abertura</button></form></dialog></body></html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f47b20" />
+    <title>Unifarma · Entregas</title>
+    <link rel="icon" href="/entregas/img/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/entregas/css/app.css?v=20261105" />
+    <script defer src="/entregas/js/app.js?v=20261105"></script>
+  </head>
+  <body>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <section id="login-view" class="login">
+      <a class="brand" href="/"
+        ><img src="/entregas/img/mark.svg" alt="" /><span
+          >Unifarma<small>ENTREGAS COM MAIKON</small></span
+        ></a
+      >
+      <h1>Entrar</h1>
+      <form id="login-form">
+        <label
+          >Usuário<input
+            id="username"
+            autocomplete="username"
+            required
+            autocapitalize="none" /></label
+        ><label
+          >Senha<input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <p id="login-error" class="error" role="alert"></p>
+        <button class="primary full">Entrar</button>
+      </form>
+    </section>
+    <div id="app" hidden>
+      <header>
+        <a class="brand" href="/"
+          ><img src="/entregas/img/mark.svg" alt="" /><span
+            >Unifarma<small>ENTREGAS COM MAIKON</small></span
+          ></a
+        ><button id="logout" class="plain">Sair</button>
+      </header>
+      <main>
+        <div id="connection" class="notice error" role="status" hidden></div>
+        <section class="balance" aria-label="Saldo do dia">
+          <div>
+            <span id="today"></span>
+            <h1>Saldo do dia</h1>
+            <strong id="day-total">R$ 0,00</strong>
+          </div>
+          <div class="balance-detail">
+            <span id="day-count"></span
+            ><small>Pedidos do dia<br />Sem cancelamentos</small>
+          </div>
+        </section>
+        <div id="availability-card" class="availability"></div>
+        <section id="request-section">
+          <div class="section-heading">
+            <h2>Nova entrega</h2>
+            <span id="draft-count" class="muted"></span>
+          </div>
+          <form id="order-form">
+            <div id="draft-stops"></div>
+            <div class="submit-area">
+              <div class="draft-total">
+                <span>Total do pedido</span
+                ><strong id="draft-total">R$ 0,00</strong>
+              </div>
+              <button id="submit-order" class="primary full" type="submit">
+                <span>Chamar o Maikon</span
+                ><img
+                  src="/entregas/img/moto.svg"
+                  width="50"
+                  height="31"
+                  alt=""
+                /></button
+              ><button
+                type="button"
+                id="priority-open"
+                class="priority-link"
+                hidden
+              >
+                Definir prioridade
+              </button>
+              <p id="draft-help" class="small muted"></p>
+            </div>
+          </form>
+        </section>
+        <section id="active-section">
+          <div class="section-heading">
+            <h2 id="active-heading">Em andamento</h2>
+            <button
+              id="refresh-now"
+              class="plain"
+              aria-label="Atualizar pedidos"
+            >
+              ↻ Atualizar
+            </button>
+          </div>
+          <div id="orders"></div>
+        </section>
+        <section class="completed-section">
+          <div class="section-heading">
+            <h2>Feito hoje</h2>
+            <span id="completed-count" class="muted"></span>
+          </div>
+          <div id="completed-orders"></div>
+        </section>
+        <details class="older-history">
+          <summary>Dias anteriores</summary>
+          <form id="history-form" class="inline-form">
+            <label>Dia<input type="date" id="history-day" required /></label
+            ><button class="outline">Consultar</button>
+          </form>
+          <div id="history-orders"></div>
+        </details>
+        <details id="settings" class="settings" hidden>
+          <summary>Ajustes do atendimento</summary>
+          <div class="card">
+            <h3>Saída e retorno</h3>
+            <p id="base-address"></p>
+            <form id="base-form">
+              <label
+                >Endereço com número<input
+                  id="base-input"
+                  required
+                  placeholder="Rua, número e cidade" /></label
+              ><button class="outline">Confirmar endereço da base</button>
+            </form>
+          </div>
+          <div class="card">
+            <h3>Proteção de consumo</h3>
+            <div id="budget"></div>
+          </div>
+        </details>
+        <footer>
+          <span id="sync-status" role="status"></span><br />Horário de Brasília
+          · <a href="/entregas/privacidade.html">Privacidade e termos</a>
+        </footer>
+      </main>
+    </div>
+    <dialog id="priority-dialog">
+      <form id="priority-form">
+        <div class="section-heading">
+          <h2>Primeira entrega</h2>
+          <button
+            class="plain"
+            type="button"
+            id="priority-close"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+        <label
+          >Endereço prioritário<select id="priority-select"></select
+        ></label>
+        <p class="small muted">
+          As demais entregas continuam na ordem calculada.
+        </p>
+        <button id="priority-save" class="primary full" disabled>
+          Aplicar prioridade
+        </button>
+      </form>
+    </dialog>
+    <dialog id="schedule-dialog">
+      <form id="schedule-form">
+        <div class="section-heading">
+          <h2>Programar abertura</h2>
+          <button
+            type="button"
+            id="close-schedule"
+            class="plain"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+        <label
+          >Data e hora de Brasília<input
+            id="schedule-at"
+            type="datetime-local"
+            required
+        /></label>
+        <p class="small muted">Encerramento diário às 20h30.</p>
+        <button class="primary full">Agendar</button>
+      </form>
+    </dialog>
+  </body>
+</html>
