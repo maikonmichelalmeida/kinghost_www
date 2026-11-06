@@ -11,8 +11,8 @@
     <link rel="icon" href="/favicon.ico?v=unifarma-laranja" sizes="16x16 32x32 48x48" />
     <link rel="icon" href="/entregas/img/unifarma-laranja.svg" type="image/svg+xml" sizes="any" />
     <link rel="apple-touch-icon" href="/entregas/img/unifarma-laranja-180.png" />
-    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-validacao" />
-    <script defer src="/entregas/js/app.js?v=20261106-validacao"></script>
+    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-estimativa" />
+    <script defer src="/entregas/js/app.js?v=20261106-estimativa"></script>
   </head>
   <body>
     <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -147,9 +147,11 @@
       </main>
     </div>
     <dialog id="correction-dialog" aria-labelledby="correction-title">
-      <form id="correction-form"><h2 id="correction-title">Validar endereço</h2>
-        <label>Rua, número e cidade<input id="correction-input" maxlength="300" required autocomplete="off"></label>
+      <form id="correction-form"><h2 id="correction-title">Ajustar entrega</h2>
+        <label>Rua, número e cidade<input id="correction-input" maxlength="300" required autocomplete="off" aria-controls="correction-options" aria-expanded="false" role="combobox" aria-autocomplete="list"></label>
+        <div id="correction-options" role="listbox" hidden></div>
         <p id="correction-result" class="small" role="status"></p>
+        <label id="correction-price-field" hidden>Valor final (R$)<input id="correction-price" inputmode="decimal" placeholder="0,00"><small id="correction-suggestion"></small></label>
         <div class="decision-actions"><button type="button" id="correction-close">Voltar</button><button class="primary" id="correction-submit">Buscar no Maps</button></div>
       </form>
     </dialog>

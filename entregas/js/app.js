@@ -169,7 +169,7 @@ function stopLines(o, driver = false) {
       const marker = o.status === 'running'
         ? `<label class="delivery-check"><input type="checkbox" data-check-order="${esc(o.id)}" data-index="${i}" ${done ? 'checked' : ''} ${canEdit ? '' : 'disabled'} aria-label="Entregue: ${esc(p.address)}"></label>`
         : `<span class="stop-number">${done ? '✓' : n+1}</span>`;
-      return `<div class="stop-line">${marker}<div class="stop-info">${esc(p.address)}${done ? `<small>Entregue às ${time(done.at)}</small>` : ""}</div><span class="stop-price">${money(p.priceCents)}</span></div>`;
+      return `<div class="stop-line">${marker}<div class="stop-info">${esc(p.address)}${done ? `<small>Entregue às ${time(done.at)}</small>` : ""}</div><span class="stop-price">${p.priceCents == null ? "A definir" : money(p.priceCents)}</span></div>`;
     })
     .join("");
 }
@@ -184,12 +184,12 @@ function historyEntries(orders, todayOnly = false) {
           orderId: o.id,
           index,
           address: p.address,
-          priceCents: p.priceCents,
+          priceCents: o.status === "cancelled" ? 0 : p.priceCents,
           createdAt: o.createdAt,
           acceptedAt: o.acceptedAt,
           seenAt: o.seenAt,
           finishedAt: delivered?.at || o.finishedAt,
-          status: delivered ? "done" : o.status,
+          status: o.status === "cancelled" ? "cancelled" : delivered ? "done" : o.status,
           cancelReason: o.cancelReason,
         };
       }),
@@ -209,7 +209,7 @@ function historyTable(entries) {
   return `<table class="history-table"><caption class="sr-only">Histórico por endereço de entrega</caption><thead><tr><th>Hora</th><th>Entrega</th><th>Valor</th></tr></thead><tbody>${entries
     .map((item) => {
       const key = esc(item.orderId) + "-" + item.index;
-      return `<tr><td>${time(item.finishedAt || item.createdAt)}</td><td><button type="button" class="history-trigger" data-history-key="${key}" aria-expanded="false">${esc(item.address)}<small>${item.status === "done" ? "Entregue" : names[item.status] || esc(item.status)}</small></button></td><td>${money(item.priceCents)}</td></tr><tr class="history-more" data-history-detail="${key}" hidden><td colspan="3"><b>${esc(item.address)}</b><p>Pedido às ${time(item.createdAt)} · Aceite ${time(item.acceptedAt)} · Visualizado ${time(item.seenAt)}${item.finishedAt ? " · Fim " + time(item.finishedAt) : ""}</p>${item.cancelReason ? `<p>${esc(item.cancelReason)}</p>` : ""}<details class="archived-chat" data-archive-chat="${esc(item.orderId)}"><summary>Conversa do pedido</summary><ol class="chat-log"></ol></details></td></tr>`;
+      return `<tr><td>${time(item.finishedAt || item.createdAt)}</td><td><button type="button" class="history-trigger" data-history-key="${key}" aria-expanded="false">${esc(item.address)}<small>${item.status === "done" ? "Entregue" : names[item.status] || esc(item.status)}</small></button></td><td>${item.status === "cancelled" || item.cancelReason ? money(0) : item.priceCents == null ? "A definir" : money(item.priceCents)}</td></tr><tr class="history-more" data-history-detail="${key}" hidden><td colspan="3"><b>${esc(item.address)}</b><p>Pedido às ${time(item.createdAt)} · Aceite ${time(item.acceptedAt)} · Visualizado ${time(item.seenAt)}${item.finishedAt ? " · Fim " + time(item.finishedAt) : ""}</p>${item.cancelReason ? `<p>${esc(item.cancelReason)}</p>` : ""}<details class="archived-chat" data-archive-chat="${esc(item.orderId)}"><summary>Conversa do pedido</summary><ol class="chat-log"></ol></details></td></tr>`;
     })
     .join("")}</tbody></table>`;
 }
@@ -222,6 +222,12 @@ function chatLines(messages) {
 }
 function chatPanel(orderId) {
   return `<section class="order-chat" data-chat="${esc(orderId)}" aria-label="Conversa deste pedido"><form class="chat-form"><input type="text" maxlength="1000" aria-label="Mensagem do pedido" placeholder="Mensagem do pedido" autocomplete="off" enterkeyhint="send" required><button type="submit">Enviar</button></form><ol class="chat-log" aria-live="polite" aria-relevant="additions"></ol></section>`;
+}
+function tripEstimate(order) {
+  const estimate=order.route.estimate;
+  if(!estimate)return `<button class="plain" data-order="${esc(order.id)}" data-action="estimate">Consultar km e tempo</button>`;
+  const km=(estimate.meters/1000).toLocaleString('pt-BR',{maximumFractionDigits:1});
+  return `<p class="trip-estimate"><strong>${km} km · ${estimate.minutes} min</strong><small>Ida e volta · inclui 2 min por entrega</small></p>`;
 }
 function routeIsCalculating(o) {
   return ["queued", "calculating"].includes(o.routeStatus) && state.serverTime - (o.routeStartedAt || o.createdAt) < 120000;
@@ -250,13 +256,13 @@ function activeOrder(o, driver, queued = false) {
         actions += button('advance', `Concluir parte ${part.number}/${part.total}`, 'primary', `data-part="${part.number}"`);
       else actions += button('finish', 'Concluir pedido', 'primary');
     }
-    actions += `<details><summary class="small muted">Mais opções</summary>${button("cancel", "Cancelar pedido", "plain")}</details>`;
-  } else if (["accepted", "scheduled"].includes(o.status))
+  }
+  if (!o.seenAt && ["accepted", "scheduled"].includes(o.status))
     actions += button("cancel", "Cancelar pedido", "plain");
   const next = (o.status === 'running' && o.part ? o.part.indices : orderIndices(o)).find(
     (i) => !o.delivered.some((d) => d.index === i),
   );
-  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${o.routeStatus === "awaiting_address" ? pendingStops(o,driver) : !o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined && o.routeStatus !== "awaiting_address" ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}${o.status === "running" ? `<div class="stop-checklist">${stopLines(o,driver)}</div>` : `<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details>`}</article>`;
+  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${driver && o.route?.order ? tripEstimate(o) : ""}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${o.routeStatus === "awaiting_address" ? pendingStops(o,driver) : !o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined && o.routeStatus !== "awaiting_address" ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${o.stops.every(p=>p.needsValidation)?"A definir":money(o.totalCents)+(o.stops.some(p=>p.needsValidation)?" + a definir":"")}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}${o.status === "running" ? `<div class="stop-checklist">${stopLines(o,driver)}</div>` : `<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details>`}</article>`;
 }
 function renderState() {
   const driver = state.user.role === "driver",
@@ -427,6 +433,8 @@ function addRow() {
   el.querySelector(".confirm").hidden = true;
   el.querySelector(".confirmed-address").onclick = () => {
     el.classList.remove("valid");
+    row.manual=false;el.querySelector(".price-input").disabled=false;
+    if(!row.priceEdited){row.price="";el.querySelector(".price-input").value="";}
     el.querySelector(".confirmed-address").hidden = true;
     row.valid = false;
     row.phase = "editing";
@@ -639,13 +647,14 @@ function updateDraftTotal() {
   $("draft-count").textContent = filled.length
     ? filled.length + (filled.length === 1 ? " endereço" : " endereços")
     : "";
+  if(filled.some(row=>row.manual)) $('draft-total').textContent=filled.some(row=>!row.manual)?$('draft-total').textContent+' + a definir':'A definir';
   const available =
     state && (state.availability.open || state.availability.scheduledAt);
   $("submit-order").disabled =
     submitting ||
     !available ||
     !filled.length ||
-    filled.some((r) => !r.valid || cents(r) === null);
+    filled.some((r) => !r.valid || (!r.manual && cents(r) === null));
   const choices = rows.filter((r) => r.valid);
   if (!choices.some((r) => r.id === priorityId) || choices.length < 2)
     priorityId = null;
@@ -660,7 +669,7 @@ function updateDraftTotal() {
     ? "Aguarde a abertura do atendimento."
     : filled.some((r) => !r.valid)
       ? "Confirme o endereço com número para continuar."
-      : filled.some((r) => cents(r) === null)
+      : filled.some((r) => !r.manual && cents(r) === null)
         ? "Informe o valor de cada entrega."
         : "";
 }
@@ -692,7 +701,7 @@ $("order-form").onsubmit = (e) => {
           selectionId: r.selectionId || undefined,
           allowUnresolved: r.manual === true,
           address: r.text,
-          priceCents: cents(r),
+          priceCents: r.manual ? null : cents(r),
         }));
       const priority = rows
         .filter((r) => r.text.trim())
@@ -742,8 +751,7 @@ document.addEventListener("click", (e) => {
     const action = b.dataset.action;
     const body = { action };
     if (action === "cancel") {
-      body.reason = prompt("Motivo do cancelamento:");
-      if (!body.reason) return;
+      if (!window.confirm('Cancelar o pedido inteiro?')) return;
     }
     if (action === "delay") {
       const value = prompt("Em quantos minutos você chega?", "10");
@@ -754,7 +762,7 @@ document.addEventListener("click", (e) => {
     void run(b, async () => {
       if (action === "start") b.textContent = "Iniciando…";
       try {
-        const order = await mutate(`/orders/${b.dataset.order}/${action === "route" ? "route" : "action"}`, body, action !== "start");
+        const order = await mutate(`/orders/${b.dataset.order}/${["route","estimate"].includes(action) ? action : "action"}`, body, action !== "start");
         if (action === "start") {
           const destination = order.navigation?.[0]?.url;
           if (destination) window.location.assign(destination);
@@ -943,7 +951,7 @@ $("priority-form").onsubmit = (e) => {
 };
 
 $('orders').addEventListener('submit', async event => {
-  const form = event.target.closest('.chat-form');
+  const form = event.target.closest('form.chat-form');
   if (!form) return;
   event.preventDefault();
   if (form.dataset.sending) return;
@@ -995,10 +1003,11 @@ $('manual-yes').onclick=()=>{
   row.valid=true;row.manual=true;row.selectionId=null;row.phase='ready';
   el.classList.add('valid');el.querySelector('.confirmed-address').textContent=row.text;el.querySelector('.confirmed-address').hidden=false;
   el.querySelector('.confirm').hidden=true;el.querySelector('.manual-send').hidden=true;closeSuggestions(row);
-  el.querySelector('.row-status').textContent='Validação pelo entregador'+(cents(row)===null?' · Informe o valor.':'.');
+  row.price='';row.priceEdited=false;el.querySelector('.price-input').value='';el.querySelector('.price-input').disabled=true;
+  el.querySelector('.row-status').textContent='Endereço e preço serão definidos pelo entregador.';
   submissionId=crypto.randomUUID();if(rows.at(-1)===row)addRow();updateDraftTotal();
   if(!$('submit-order').disabled)$('order-form').requestSubmit($('submit-order'));
-  else if(cents(row)===null)el.querySelector('.price-input').focus();
+
 };
 $('manual-confirm').onclose=()=>{manualRow=null;};
 window.addEventListener('resize',positionManual);window.addEventListener('scroll',positionManual,{passive:true});
@@ -1007,25 +1016,55 @@ function pendingStops(order,driver){
   return `<div class="address-review"><strong>${driver?'Validar antes de iniciar':'Aguardando validação do entregador'}</strong>${items.join('')}</div>`;
 }
 let correcting=null;
+const correctionInput=$('correction-input'),options=$('correction-options');
+function clearChoices(){ options.replaceChildren(); options.hidden=true;correctionInput.setAttribute('aria-expanded','false'); }
+function resetCorrectionPrice(){ $('correction-price-field').hidden=true;$('correction-price').value='';$('correction-suggestion').textContent=''; }
+function correctionCurrent(draft,text){return correcting===draft && correctionInput.value.trim()===text;}
+async function suggestCorrection(draft,text,local=false){
+  if(!correctionCurrent(draft,text)||draft.count>=4||draft.place||draft.paused)return;
+  const query=local?localityQuery(text):text;if(!query)return;
+  draft.count++;draft.controller=new AbortController();
+  try{
+    const {suggestions}=await api('/autocomplete',{input:query,session:draft.session,operationId:crypto.randomUUID()},draft.controller.signal);
+    if(!correctionCurrent(draft,text)||draft.place)return;
+    clearChoices();
+    if(!suggestions.length){if(!local&&localityQuery(text))draft.timer=setTimeout(()=>suggestCorrection(draft,text,true),1000);return;}
+    for(const choice of suggestions){const button=document.createElement('button');button.type='button';button.setAttribute('role','option');button.textContent=choice.label;button.onclick=()=>run($('correction-submit'),()=>resolveCorrection(draft,choice));options.append(button);}
+    const credit=document.createElement('small');credit.textContent='Google Maps';options.append(credit);options.hidden=false;correctionInput.setAttribute('aria-expanded','true');
+  }catch(e){if(e.name!=='AbortError'&&correctionCurrent(draft,text)){draft.paused=true;$('correction-result').textContent='Digite rua, número e cidade e toque em Buscar no Maps.';}}
+}
+async function resolveCorrection(draft,choice){
+  const text=correctionInput.value.trim();if(!text)return;
+  clearTimeout(draft.timer);draft.controller?.abort();clearChoices();$('correction-result').textContent='Confirmando endereço…';
+  const current=()=>correctionCurrent(draft,text);
+  try{
+    const place=await resolveWithLocality(text,(query,extra)=>api('/resolve',{address:query,placeId:extra?undefined:choice?.placeId,purpose:'correction',session:draft.session,operationId:crypto.randomUUID()}),current,()=>{$('correction-result').textContent='Tentando também em Gravataí, RS…';});
+    if(!place||!current())return;
+    draft.place=place;correctionInput.value=place.address;draft.session=crypto.randomUUID();
+    $('correction-result').textContent='✓ Endereço confirmado pelo Google Maps';$('correction-price-field').hidden=false;
+    const suggested=place.suggestedCents;
+    const initial=Number.isInteger(suggested)?suggested:draft.previousPrice;
+    $('correction-price').value=Number.isInteger(initial)?(initial/100).toFixed(2).replace('.',','):'';
+    $('correction-suggestion').textContent=Number.isInteger(suggested)?`Sugestão: ${money(suggested)} · ${(place.meters/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})} km da farmácia`:'Sugestão indisponível. Informe o valor.';
+    $('correction-submit').textContent='Salvar endereço e valor';$('correction-price').focus();
+  }catch(e){if(current())$('correction-result').textContent=e.message;}
+}
 $('orders').addEventListener('click',e=>{
   const b=e.target.closest('[data-correct]');if(!b)return;
-  const order=state.orders.find(o=>o.id===b.dataset.correct),index=Number(b.dataset.stop);
-  if(!order?.stops[index]?.needsValidation)return;
-  correcting={id:order.id,index,place:null};$('correction-input').value=order.stops[index].address;
-  $('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';$('correction-dialog').showModal();
+  const order=state.orders.find(o=>o.id===b.dataset.correct),index=Number(b.dataset.stop),stop=order?.stops[index];
+  if(!stop?.needsValidation)return;
+  correcting={id:order.id,index,place:null,session:crypto.randomUUID(),count:0,previousPrice:stop.priceCents};correctionInput.value=stop.address;
+  resetCorrectionPrice();clearChoices();$('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';$('correction-dialog').showModal();correctionInput.focus();
+  const draft=correcting,text=stop.address;if(text.length>=5)draft.timer=setTimeout(()=>suggestCorrection(draft,text),1000);
 });
 $('correction-close').onclick=()=>$('correction-dialog').close();
-$('correction-dialog').onclose=()=>{correcting=null;};
-$('correction-input').oninput=()=>{if(correcting)correcting.place=null;$('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';};
+$('correction-dialog').onclose=()=>{clearTimeout(correcting?.timer);correcting?.controller?.abort();correcting=null;clearChoices();};
+correctionInput.oninput=()=>{const draft=correcting;if(!draft)return;const text=correctionInput.value.trim();clearTimeout(draft.timer);draft.controller?.abort();clearChoices();resetCorrectionPrice();draft.place=null;$('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';if(text.length>=5)draft.timer=setTimeout(()=>suggestCorrection(draft,text),1000);};
+correctionInput.onkeydown=e=>{if(e.key==='ArrowDown'&&!options.hidden){e.preventDefault();options.querySelector('button')?.focus();}};
 $('correction-form').onsubmit=e=>{e.preventDefault();const draft=correcting;if(!draft)return;
-  void run(e.submitter,async()=>{const address=$('correction-input').value.trim();try{
-    if(!draft.place){
-      const current=()=>correcting===draft && address===$('correction-input').value.trim();
-      const p=await resolveWithLocality(address,query=>api('/resolve',{address:query,purpose:'correction',session:crypto.randomUUID(),operationId:crypto.randomUUID()}),current,()=>{$('correction-result').textContent='Tentando também em Gravataí, RS…';});
-      if(!p || !current())return;
-      draft.place=p;$('correction-result').textContent=p.address;$('correction-submit').textContent='Usar este endereço';return;
-    }
-    await mutate(`/orders/${draft.id}/correct`,{index:draft.index,selectionId:draft.place.selectionId});
-    if(correcting===draft)$('correction-dialog').close();
-  }catch(err){if(correcting===draft)$('correction-result').textContent=err.message;}});
+  void run(e.submitter,async()=>{if(!draft.place){await resolveCorrection(draft);return;}
+    const price=cents({price:$('correction-price').value});if(price===null){$('correction-result').textContent='Informe o valor entre R$ 0 e R$ 1.000.';$('correction-price').focus();return;}
+    try{await mutate(`/orders/${draft.id}/correct`,{index:draft.index,selectionId:draft.place.selectionId,priceCents:price});if(correcting===draft)$('correction-dialog').close();}
+    catch(err){if(correcting===draft)$('correction-result').textContent=err.message;}
+  });
 };
