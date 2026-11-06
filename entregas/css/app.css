@@ -947,3 +947,12 @@ select {
 .brand .sign { width:154px; height:auto; display:block; }
 .login .brand .sign { width:200px; }
 header { border-top:3px solid #ef7929; }
+
+.order-chat { margin: 0 0 14px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fffbf7; }
+.chat-form { display: flex; align-items: center; gap: 6px; }
+.chat-form input { flex: 1; min-width: 0; margin: 0; min-height: 44px; padding: 8px 10px; font-size: 16px; }
+.chat-form button { min-height: 44px; padding: 8px 13px; color: #a6410b; background: #ffead9; }
+.chat-log { list-style: none; margin: 0; padding: 0; max-height: 15rem; overflow-y: auto; }
+.chat-log li { font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; padding: 8px 1px 0; text-align: left; }
+.chat-log time { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.archived-chat summary { padding: 9px 0; color: #99410e; }

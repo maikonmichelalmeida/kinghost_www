@@ -98,6 +98,7 @@ async function run(button, fn) {
   }
 }
 function logoutLocal() {
+  $("orders").replaceChildren();
   stopLive();
   token = "";
   sessionEpoch++;
@@ -201,9 +202,19 @@ function historyTable(entries) {
   return `<table class="history-table"><caption class="sr-only">Histórico por endereço de entrega</caption><thead><tr><th>Hora</th><th>Entrega</th><th>Valor</th></tr></thead><tbody>${entries
     .map((item) => {
       const key = esc(item.orderId) + "-" + item.index;
-      return `<tr><td>${time(item.finishedAt || item.createdAt)}</td><td><button type="button" class="history-trigger" data-history-key="${key}" aria-expanded="false">${esc(item.address)}<small>${item.status === "done" ? "Entregue" : names[item.status] || esc(item.status)}</small></button></td><td>${money(item.priceCents)}</td></tr><tr class="history-more" data-history-detail="${key}" hidden><td colspan="3"><b>${esc(item.address)}</b><p>Pedido às ${time(item.createdAt)} · Aceite ${time(item.acceptedAt)} · Visualizado ${time(item.seenAt)}${item.finishedAt ? " · Fim " + time(item.finishedAt) : ""}</p>${item.cancelReason ? `<p>${esc(item.cancelReason)}</p>` : ""}</td></tr>`;
+      return `<tr><td>${time(item.finishedAt || item.createdAt)}</td><td><button type="button" class="history-trigger" data-history-key="${key}" aria-expanded="false">${esc(item.address)}<small>${item.status === "done" ? "Entregue" : names[item.status] || esc(item.status)}</small></button></td><td>${money(item.priceCents)}</td></tr><tr class="history-more" data-history-detail="${key}" hidden><td colspan="3"><b>${esc(item.address)}</b><p>Pedido às ${time(item.createdAt)} · Aceite ${time(item.acceptedAt)} · Visualizado ${time(item.seenAt)}${item.finishedAt ? " · Fim " + time(item.finishedAt) : ""}</p>${item.cancelReason ? `<p>${esc(item.cancelReason)}</p>` : ""}<details class="archived-chat" data-archive-chat="${esc(item.orderId)}"><summary>Conversa do pedido</summary><ol class="chat-log"></ol></details></td></tr>`;
     })
     .join("")}</tbody></table>`;
+}
+const chatClock = new Intl.DateTimeFormat('pt-BR', {timeZone:'America/Sao_Paulo', hour:'2-digit', minute:'2-digit', hourCycle:'h23'});
+function chatLines(messages) {
+  return messages.map(entry => {
+    const hour = chatClock.format(Number(entry.sentAt)).replace(':', 'h')+'m';
+    return `<li><b>${esc(entry.sender)}:</b> ${esc(entry.message)} <time>${hour}</time></li>`;
+  }).join('');
+}
+function chatPanel(orderId) {
+  return `<section class="order-chat" data-chat="${esc(orderId)}" aria-label="Conversa deste pedido"><form class="chat-form"><input type="text" maxlength="1000" aria-label="Mensagem do pedido" placeholder="Mensagem do pedido" autocomplete="off" enterkeyhint="send" required><button type="submit">Enviar</button></form><ol class="chat-log" aria-live="polite" aria-relevant="additions"></ol></section>`;
 }
 function activeOrder(o, driver) {
   const button = (action, label, cls = "outline", extra = "") =>
@@ -238,7 +249,7 @@ function activeOrder(o, driver) {
   const next = orderIndices(o).find(
     (i) => !o.delivered.some((d) => d.index === i),
   );
-  return `<article class="order-card"><div class="order-head"><div><span class="eyebrow">PEDIDO ATUAL</span><h3>${o.stops.length} ${o.stops.length === 1 ? "entrega" : "entregas"}</h3><span class="small muted">Pedido às ${time(o.createdAt)}</span></div><span class="badge ${o.status}">${names[o.status] || esc(o.status)}</span></div>${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${o.routeStatus === "calculating" ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
+  return `<article class="order-card"><div class="order-head"><div><span class="eyebrow">PEDIDO ATUAL</span><h3>${o.stops.length} ${o.stops.length === 1 ? "entrega" : "entregas"}</h3><span class="small muted">Pedido às ${time(o.createdAt)}</span></div><span class="badge ${o.status}">${names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${o.routeStatus === "calculating" ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
 }
 function renderState() {
   const driver = state.user.role === "driver",
@@ -276,6 +287,9 @@ function renderState() {
   active.sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt);
   const sig = JSON.stringify([active, driver]);
   if (sig !== orderSignature) {
+    const previousPanels = new Map([...$('orders').querySelectorAll('[data-chat]')].map(el=>[el.dataset.chat, el]));
+    const openQueue = new Set([...$('orders').querySelectorAll('.queue[open] [data-chat]')].map(el=>el.dataset.chat));
+    const typing = document.activeElement?.closest('.chat-form') ? document.activeElement : null;
     $("orders").innerHTML = active.length
       ? activeOrder(active[0], driver) +
         active
@@ -286,9 +300,21 @@ function renderState() {
           )
           .join("")
       : '<p class="empty">Nenhum pedido em andamento.</p>';
+    for (const panel of $('orders').querySelectorAll('[data-chat]')) {
+      const old = previousPanels.get(panel.dataset.chat);
+      if (openQueue.has(panel.dataset.chat) && panel.closest('.queue')) panel.closest('.queue').open = true;
+      if (old) panel.replaceWith(old);
+    }
+    if (typing?.isConnected) typing.focus({preventScroll:true});
     orderSignature = sig;
   }
 
+  for (const panel of $('orders').querySelectorAll('[data-chat]')) {
+    const messages = state.messages?.[panel.dataset.chat] || [];
+    const list = panel.querySelector('.chat-log');
+    const newest = String(messages[0]?.id || '');
+    if (list.dataset.newest !== newest) {list.innerHTML = chatLines(messages); list.dataset.newest = newest;}
+  }
   const workArea = $(driver || $("request-section").hidden ? "active-section" : "request-section");
   const summary = document.querySelector(".day-summary");
   if (workArea.nextElementSibling !== summary) workArea.after(summary);
@@ -877,3 +903,28 @@ $("priority-form").onsubmit = (e) => {
   $("priority-dialog").close();
   updateDraftTotal();
 };
+
+$('orders').addEventListener('submit', async event => {
+  const form = event.target.closest('.chat-form');
+  if (!form) return;
+  event.preventDefault();
+  if (form.dataset.sending) return;
+  const input = form.querySelector('input'), button = form.querySelector('button');
+  const message = input.value.trim();
+  if (!message) return;
+  if (form.dataset.lastText !== message) {form.dataset.lastText=message;form.dataset.messageKey=crypto.randomUUID();}
+  form.dataset.sending='1'; button.disabled=true;
+  try {
+    await api('/orders/'+form.closest('[data-chat]').dataset.chat+'/messages',{message,messageKey:form.dataset.messageKey});
+    if (input.value.trim()===message) input.value='';
+    delete form.dataset.messageKey; delete form.dataset.lastText;
+    await refresh();
+  } catch(e) {toast(e.message);} finally {delete form.dataset.sending;button.disabled=false;}
+});
+document.addEventListener('toggle', async event => {
+  const panel=event.target;
+  if (!panel.matches?.('details[data-archive-chat]') || !panel.open) return;
+  const list=panel.querySelector('ol');list.textContent='Carregando…';
+  try {const result=await api('/orders/'+panel.dataset.archiveChat+'/messages');list.innerHTML=result.messages.length?chatLines(result.messages):'<li>Nenhuma mensagem.</li>';}
+  catch(e){list.textContent=e.message;}
+},true);
