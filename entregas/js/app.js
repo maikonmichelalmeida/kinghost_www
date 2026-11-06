@@ -98,6 +98,8 @@ async function run(button, fn) {
   }
 }
 function logoutLocal() {
+  $("first-message").value = "";
+  $("first-message-status").hidden = true;
   $("orders").replaceChildren();
   stopLive();
   token = "";
@@ -147,11 +149,12 @@ async function refresh() {
     }
   }
 }
-async function mutate(route, body) {
+async function mutate(route, body, waitForRefresh = true) {
   mutationEpoch++;
   const data = await api(route, body);
   mutationEpoch++;
-  await refresh();
+  if (waitForRefresh) await refresh();
+  else void refresh();
   return data;
 }
 function orderIndices(o) {
@@ -216,7 +219,11 @@ function chatLines(messages) {
 function chatPanel(orderId) {
   return `<section class="order-chat" data-chat="${esc(orderId)}" aria-label="Conversa deste pedido"><form class="chat-form"><input type="text" maxlength="1000" aria-label="Mensagem do pedido" placeholder="Mensagem do pedido" autocomplete="off" enterkeyhint="send" required><button type="submit">Enviar</button></form><ol class="chat-log" aria-live="polite" aria-relevant="additions"></ol></section>`;
 }
-function activeOrder(o, driver) {
+function routeIsCalculating(o) {
+  return ["queued", "calculating"].includes(o.routeStatus) && state.serverTime - (o.routeStartedAt || o.createdAt) < 120000;
+}
+function activeOrder(o, driver, queued = false) {
+  const calculating = routeIsCalculating(o);
   const button = (action, label, cls = "outline", extra = "") =>
     `<button class="${cls}" data-order="${esc(o.id)}" data-action="${action}" ${extra}>${label}</button>`;
   let actions = "";
@@ -224,7 +231,7 @@ function activeOrder(o, driver) {
     if (!o.seenAt) actions += button("seen", "✓ Visualizei", "primary");
     if (o.status !== "running")
       actions += button("delay", "Vou em alguns minutos");
-    if (!o.route?.order) actions += button("route", "Calcular rota", "outline");
+    if (!o.route?.order && !calculating) actions += button("route", "Calcular rota", "outline");
     if (["accepted", "seen"].includes(o.status) && o.route?.order)
       actions += button("start", "Iniciar no Google Maps ↗", "primary");
     if (o.status === "running") {
@@ -249,7 +256,7 @@ function activeOrder(o, driver) {
   const next = orderIndices(o).find(
     (i) => !o.delivered.some((d) => d.index === i),
   );
-  return `<article class="order-card"><div class="order-head"><div><span class="eyebrow">PEDIDO ATUAL</span><h3>${o.stops.length} ${o.stops.length === 1 ? "entrega" : "entregas"}</h3><span class="small muted">Pedido às ${time(o.createdAt)}</span></div><span class="badge ${o.status}">${names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${o.routeStatus === "calculating" ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
+  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
 }
 function renderState() {
   const driver = state.user.role === "driver",
@@ -285,7 +292,7 @@ function renderState() {
           ? 3
           : 2;
   active.sort((a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt);
-  const sig = JSON.stringify([active, driver]);
+  const sig = JSON.stringify([active, driver, active.map(routeIsCalculating)]);
   if (sig !== orderSignature) {
     const previousPanels = new Map([...$('orders').querySelectorAll('[data-chat]')].map(el=>[el.dataset.chat, el]));
     const openQueue = new Set([...$('orders').querySelectorAll('.queue[open] [data-chat]')].map(el=>el.dataset.chat));
@@ -296,7 +303,7 @@ function renderState() {
           .slice(1)
           .map(
             (o) =>
-              `<details class="queue"><summary>Na fila · ${time(o.createdAt)} · ${money(o.totalCents)}</summary>${activeOrder(o, driver).replace("PEDIDO ATUAL", "NA FILA")}</details>`,
+              `<details class="queue"><summary>Na fila · ${time(o.createdAt)} · ${money(o.totalCents)}</summary>${activeOrder(o, driver, true)}</details>`,
           )
           .join("")
       : '<p class="empty">Nenhum pedido em andamento.</p>';
@@ -637,6 +644,18 @@ function updateDraftTotal() {
         ? "Informe o valor de cada entrega."
         : "";
 }
+$("first-message").oninput = () => {
+  submissionId = crypto.randomUUID();
+  $("first-message-status").hidden = true;
+};
+$("stage-message").onclick = () => {
+  if (!$("first-message").value.trim()) { $("first-message").focus(); return; }
+  $("first-message-status").textContent = "A mensagem será enviada junto com o chamado.";
+  $("first-message-status").hidden = false;
+};
+$("first-message").onkeydown = event => {
+  if (event.key === "Enter" && !event.isComposing) {event.preventDefault(); $("stage-message").click();}
+};
 $("order-form").onsubmit = (e) => {
   e.preventDefault();
   if (submitting || $("submit-order").disabled) return;
@@ -657,7 +676,9 @@ $("order-form").onsubmit = (e) => {
       const priority = rows
         .filter((r) => r.text.trim())
         .findIndex((r) => r.id === priorityId);
-      await mutate("/orders", { submissionId, stops, priority });
+      await mutate("/orders", { submissionId, stops, priority, firstMessage: $("first-message").value.trim(), backgroundRoute: true }, false);
+      $("first-message").value = "";
+      $("first-message-status").hidden = true;
       priorityId = null;
       rows.forEach((r) => {
         clearTimeout(r.timer);
@@ -676,7 +697,7 @@ $("order-form").onsubmit = (e) => {
       submitting = false;
       $("order-form").inert = false;
       $("order-form").removeAttribute("aria-busy");
-      $("submit-order").firstElementChild.textContent = "Chamar o Maikon";
+      $("submit-order").firstElementChild.textContent = "Chamar o entregador";
       updateDraftTotal();
     }
   });
@@ -709,21 +730,17 @@ document.addEventListener("click", (e) => {
       body.minutes = Number(value);
     }
     if (action === "delivered") body.index = Number(b.dataset.index);
-    const popup =
-      action === "start" ? window.open("about:blank", "_blank") : null;
     void run(b, async () => {
+      if (action === "start") b.textContent = "Iniciando…";
       try {
-        const o = await mutate(
-          `/orders/${b.dataset.order}/${action === "route" ? "route" : "action"}`,
-          body,
-        );
-        if (action === "start" && o.navigation?.[0]?.url) {
-          if (popup) popup.location.replace(o.navigation[0].url);
-          else toast("Rota iniciada. Toque em Abrir rota no Google Maps.");
-        } else popup?.close();
-      } catch (e) {
-        popup?.close();
-        throw e;
+        const order = await mutate(`/orders/${b.dataset.order}/${action === "route" ? "route" : "action"}`, body, action !== "start");
+        if (action === "start") {
+          const destination = order.navigation?.[0]?.url;
+          if (destination) window.location.assign(destination);
+          else toast("Entrega iniciada. Abra a rota pelo cartão do pedido.");
+        }
+      } finally {
+        if (action === "start" && b.isConnected) b.textContent = "Iniciar no Google Maps ↗";
       }
     });
   }

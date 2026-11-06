@@ -9,8 +9,8 @@
     <meta name="theme-color" content="#f47b20" />
     <title>Unifarma · Entregas</title>
     <link rel="icon" href="/entregas/img/mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-chat" />
-    <script defer src="/entregas/js/app.js?v=20261106-chat"></script>
+    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-chamado" />
+    <script defer src="/entregas/js/app.js?v=20261106-chamado"></script>
   </head>
   <body>
     <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -54,19 +54,24 @@
           <form id="order-form">
             <div id="draft-stops"></div>
             <div class="submit-area">
-              <div class="draft-total">
-                <span>Total do pedido</span
-                ><strong id="draft-total">R$ 0,00</strong>
+              <div class="chat-form draft-chat">
+                <input id="first-message" type="text" maxlength="1000" aria-label="Primeira mensagem do pedido (opcional)" placeholder="Mensagem do pedido (opcional)" autocomplete="off" enterkeyhint="send">
+                <button type="button" id="stage-message">Enviar</button>
               </div>
+              <p id="first-message-status" class="small muted" role="status" hidden></p>
               <button id="submit-order" class="primary full" type="submit">
-                <span>Chamar o Maikon</span
+                <span>Chamar o entregador</span
                 ><img
                   src="/entregas/img/moto.svg"
                   width="50"
                   height="31"
                   alt=""
-                /></button
-              ><button
+                /></button>
+              <div class="draft-total">
+                <span>Total do pedido</span
+                ><strong id="draft-total">R$ 0,00</strong>
+              </div>
+              <button
                 type="button"
                 id="priority-open"
                 class="priority-link"

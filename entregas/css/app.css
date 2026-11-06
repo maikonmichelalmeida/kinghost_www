@@ -956,3 +956,11 @@ header { border-top:3px solid #ef7929; }
 .chat-log li { font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; padding: 8px 1px 0; text-align: left; }
 .chat-log time { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .archived-chat summary { padding: 9px 0; color: #99410e; }
+
+.order-head { display:flex; flex-wrap:nowrap; align-items:center; gap:6px; margin-bottom:10px; }
+.order-head h3 { font-size:clamp(13px,3.6vw,16px); white-space:nowrap; margin:0; }
+.order-head time { font-size:12px; color:var(--muted); white-space:nowrap; }
+.order-head .badge { margin-left:auto; }
+.draft-chat { margin-bottom:10px; }
+.draft-chat input { background:white; }
+.submit-area .draft-total { margin:0; padding:10px 2px 0; }
