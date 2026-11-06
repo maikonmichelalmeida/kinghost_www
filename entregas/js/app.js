@@ -160,12 +160,16 @@ async function mutate(route, body, waitForRefresh = true) {
 function orderIndices(o) {
   return o.route?.order || o.stops.map((_, i) => i);
 }
-function stopLines(o) {
+function stopLines(o, driver = false) {
   return orderIndices(o)
     .map((i, n) => {
       const p = o.stops[i],
         done = o.delivered?.find((d) => d.index === i);
-      return `<div class="stop-line"><span class="stop-number">${done ? "✓" : n + 1}</span><div class="stop-info">${esc(p.address)}${done ? `<small>Entregue às ${time(done.at)}</small>` : ""}</div><span class="stop-price">${money(p.priceCents)}</span></div>`;
+      const canEdit = driver && !o.part?.completedIndices.includes(i);
+      const marker = o.status === 'running'
+        ? `<label class="delivery-check"><input type="checkbox" data-check-order="${esc(o.id)}" data-index="${i}" ${done ? 'checked' : ''} ${canEdit ? '' : 'disabled'} aria-label="Entregue: ${esc(p.address)}"></label>`
+        : `<span class="stop-number">${done ? '✓' : n+1}</span>`;
+      return `<div class="stop-line">${marker}<div class="stop-info">${esc(p.address)}${done ? `<small>Entregue às ${time(done.at)}</small>` : ""}</div><span class="stop-price">${money(p.priceCents)}</span></div>`;
     })
     .join("");
 }
@@ -241,22 +245,18 @@ function activeOrder(o, driver, queued = false) {
       const link = o.navigation?.[0]?.url;
       if (link)
         actions += `<a class="primary navigation" href="${esc(link)}" target="_blank" rel="noopener">${next === undefined ? "Voltar para casa" : o.navigation[0].segments > 1 ? "Abrir trecho " + o.navigation[0].segment + " de " + o.navigation[0].segments : "Abrir rota no Google Maps"} ↗</a>`;
-      if (next !== undefined)
-        actions += button(
-          "delivered",
-          "✓ Entreguei neste endereço",
-          "primary",
-          `data-index="${next}"`,
-        );
-      else actions += button("finish", "Concluir pedido", "primary");
+      const part = o.part;
+      if (part && part.number < part.total)
+        actions += button('advance', `Concluir parte ${part.number}/${part.total}`, 'primary', `data-part="${part.number}"`);
+      else actions += button('finish', 'Concluir pedido', 'primary');
     }
     actions += `<details><summary class="small muted">Mais opções</summary>${button("cancel", "Cancelar pedido", "plain")}</details>`;
   } else if (["accepted", "scheduled"].includes(o.status))
     actions += button("cancel", "Cancelar pedido", "plain");
-  const next = orderIndices(o).find(
+  const next = (o.status === 'running' && o.part ? o.part.indices : orderIndices(o)).find(
     (i) => !o.delivered.some((d) => d.index === i),
   );
-  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details></article>`;
+  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}${o.status === "running" ? `<div class="stop-checklist">${stopLines(o,driver)}</div>` : `<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details>`}</article>`;
 }
 function renderState() {
   const driver = state.user.role === "driver",
@@ -729,7 +729,7 @@ document.addEventListener("click", (e) => {
       if (value === null) return;
       body.minutes = Number(value);
     }
-    if (action === "delivered") body.index = Number(b.dataset.index);
+    if (action === "advance") body.part = Number(b.dataset.part);
     void run(b, async () => {
       if (action === "start") b.textContent = "Iniciando…";
       try {
@@ -945,3 +945,12 @@ document.addEventListener('toggle', async event => {
   try {const result=await api('/orders/'+panel.dataset.archiveChat+'/messages');list.innerHTML=result.messages.length?chatLines(result.messages):'<li>Nenhuma mensagem.</li>';}
   catch(e){list.textContent=e.message;}
 },true);
+
+$('orders').addEventListener('change', async event => {
+  const box=event.target.closest('input[data-check-order]');
+  if(!box || state.user.role!=='driver')return;
+  const checked=box.checked; box.disabled=true;
+  try {await mutate(`/orders/${box.dataset.checkOrder}/action`,{action:'delivered',index:Number(box.dataset.index),checked});}
+  catch(e){box.checked=!checked;toast(e.message);await refresh();}
+  finally{if(box.isConnected)box.disabled=false;}
+});
