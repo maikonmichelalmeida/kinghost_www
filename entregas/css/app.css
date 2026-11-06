@@ -969,3 +969,15 @@ header { border-top:3px solid #ef7929; }
 .delivery-check input { width:22px; height:22px; min-height:0; margin:0; padding:0; accent-color:#c94d06; }
 .delivery-check input:disabled { opacity:1; }
 .stop-checklist .stop-line { align-items:center; padding:5px 0; }
+
+#request-section { position:relative; }
+.row-feedback,.decision-actions,.address-review>div { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.row-feedback { grid-column:1/-1; }
+.manual-send,.address-review button { flex:none; background:transparent; color:#9b3900; min-height:40px; font-size:12px; padding:6px; text-decoration:underline; }
+#manual-confirm { position:fixed; inset:auto; margin:0; transform:translate(-50%,-50%); width:min(300px,calc(100vw - 64px)); padding:16px; border-radius:14px; box-shadow:0 5px 32px #40200044; }
+#manual-confirm::backdrop { background:transparent; }
+#request-section:has(#manual-confirm[open])::after { content:''; position:absolute; inset:0; background:#31231855; border-radius:inherit; z-index:8; }
+.decision-actions { justify-content:flex-end; margin-top:10px; }.decision-actions button {min-height:44px;}
+.address-review { background:#fff4e6; border-radius:10px; padding:8px 10px; margin:8px 0; font-size:13px; }.address-review span { overflow-wrap:anywhere; }
+
+.address-row.valid .row-feedback { grid-column:1; grid-row:3; }

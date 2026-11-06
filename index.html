@@ -11,8 +11,8 @@
     <link rel="icon" href="/favicon.ico?v=unifarma-laranja" sizes="16x16 32x32 48x48" />
     <link rel="icon" href="/entregas/img/unifarma-laranja.svg" type="image/svg+xml" sizes="any" />
     <link rel="apple-touch-icon" href="/entregas/img/unifarma-laranja-180.png" />
-    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-partes" />
-    <script defer src="/entregas/js/app.js?v=20261106-partes"></script>
+    <link rel="stylesheet" href="/entregas/css/app.css?v=20261106-validacao" />
+    <script defer src="/entregas/js/app.js?v=20261106-validacao"></script>
   </head>
   <body>
     <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -84,6 +84,10 @@
               <p id="draft-help" class="small muted"></p>
             </div>
           </form>
+          <dialog id="manual-confirm" aria-labelledby="manual-question">
+            <p id="manual-question">Tem certeza que quer fazer esse pedido sem validar o endereço no maps?</p>
+            <div class="decision-actions"><button type="button" id="manual-no" autofocus>Não</button><button type="button" id="manual-yes" class="primary">Sim</button></div>
+          </dialog>
         </section>
         <section id="active-section">
           <div class="section-heading">
@@ -142,6 +146,13 @@
         </footer>
       </main>
     </div>
+    <dialog id="correction-dialog" aria-labelledby="correction-title">
+      <form id="correction-form"><h2 id="correction-title">Validar endereço</h2>
+        <label>Rua, número e cidade<input id="correction-input" maxlength="300" required autocomplete="off"></label>
+        <p id="correction-result" class="small" role="status"></p>
+        <div class="decision-actions"><button type="button" id="correction-close">Voltar</button><button class="primary" id="correction-submit">Buscar no Maps</button></div>
+      </form>
+    </dialog>
     <dialog id="priority-dialog">
       <form id="priority-form">
         <div class="section-heading">

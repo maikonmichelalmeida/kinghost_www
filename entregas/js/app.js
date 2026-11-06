@@ -235,7 +235,7 @@ function activeOrder(o, driver, queued = false) {
     if (!o.seenAt) actions += button("seen", "✓ Visualizei", "primary");
     if (o.status !== "running")
       actions += button("delay", "Vou em alguns minutos");
-    if (!o.route?.order && !calculating) actions += button("route", "Calcular rota", "outline");
+    if (!o.route?.order && !calculating && o.routeStatus !== "awaiting_address") actions += button("route", "Calcular rota", "outline");
     if (["accepted", "seen"].includes(o.status) && o.route?.order)
       actions += button("start", "Iniciar no Google Maps ↗", "primary");
     if (o.status === "running") {
@@ -256,7 +256,7 @@ function activeOrder(o, driver, queued = false) {
   const next = (o.status === 'running' && o.part ? o.part.indices : orderIndices(o)).find(
     (i) => !o.delivered.some((d) => d.index === i),
   );
-  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${!o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}${o.status === "running" ? `<div class="stop-checklist">${stopLines(o,driver)}</div>` : `<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details>`}</article>`;
+  return `<article class="order-card"><div class="order-head"><h3>${queued ? "Na fila" : "Entrega atual"} (${o.stops.length})</h3><time>${time(o.createdAt)}</time><span class="badge ${o.status}" title="${esc(names[o.status] || o.status)}">${o.status === "accepted" ? "Aguardando" : names[o.status] || esc(o.status)}</span></div>${chatPanel(o.id)}${o.status === "scheduled" ? `<p class="notice">Abertura ${dateTime(o.scheduledFor)}</p>` : ""}${o.seenAt ? `<p class="seen-note">✓ Maikon visualizou às ${time(o.seenAt)}</p>` : ""}${o.delayUntil ? `<p class="notice">Previsão: ${time(o.delayUntil)}</p>` : ""}${o.routeStatus === "awaiting_address" ? pendingStops(o,driver) : !o.route?.order ? `<p class="notice">Pedido registrado. ${calculating ? "Calculando a rota…" : "Rota pendente."}${driver && o.routeError ? " " + esc(o.routeError) : ""}</p>` : ""}${next !== undefined && o.routeStatus !== "awaiting_address" ? `<div class="next-stop"><span>${!o.route?.order ? "Endereço informado" : o.status === "running" ? "Próxima entrega" : "Primeiro destino"}${o.priority === next ? " · Prioridade" : ""}</span><strong>${esc(o.stops[next].address)}</strong></div>` : ""}<div class="order-summary"><span>Total do pedido</span><strong>${money(o.totalCents)}</strong></div>${actions ? `<div class="actions">${actions}</div>` : ""}${o.status === "running" ? `<div class="stop-checklist">${stopLines(o,driver)}</div>` : `<details class="itinerary"><summary>Endereços e valores</summary>${stopLines(o)}</details>`}</article>`;
 }
 function renderState() {
   const driver = state.user.role === "driver",
@@ -380,6 +380,30 @@ function renderBudget() {
       )
       .join("");
 }
+// Do not change the input. The locality is only an alternative query after a miss.
+function localityQuery(raw) {
+  const normalized=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if (/\b(gravatai|alvorada|viamao|canoas|porto[\s-]+alegre|cachoeirinha|esteio|rs)\b/.test(normalized)) return null;
+  // Preserve another explicitly written city, e.g. “Rua X, 123, Sapucaia do Sul”.
+  if (/,\s*[a-z][a-z .'-]*\s*$/.test(normalized) || /\b\d+\s*[-,]?\s+[a-z][a-z .'-]+$/.test(normalized)) return null;
+  return raw.trim() ? raw.trim()+', Gravataí, RS' : null;
+}
+async function resolveWithLocality(address, lookup, stillCurrent, onRetry) {
+  try { return await lookup(address,false); }
+  catch (error) {
+    const local=localityQuery(address);
+    if(!local || ![400,422].includes(error.status) || !/\d/.test(address) || !stillCurrent())throw error;
+    onRetry();
+    await new Promise(done=>setTimeout(done,1000));
+    if(!stillCurrent())return null;
+    return lookup(local,true);
+  }
+}
+function showManual(row,message) {
+  const el=rowElement(row);if(!el||row.valid)return;
+  el.querySelector('.row-status').textContent=message;
+  el.querySelector('.manual-send').hidden=false;
+}
 function rowElement(row) {
   return document.querySelector(`[data-row="${row.id}"]`);
 }
@@ -396,8 +420,10 @@ function addRow() {
   const el = document.createElement("article");
   el.className = "address-row";
   el.dataset.row = row.id;
-  el.innerHTML = `<div class="row-heading"><span>Entrega ${rows.length}</span><button type="button" data-remove aria-label="Remover entrega">Remover</button></div><div class="fields"><button type="button" class="confirmed-address" title="Editar endereço" hidden></button><label class="address-label">Endereço<input class="address-input" placeholder="Rua, número e cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions-${row.id}"></label><label>Valor<div class="price-wrap"><span>R$</span><input class="price-input" inputmode="decimal" placeholder="—" aria-label="Valor da entrega em reais"></div></label></div><button type="button" class="confirm">Confirmar endereço</button><p class="row-status" role="status"></p><div class="suggestions" id="suggestions-${row.id}" role="listbox" hidden></div>`;
+  el.innerHTML = `<div class="row-heading"><span>Entrega ${rows.length}</span><button type="button" data-remove aria-label="Remover entrega">Remover</button></div><div class="fields"><button type="button" class="confirmed-address" title="Editar endereço" hidden></button><label class="address-label">Endereço<input class="address-input" placeholder="Rua, número e cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions-${row.id}"></label><label>Valor<div class="price-wrap"><span>R$</span><input class="price-input" inputmode="decimal" placeholder="—" aria-label="Valor da entrega em reais"></div></label></div><button type="button" class="confirm">Confirmar endereço</button><div class="row-feedback"><p class="row-status" role="status"></p><button type="button" class="manual-send" hidden>Enviar mesmo assim</button></div><div class="suggestions" id="suggestions-${row.id}" role="listbox" hidden></div>`;
   $("draft-stops").append(el);
+  el.querySelector('.address-input').maxLength=300;
+  el.querySelector('.manual-send').onclick=()=>askManual(row);
   el.querySelector(".confirm").hidden = true;
   el.querySelector(".confirmed-address").onclick = () => {
     el.classList.remove("valid");
@@ -413,6 +439,8 @@ function addRow() {
   };
   el.querySelector(".address-input").addEventListener("input", (e) => {
     row.text = e.target.value;
+    row.manual=false;
+    el.querySelector('.manual-send').hidden=true;
     row.valid = false;
     el.querySelector(".confirm").hidden = !row.text.trim();
     row.selectionId = null;
@@ -431,7 +459,7 @@ function addRow() {
       (row.autoCount || 0) < 4 &&
       row.lastQuery !== row.text.trim()
     )
-      row.timer = setTimeout(() => suggest(row), 850);
+      row.timer = setTimeout(() => suggest(row), 1000);
   });
   el.querySelector(".address-input").addEventListener("keydown", (e) => {
     const choices = [...el.querySelectorAll("[data-choice]")];
@@ -474,7 +502,7 @@ function closeSuggestions(row) {
   el.querySelector(".suggestions").hidden = true;
   el.querySelector(".address-input").setAttribute("aria-expanded", "false");
 }
-async function suggest(row) {
+async function suggest(row, alternate = null) {
   const el = rowElement(row),
     seq = row.sequence;
   if (
@@ -490,13 +518,24 @@ async function suggest(row) {
     const result = await api(
       "/autocomplete",
       {
-        input: row.text,
+        input: alternate || row.text,
         session: row.session,
         operationId: crypto.randomUUID(),
       },
       row.controller.signal,
     );
     if (row.sequence !== seq || !el.isConnected) return;
+    if (!result.suggestions.length) {
+      closeSuggestions(row);
+      const local=!alternate && localityQuery(row.text);
+      if (local && row.autoCount<4) {
+        el.querySelector('.row-status').textContent='Buscando também em Gravataí, RS…';
+        row.timer=setTimeout(()=>{if(row.sequence===seq && !row.valid)void suggest(row,local);},1000);
+      } else showManual(row,'Confira rua, número e cidade.');
+      return;
+    }
+    el.querySelector('.row-status').textContent='';
+    el.querySelector('.manual-send').hidden=true;
     const box = el.querySelector(".suggestions");
     box.innerHTML =
       result.suggestions
@@ -534,11 +573,10 @@ async function suggest(row) {
       };
     });
   } catch (e) {
-    if (e.name === "AbortError") return;
+    if (e.name === "AbortError" || row.sequence !== seq || !el.isConnected || row.valid) return;
     if (e.status === 429 || e.status === 503) {
       row.autoPaused = true;
-      el.querySelector(".row-status").textContent =
-        "Digite rua, número e cidade e toque em Confirmar.";
+      showManual(row,"Sugestões pausadas. Confira rua, número e cidade.");
     }
   }
 }
@@ -551,15 +589,13 @@ async function resolveRow(row, choice) {
   clearTimeout(row.timer);
   row.controller?.abort();
   closeSuggestions(row);
+  el.querySelector(".manual-send").hidden = true;
   el.querySelector(".row-status").textContent = "Confirmando endereço…";
   try {
-    const p = await api("/resolve", {
-      placeId: choice?.placeId,
-      address: row.text,
-      session: row.session,
-      operationId: crypto.randomUUID(),
-    });
-    if (seq !== row.sequence || !el.isConnected) return;
+    const resolve=(address,placeId)=>api('/resolve',{placeId,address,session:row.session,operationId:crypto.randomUUID()});
+    const current=()=>seq===row.sequence && el.isConnected;
+    const p=await resolveWithLocality(row.text,(address,extra)=>resolve(address,extra?undefined:choice?.placeId),current,()=>{el.querySelector('.row-status').textContent='Tentando também em Gravataí, RS…';});
+    if (!p || !current()) return;
     row.selectionId = p.selectionId;
     row.text = p.address;
     row.valid = true;
@@ -585,24 +621,8 @@ async function resolveRow(row, choice) {
     if (seq !== row.sequence || !el.isConnected) return;
     row.phase = "editing";
     el.querySelector(".row-status").textContent = e.message;
-    if (
-      [429, 503, 502].includes(e.status) &&
-      /\d/.test(row.text) &&
-      row.text.trim().length >= 8
-    ) {
-      row.valid = true;
-      row.phase = "ready";
-      el.classList.add("valid");
-      el.querySelector(".confirmed-address").textContent = row.text;
-      el.querySelector(".confirmed-address").hidden = false;
-      el.querySelector(".confirm").hidden = true;
-      row.manual = true;
-      row.selectionId = null;
-      el.querySelector(".row-status").textContent =
-        "Consulta indisponível. Endereço escrito; informe o valor. A rota será confirmada depois.";
-      if (rows.at(-1) === row) addRow();
-      updateDraftTotal();
-    } else throw e;
+    if ([400,422,429,502,503].includes(e.status) || !e.status) showManual(row,e.message);
+    else throw e;
   }
 }
 function cents(row) {
@@ -617,7 +637,7 @@ function updateDraftTotal() {
     filled.reduce((n, r) => n + (cents(r) || 0), 0),
   );
   $("draft-count").textContent = filled.length
-    ? filled.length + " endereços"
+    ? filled.length + (filled.length === 1 ? " endereço" : " endereços")
     : "";
   const available =
     state && (state.availability.open || state.availability.scheduledAt);
@@ -670,6 +690,7 @@ $("order-form").onsubmit = (e) => {
         .filter((r) => r.text.trim())
         .map((r) => ({
           selectionId: r.selectionId || undefined,
+          allowUnresolved: r.manual === true,
           address: r.text,
           priceCents: cents(r),
         }));
@@ -954,3 +975,57 @@ $('orders').addEventListener('change', async event => {
   catch(e){box.checked=!checked;toast(e.message);await refresh();}
   finally{if(box.isConnected)box.disabled=false;}
 });
+
+let manualRow=null;
+function positionManual() {
+  const dialog=$('manual-confirm');if(!dialog.open)return;
+  const rect=$('request-section').getBoundingClientRect();
+  const top=Math.max(8,rect.top),bottom=Math.min(innerHeight-8,rect.bottom);
+  dialog.style.left=(rect.left+rect.width/2)+'px';
+  dialog.style.top=Math.max(dialog.offsetHeight/2+8,Math.min(innerHeight-dialog.offsetHeight/2-8,(top+bottom)/2))+'px';
+}
+function askManual(row){
+  manualRow=row;$('manual-confirm').showModal();positionManual();
+}
+$('manual-no').onclick=()=>$('manual-confirm').close();
+$('manual-yes').onclick=()=>{
+  const row=manualRow,el=row && rowElement(row);$('manual-confirm').close();
+  if(!el || !row.text.trim())return;
+  clearTimeout(row.timer);row.controller?.abort();row.sequence++;
+  row.valid=true;row.manual=true;row.selectionId=null;row.phase='ready';
+  el.classList.add('valid');el.querySelector('.confirmed-address').textContent=row.text;el.querySelector('.confirmed-address').hidden=false;
+  el.querySelector('.confirm').hidden=true;el.querySelector('.manual-send').hidden=true;closeSuggestions(row);
+  el.querySelector('.row-status').textContent='Validação pelo entregador'+(cents(row)===null?' · Informe o valor.':'.');
+  submissionId=crypto.randomUUID();if(rows.at(-1)===row)addRow();updateDraftTotal();
+  if(!$('submit-order').disabled)$('order-form').requestSubmit($('submit-order'));
+  else if(cents(row)===null)el.querySelector('.price-input').focus();
+};
+$('manual-confirm').onclose=()=>{manualRow=null;};
+window.addEventListener('resize',positionManual);window.addEventListener('scroll',positionManual,{passive:true});
+function pendingStops(order,driver){
+  const items=order.stops.flatMap((p,i)=>p.needsValidation?`<div><span>${esc(p.address)}</span>${driver?`<button type="button" data-correct="${esc(order.id)}" data-stop="${i}">Validar</button>`:''}</div>`:[]);
+  return `<div class="address-review"><strong>${driver?'Validar antes de iniciar':'Aguardando validação do entregador'}</strong>${items.join('')}</div>`;
+}
+let correcting=null;
+$('orders').addEventListener('click',e=>{
+  const b=e.target.closest('[data-correct]');if(!b)return;
+  const order=state.orders.find(o=>o.id===b.dataset.correct),index=Number(b.dataset.stop);
+  if(!order?.stops[index]?.needsValidation)return;
+  correcting={id:order.id,index,place:null};$('correction-input').value=order.stops[index].address;
+  $('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';$('correction-dialog').showModal();
+});
+$('correction-close').onclick=()=>$('correction-dialog').close();
+$('correction-dialog').onclose=()=>{correcting=null;};
+$('correction-input').oninput=()=>{if(correcting)correcting.place=null;$('correction-result').textContent='';$('correction-submit').textContent='Buscar no Maps';};
+$('correction-form').onsubmit=e=>{e.preventDefault();const draft=correcting;if(!draft)return;
+  void run(e.submitter,async()=>{const address=$('correction-input').value.trim();try{
+    if(!draft.place){
+      const current=()=>correcting===draft && address===$('correction-input').value.trim();
+      const p=await resolveWithLocality(address,query=>api('/resolve',{address:query,purpose:'correction',session:crypto.randomUUID(),operationId:crypto.randomUUID()}),current,()=>{$('correction-result').textContent='Tentando também em Gravataí, RS…';});
+      if(!p || !current())return;
+      draft.place=p;$('correction-result').textContent=p.address;$('correction-submit').textContent='Usar este endereço';return;
+    }
+    await mutate(`/orders/${draft.id}/correct`,{index:draft.index,selectionId:draft.place.selectionId});
+    if(correcting===draft)$('correction-dialog').close();
+  }catch(err){if(correcting===draft)$('correction-result').textContent=err.message;}});
+};
